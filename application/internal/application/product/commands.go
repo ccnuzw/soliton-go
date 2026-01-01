@@ -8,8 +8,15 @@ import (
 
 // CreateProductCommand is the command for creating a Product.
 type CreateProductCommand struct {
-	ID   string
+	ID string
 	Name string
+	Sku string
+	Description string
+	Price int64
+	OriginalPrice int64
+	Stock int
+	CategoryId string
+	Status product.ProductStatus
 }
 
 // CreateProductHandler handles CreateProductCommand.
@@ -22,7 +29,7 @@ func NewCreateProductHandler(repo product.ProductRepository) *CreateProductHandl
 }
 
 func (h *CreateProductHandler) Handle(ctx context.Context, cmd CreateProductCommand) (*product.Product, error) {
-	entity := product.NewProduct(cmd.ID, cmd.Name)
+	entity := product.NewProduct(cmd.ID, cmd.Name, cmd.Sku, cmd.Description, cmd.Price, cmd.OriginalPrice, cmd.Stock, cmd.CategoryId, cmd.Status)
 	if err := h.repo.Save(ctx, entity); err != nil {
 		return nil, err
 	}
@@ -31,8 +38,15 @@ func (h *CreateProductHandler) Handle(ctx context.Context, cmd CreateProductComm
 
 // UpdateProductCommand is the command for updating a Product.
 type UpdateProductCommand struct {
-	ID   string
+	ID string
 	Name string
+	Sku string
+	Description string
+	Price int64
+	OriginalPrice int64
+	Stock int
+	CategoryId string
+	Status product.ProductStatus
 }
 
 // UpdateProductHandler handles UpdateProductCommand.
@@ -49,7 +63,7 @@ func (h *UpdateProductHandler) Handle(ctx context.Context, cmd UpdateProductComm
 	if err != nil {
 		return nil, err
 	}
-	entity.Update(cmd.Name)
+	entity.Update(cmd.Name, cmd.Sku, cmd.Description, cmd.Price, cmd.OriginalPrice, cmd.Stock, cmd.CategoryId, cmd.Status)
 	if err := h.repo.Save(ctx, entity); err != nil {
 		return nil, err
 	}

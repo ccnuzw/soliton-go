@@ -1,28 +1,60 @@
 package orderapp
 
-import "github.com/soliton-go/application/internal/domain/order"
+import (
+	"time"
+
+	"github.com/soliton-go/application/internal/domain/order"
+)
 
 // CreateOrderRequest is the request body for creating a Order.
 type CreateOrderRequest struct {
-	Name string `json:"name" binding:"required"`
+	UserId string `json:"user_id"`
+	OrderNo string `json:"order_no"`
+	TotalAmount int64 `json:"total_amount"`
+	Status string `json:"status"`
+	ReceiverName string `json:"receiver_name"`
+	ReceiverPhone string `json:"receiver_phone"`
+	ReceiverAddress string `json:"receiver_address"`
 }
 
 // UpdateOrderRequest is the request body for updating a Order.
 type UpdateOrderRequest struct {
-	Name string `json:"name" binding:"required"`
+	UserId string `json:"user_id"`
+	OrderNo string `json:"order_no"`
+	TotalAmount int64 `json:"total_amount"`
+	Status string `json:"status"`
+	ReceiverName string `json:"receiver_name"`
+	ReceiverPhone string `json:"receiver_phone"`
+	ReceiverAddress string `json:"receiver_address"`
 }
 
 // OrderResponse is the response body for Order data.
 type OrderResponse struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+	ID        string    `json:"id"`
+	UserId string `json:"user_id"`
+	OrderNo string `json:"order_no"`
+	TotalAmount int64 `json:"total_amount"`
+	Status string `json:"status"`
+	ReceiverName string `json:"receiver_name"`
+	ReceiverPhone string `json:"receiver_phone"`
+	ReceiverAddress string `json:"receiver_address"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // ToOrderResponse converts entity to response.
 func ToOrderResponse(e *order.Order) OrderResponse {
 	return OrderResponse{
-		ID:   string(e.ID),
-		Name: e.Name,
+		ID:        string(e.ID),
+		UserId: e.UserId,
+		OrderNo: e.OrderNo,
+		TotalAmount: e.TotalAmount,
+		Status: string(e.Status),
+		ReceiverName: e.ReceiverName,
+		ReceiverPhone: e.ReceiverPhone,
+		ReceiverAddress: e.ReceiverAddress,
+		CreatedAt: e.CreatedAt,
+		UpdatedAt: e.UpdatedAt,
 	}
 }
 

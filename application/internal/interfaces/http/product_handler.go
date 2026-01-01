@@ -5,6 +5,7 @@ import (
 	"github.com/google/uuid"
 
 	productapp "github.com/soliton-go/application/internal/application/product"
+	"github.com/soliton-go/application/internal/domain/product"
 )
 
 // ProductHandler handles HTTP requests for Product operations.
@@ -54,8 +55,15 @@ func (h *ProductHandler) Create(c *gin.Context) {
 	}
 
 	cmd := productapp.CreateProductCommand{
-		ID:   uuid.New().String(),
+		ID: uuid.New().String(),
 		Name: req.Name,
+		Sku: req.Sku,
+		Description: req.Description,
+		Price: req.Price,
+		OriginalPrice: req.OriginalPrice,
+		Stock: req.Stock,
+		CategoryId: req.CategoryId,
+		Status: product.ProductStatus(req.Status),
 	}
 
 	entity, err := h.createHandler.Handle(c.Request.Context(), cmd)
@@ -102,8 +110,15 @@ func (h *ProductHandler) Update(c *gin.Context) {
 	}
 
 	cmd := productapp.UpdateProductCommand{
-		ID:   id,
+		ID: id,
 		Name: req.Name,
+		Sku: req.Sku,
+		Description: req.Description,
+		Price: req.Price,
+		OriginalPrice: req.OriginalPrice,
+		Stock: req.Stock,
+		CategoryId: req.CategoryId,
+		Status: product.ProductStatus(req.Status),
 	}
 
 	entity, err := h.updateHandler.Handle(c.Request.Context(), cmd)

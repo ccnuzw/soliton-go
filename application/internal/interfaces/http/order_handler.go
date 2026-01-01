@@ -5,6 +5,7 @@ import (
 	"github.com/google/uuid"
 
 	orderapp "github.com/soliton-go/application/internal/application/order"
+	"github.com/soliton-go/application/internal/domain/order"
 )
 
 // OrderHandler handles HTTP requests for Order operations.
@@ -54,8 +55,14 @@ func (h *OrderHandler) Create(c *gin.Context) {
 	}
 
 	cmd := orderapp.CreateOrderCommand{
-		ID:   uuid.New().String(),
-		Name: req.Name,
+		ID: uuid.New().String(),
+		UserId: req.UserId,
+		OrderNo: req.OrderNo,
+		TotalAmount: req.TotalAmount,
+		Status: order.OrderStatus(req.Status),
+		ReceiverName: req.ReceiverName,
+		ReceiverPhone: req.ReceiverPhone,
+		ReceiverAddress: req.ReceiverAddress,
 	}
 
 	entity, err := h.createHandler.Handle(c.Request.Context(), cmd)
@@ -102,8 +109,14 @@ func (h *OrderHandler) Update(c *gin.Context) {
 	}
 
 	cmd := orderapp.UpdateOrderCommand{
-		ID:   id,
-		Name: req.Name,
+		ID: id,
+		UserId: req.UserId,
+		OrderNo: req.OrderNo,
+		TotalAmount: req.TotalAmount,
+		Status: order.OrderStatus(req.Status),
+		ReceiverName: req.ReceiverName,
+		ReceiverPhone: req.ReceiverPhone,
+		ReceiverAddress: req.ReceiverAddress,
 	}
 
 	entity, err := h.updateHandler.Handle(c.Request.Context(), cmd)

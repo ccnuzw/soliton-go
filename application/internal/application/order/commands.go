@@ -8,8 +8,14 @@ import (
 
 // CreateOrderCommand is the command for creating a Order.
 type CreateOrderCommand struct {
-	ID   string
-	Name string
+	ID string
+	UserId string
+	OrderNo string
+	TotalAmount int64
+	Status order.OrderStatus
+	ReceiverName string
+	ReceiverPhone string
+	ReceiverAddress string
 }
 
 // CreateOrderHandler handles CreateOrderCommand.
@@ -22,7 +28,7 @@ func NewCreateOrderHandler(repo order.OrderRepository) *CreateOrderHandler {
 }
 
 func (h *CreateOrderHandler) Handle(ctx context.Context, cmd CreateOrderCommand) (*order.Order, error) {
-	entity := order.NewOrder(cmd.ID, cmd.Name)
+	entity := order.NewOrder(cmd.ID, cmd.UserId, cmd.OrderNo, cmd.TotalAmount, cmd.Status, cmd.ReceiverName, cmd.ReceiverPhone, cmd.ReceiverAddress)
 	if err := h.repo.Save(ctx, entity); err != nil {
 		return nil, err
 	}
@@ -31,8 +37,14 @@ func (h *CreateOrderHandler) Handle(ctx context.Context, cmd CreateOrderCommand)
 
 // UpdateOrderCommand is the command for updating a Order.
 type UpdateOrderCommand struct {
-	ID   string
-	Name string
+	ID string
+	UserId string
+	OrderNo string
+	TotalAmount int64
+	Status order.OrderStatus
+	ReceiverName string
+	ReceiverPhone string
+	ReceiverAddress string
 }
 
 // UpdateOrderHandler handles UpdateOrderCommand.
@@ -49,7 +61,7 @@ func (h *UpdateOrderHandler) Handle(ctx context.Context, cmd UpdateOrderCommand)
 	if err != nil {
 		return nil, err
 	}
-	entity.Update(cmd.Name)
+	entity.Update(cmd.UserId, cmd.OrderNo, cmd.TotalAmount, cmd.Status, cmd.ReceiverName, cmd.ReceiverPhone, cmd.ReceiverAddress)
 	if err := h.repo.Save(ctx, entity); err != nil {
 		return nil, err
 	}

@@ -34,13 +34,23 @@ func NewResolver(
 
 // User represents the GraphQL User type.
 type User struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+	ID       string `json:"id"`
+	Username string `json:"username"`
+	Email    string `json:"email"`
+	Nickname string `json:"nickname"`
+	Role     string `json:"role"`
+	Status   string `json:"status"`
 }
 
 // CreateUserInput represents the input for creating a user.
 type CreateUserInput struct {
-	Name string `json:"name"`
+	Username     string `json:"username"`
+	Email        string `json:"email"`
+	PasswordHash string `json:"password_hash"`
+	Phone        string `json:"phone"`
+	Nickname     string `json:"nickname"`
+	Role         string `json:"role"`
+	Status       string `json:"status"`
 }
 
 // QueryResolver implements the Query resolvers.
@@ -71,8 +81,12 @@ func (r *QueryResolver) User(ctx context.Context, id string) (*User, error) {
 		return nil, err
 	}
 	return &User{
-		ID:   string(u.ID),
-		Name: u.Name,
+		ID:       string(u.ID),
+		Username: u.Username,
+		Email:    u.Email,
+		Nickname: u.Nickname,
+		Role:     string(u.Role),
+		Status:   string(u.Status),
 	}, nil
 }
 
@@ -87,8 +101,12 @@ func (r *QueryResolver) Users(ctx context.Context) ([]*User, error) {
 	var result []*User
 	for _, u := range users {
 		result = append(result, &User{
-			ID:   string(u.ID),
-			Name: u.Name,
+			ID:       string(u.ID),
+			Username: u.Username,
+			Email:    u.Email,
+			Nickname: u.Nickname,
+			Role:     string(u.Role),
+			Status:   string(u.Status),
 		})
 	}
 	return result, nil
@@ -99,8 +117,14 @@ func (r *MutationResolver) CreateUser(ctx context.Context, input CreateUserInput
 	id := uuid.New().String()
 
 	cmd := userapp.CreateUserCommand{
-		ID:   id,
-		Name: input.Name,
+		ID:           id,
+		Username:     input.Username,
+		Email:        input.Email,
+		PasswordHash: input.PasswordHash,
+		Phone:        input.Phone,
+		Nickname:     input.Nickname,
+		Role:         user.UserRole(input.Role),
+		Status:       user.UserStatus(input.Status),
 	}
 
 	u, err := r.createHandler.Handle(ctx, cmd)
@@ -109,7 +133,11 @@ func (r *MutationResolver) CreateUser(ctx context.Context, input CreateUserInput
 	}
 
 	return &User{
-		ID:   string(u.ID),
-		Name: u.Name,
+		ID:       string(u.ID),
+		Username: u.Username,
+		Email:    u.Email,
+		Nickname: u.Nickname,
+		Role:     string(u.Role),
+		Status:   string(u.Status),
 	}, nil
 }
