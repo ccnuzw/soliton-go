@@ -9,120 +9,121 @@ go build -o soliton-gen .
 
 ---
 
-## 🚀 命令
+## 🚀 命令列表
 
-### init - 初始化新项目
+| 命令 | 说明 |
+|------|------|
+| `init` | 初始化新项目 |
+| `domain` | 生成领域模块 (Entity/Repo/Events/Handler) |
+| `service` | 生成应用服务 (跨领域业务逻辑) |
+
+---
+
+## init - 初始化项目
 
 ```bash
-./soliton-gen init <project-name>
-./soliton-gen init <project-name> --module github.com/myorg/my-project
+./soliton-gen init my-project
+./soliton-gen init my-project --module github.com/myorg/my-project
 ```
 
-**生成内容：**
+**生成内容：** `cmd/main.go`, `configs/`, `internal/`, `go.mod`, `Makefile`, `README.md`
+
+---
+
+## domain - 生成领域模块
+
+```bash
+./soliton-gen domain User
+./soliton-gen domain User --fields "username,email,status:enum(active|inactive)"
+./soliton-gen domain User --fields "..." --force  # 强制覆盖
 ```
-my-project/
-├── cmd/main.go              # 入口 (Fx + Gin)
-├── configs/
-│   ├── config.yaml          # 配置文件
-│   └── config.example.yaml  # 配置示例
-├── internal/
-│   ├── domain/              # 领域层
-│   ├── application/         # 应用层
-│   ├── infrastructure/      # 基础设施层
-│   └── interfaces/http/     # HTTP 层
-├── go.mod                   # Go 模块
-├── Makefile                 # 常用命令
-├── README.md                # 项目说明
-└── .gitignore               # Git 忽略
+
+### 字段类型
+| 类型 | 格式 | 示例 |
+|------|------|------|
+| string | `field` | `username` |
+| int64 | `field:int64` | `price:int64` |
+| text | `field:text` | `description:text` |
+| uuid | `field:uuid` | `user_id:uuid` |
+| enum | `field:enum(a\|b)` | `status:enum(active\|banned)` |
+
+### 生成文件 (9个)
+- `domain/{name}/` - 实体 + Repository + Events
+- `application/{name}/` - Commands + Queries + DTO + Module
+- `infrastructure/persistence/{name}_repo.go`
+- `interfaces/http/{name}_handler.go`
+
+---
+
+## service - 生成应用服务
+
+用于生成跨领域的业务编排服务。
+
+```bash
+./soliton-gen service OrderService
+./soliton-gen service OrderService --methods "CreateOrder,CancelOrder,GetUserOrders"
+./soliton-gen service PaymentService --methods "ProcessPayment,Refund"
+```
+
+### 生成文件 (2个)
+- `application/services/{name}_service.go` - 服务结构和方法
+- `application/services/{name}_dto.go` - 请求/响应 DTO
+
+### 使用场景
+- **下单服务**: 涉及 User + Product + Order 多个领域
+- **支付服务**: 涉及 Order + Payment + Wallet 多个领域
+- **库存服务**: 涉及 Product + Inventory + Warehouse 多个领域
+
+### 示例输出
+
+```go
+// OrderService handles cross-domain business logic.
+type OrderService struct {
+    userRepo  user.UserRepository
+    orderRepo order.OrderRepository
+    productRepo product.ProductRepository
+}
+
+// CreateOrder implements the CreateOrder use case.
+func (s *OrderService) CreateOrder(ctx context.Context, req CreateOrderRequest) (*CreateOrderResponse, error) {
+    // 1. 验证用户
+    // 2. 检查库存
+    // 3. 创建订单
+    // 4. 扣减库存
+    // 5. 发布事件
+}
 ```
 
 ---
 
-### domain - 生成领域模块
+## 🔄 修改已生成代码
 
-```bash
-./soliton-gen domain <EntityName>
-./soliton-gen domain <EntityName> --fields "<field1>,<field2:type>,..."
-./soliton-gen domain <EntityName> --fields "..." --force  # 强制覆盖
-```
+| 场景 | 推荐方式 |
+|------|----------|
+| 小改动 (1-2字段) | 手动编辑 |
+| 大改动 | `--force` 重新生成 |
 
----
-
-## 📋 字段类型参考
-
-| 类型 | 格式 | Go 类型 |
-|------|------|---------|
-| string | `field` | `string` |
-| text | `field:text` | `string` |
-| int | `field:int` | `int` |
-| int64 | `field:int64` | `int64` |
-| uuid | `field:uuid` | `string` |
-| **enum** | `field:enum(a\|b\|c)` | 枚举类型 |
-
----
-
-## 🎯 完整示例
-
-```bash
-# 1. 初始化项目
-./soliton-gen init my-shop
-
-# 2. 进入项目
-cd my-shop
-
-# 3. 生成领域模块
-../soliton-gen domain User --fields "username,email,role:enum(admin|customer),status:enum(active|banned)"
-../soliton-gen domain Product --fields "name,price:int64,stock:int,status:enum(draft|active)"
-../soliton-gen domain Order --fields "user_id:uuid,total:int64,status:enum(pending|paid|shipped)"
-
-# 4. 更新 main.go (取消注释导入)
-
-# 5. 运行
-go mod tidy
-go run ./cmd/main.go
-```
-
----
-
-## 🔄 修改字段的三种方式
-
-### 方式 1: 手动修改（小改动）
-编辑 4 个文件：`{name}.go`, `commands.go`, `dto.go`, `{name}_handler.go`
-
-### 方式 2: 删除后重新生成（大改动）
-```bash
-rm -rf internal/domain/user internal/application/user ...
-./soliton-gen domain User --fields "..."
-```
-
-### 方式 3: --force 强制覆盖（最简单）
 ```bash
 ./soliton-gen domain User --fields "..." --force
 ```
 
 ---
 
-## 📁 domain 生成文件 (9个)
+## 🎯 完整开发流程
 
-| 层 | 文件 | 说明 |
-|---|------|------|
-| Domain | `{name}.go` | Entity + Enum |
-| Domain | `repository.go` | Repository 接口 |
-| Domain | `events.go` | 领域事件 |
-| Infrastructure | `{name}_repo.go` | GORM 实现 |
-| Application | `commands.go` | 命令处理器 |
-| Application | `queries.go` | 查询处理器 |
-| Application | `dto.go` | DTO |
-| Application | `module.go` | Fx 模块 |
-| Interfaces | `{name}_handler.go` | HTTP Handler |
+```bash
+# 1. 初始化项目
+./soliton-gen init my-shop && cd my-shop
 
----
+# 2. 生成领域模块
+soliton-gen domain User --fields "username,email,role:enum(admin|customer)"
+soliton-gen domain Product --fields "name,price:int64,stock:int"
+soliton-gen domain Order --fields "user_id:uuid,total:int64,status:enum(pending|paid)"
 
-## 🔒 状态说明
+# 3. 生成跨领域服务
+soliton-gen service OrderService --methods "CreateOrder,CancelOrder"
 
-| 状态 | 说明 |
-|------|------|
-| `[NEW]` | 新建 |
-| `[SKIP]` | 已存在，跳过 |
-| `[OVERWRITE]` | --force 覆盖 |
-| `[DIR]` | 创建目录 |
+# 4. 更新 main.go (取消注释导入)
+# 5. 运行
+go mod tidy && go run ./cmd/main.go
+```
