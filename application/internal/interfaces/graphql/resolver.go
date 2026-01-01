@@ -37,6 +37,8 @@ type User struct {
 	ID       string `json:"id"`
 	Username string `json:"username"`
 	Email    string `json:"email"`
+	Phone    string `json:"phone"`
+	Avatar   string `json:"avatar"`
 	Nickname string `json:"nickname"`
 	Role     string `json:"role"`
 	Status   string `json:"status"`
@@ -48,6 +50,7 @@ type CreateUserInput struct {
 	Email        string `json:"email"`
 	PasswordHash string `json:"password_hash"`
 	Phone        string `json:"phone"`
+	Avatar       string `json:"avatar"`
 	Nickname     string `json:"nickname"`
 	Role         string `json:"role"`
 	Status       string `json:"status"`
@@ -84,6 +87,8 @@ func (r *QueryResolver) User(ctx context.Context, id string) (*User, error) {
 		ID:       string(u.ID),
 		Username: u.Username,
 		Email:    u.Email,
+		Phone:    u.Phone,
+		Avatar:   u.Avatar,
 		Nickname: u.Nickname,
 		Role:     string(u.Role),
 		Status:   string(u.Status),
@@ -104,6 +109,8 @@ func (r *QueryResolver) Users(ctx context.Context) ([]*User, error) {
 			ID:       string(u.ID),
 			Username: u.Username,
 			Email:    u.Email,
+			Phone:    u.Phone,
+			Avatar:   u.Avatar,
 			Nickname: u.Nickname,
 			Role:     string(u.Role),
 			Status:   string(u.Status),
@@ -122,9 +129,11 @@ func (r *MutationResolver) CreateUser(ctx context.Context, input CreateUserInput
 		Email:        input.Email,
 		PasswordHash: input.PasswordHash,
 		Phone:        input.Phone,
+		Avatar:       input.Avatar,
 		Nickname:     input.Nickname,
 		Role:         user.UserRole(input.Role),
 		Status:       user.UserStatus(input.Status),
+		LastLoginAt:  nil,
 	}
 
 	u, err := r.createHandler.Handle(ctx, cmd)
@@ -136,6 +145,8 @@ func (r *MutationResolver) CreateUser(ctx context.Context, input CreateUserInput
 		ID:       string(u.ID),
 		Username: u.Username,
 		Email:    u.Email,
+		Phone:    u.Phone,
+		Avatar:   u.Avatar,
 		Nickname: u.Nickname,
 		Role:     string(u.Role),
 		Status:   string(u.Status),

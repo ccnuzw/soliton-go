@@ -10,12 +10,26 @@ import (
 type CreateUserRequest struct {
 	Username string `json:"username"`
 	Email string `json:"email"`
+	PasswordHash string `json:"password_hash"`
+	Phone string `json:"phone"`
+	Avatar string `json:"avatar"`
+	Nickname string `json:"nickname"`
+	Role string `json:"role"`
+	Status string `json:"status"`
+	LastLoginAt *time.Time `json:"last_login_at"`
 }
 
 // UpdateUserRequest is the request body for updating a User.
 type UpdateUserRequest struct {
 	Username string `json:"username"`
 	Email string `json:"email"`
+	PasswordHash string `json:"password_hash"`
+	Phone string `json:"phone"`
+	Avatar string `json:"avatar"`
+	Nickname string `json:"nickname"`
+	Role string `json:"role"`
+	Status string `json:"status"`
+	LastLoginAt *time.Time `json:"last_login_at"`
 }
 
 // UserResponse is the response body for User data.
@@ -23,6 +37,13 @@ type UserResponse struct {
 	ID        string    `json:"id"`
 	Username string `json:"username"`
 	Email string `json:"email"`
+	PasswordHash string `json:"password_hash"`
+	Phone string `json:"phone"`
+	Avatar string `json:"avatar"`
+	Nickname string `json:"nickname"`
+	Role string `json:"role"`
+	Status string `json:"status"`
+	LastLoginAt *time.Time `json:"last_login_at"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
@@ -33,6 +54,13 @@ func ToUserResponse(e *user.User) UserResponse {
 		ID:        string(e.ID),
 		Username: e.Username,
 		Email: e.Email,
+		PasswordHash: e.PasswordHash,
+		Phone: e.Phone,
+		Avatar: e.Avatar,
+		Nickname: e.Nickname,
+		Role: string(e.Role),
+		Status: string(e.Status),
+		LastLoginAt: e.LastLoginAt,
 		CreatedAt: e.CreatedAt,
 		UpdatedAt: e.UpdatedAt,
 	}

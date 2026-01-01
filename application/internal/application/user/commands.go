@@ -2,6 +2,7 @@ package userapp
 
 import (
 	"context"
+	"time"
 
 	"github.com/soliton-go/application/internal/domain/user"
 )
@@ -11,6 +12,13 @@ type CreateUserCommand struct {
 	ID string
 	Username string
 	Email string
+	PasswordHash string
+	Phone string
+	Avatar string
+	Nickname string
+	Role user.UserRole
+	Status user.UserStatus
+	LastLoginAt *time.Time
 }
 
 // CreateUserHandler handles CreateUserCommand.
@@ -23,7 +31,7 @@ func NewCreateUserHandler(repo user.UserRepository) *CreateUserHandler {
 }
 
 func (h *CreateUserHandler) Handle(ctx context.Context, cmd CreateUserCommand) (*user.User, error) {
-	entity := user.NewUser(cmd.ID, cmd.Username, cmd.Email)
+	entity := user.NewUser(cmd.ID, cmd.Username, cmd.Email, cmd.PasswordHash, cmd.Phone, cmd.Avatar, cmd.Nickname, cmd.Role, cmd.Status, cmd.LastLoginAt)
 	if err := h.repo.Save(ctx, entity); err != nil {
 		return nil, err
 	}
@@ -35,6 +43,13 @@ type UpdateUserCommand struct {
 	ID string
 	Username string
 	Email string
+	PasswordHash string
+	Phone string
+	Avatar string
+	Nickname string
+	Role user.UserRole
+	Status user.UserStatus
+	LastLoginAt *time.Time
 }
 
 // UpdateUserHandler handles UpdateUserCommand.
@@ -51,7 +66,7 @@ func (h *UpdateUserHandler) Handle(ctx context.Context, cmd UpdateUserCommand) (
 	if err != nil {
 		return nil, err
 	}
-	entity.Update(cmd.Username, cmd.Email)
+	entity.Update(cmd.Username, cmd.Email, cmd.PasswordHash, cmd.Phone, cmd.Avatar, cmd.Nickname, cmd.Role, cmd.Status, cmd.LastLoginAt)
 	if err := h.repo.Save(ctx, entity); err != nil {
 		return nil, err
 	}

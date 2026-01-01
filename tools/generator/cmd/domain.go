@@ -543,6 +543,9 @@ const commandsTemplateV2 = `package {{.PackageName}}app
 
 import (
 	"context"
+{{- if .HasTime}}
+	"time"
+{{- end}}
 
 	"github.com/soliton-go/application/internal/domain/{{.PackageName}}"
 )
