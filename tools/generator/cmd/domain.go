@@ -12,17 +12,19 @@ import (
 
 var domainCmd = &cobra.Command{
 	Use:   "domain [name]",
-	Short: "Generate a new domain entity with full DDD structure",
+	Short: "Generate a complete domain module ready for production",
 	Long: `Generate a complete domain entity including:
   - Entity with ID and aggregate root
-  - Repository interface
+  - Repository interface and GORM implementation
   - Domain events (Created, Updated, Deleted)
-  - Application layer (Commands and Queries)
-  - Infrastructure implementation`,
+  - Application layer (Commands, Queries, DTOs)
+  - HTTP Handler with CRUD endpoints
+  - Fx dependency injection module
+  - Database migration support`,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		name := args[0]
-		fmt.Printf("Generating domain entity: %s\n", name)
+		fmt.Printf("🚀 Generating domain: %s\n\n", name)
 
 		generateDomain(name)
 	},
@@ -37,86 +39,99 @@ func generateDomain(name string) {
 	entityName := strings.Title(name)
 	packageName := strings.ToLower(name)
 
-	// Try to find application directory
-	baseDir := "../../application/internal/domain"
-	if _, err := os.Stat(baseDir); os.IsNotExist(err) {
-		baseDir = "application/internal/domain"
-	}
-
-	targetDir := filepath.Join(baseDir, packageName)
-	if err := os.MkdirAll(targetDir, 0755); err != nil {
-		fmt.Printf("Error creating directory %s: %v\n", targetDir, err)
-		return
-	}
+	// Determine base paths
+	baseDir := findPath("application/internal/domain")
+	infraDir := findPath("application/internal/infrastructure/persistence")
+	appDir := findPath("application/internal/application")
+	interfacesDir := findPath("application/internal/interfaces/http")
 
 	data := map[string]string{
 		"PackageName": packageName,
 		"EntityName":  entityName,
 	}
 
-	// 1. Generate Entity
-	entityFile := filepath.Join(targetDir, packageName+".go")
-	generateFile(entityFile, entityTemplate, data)
+	// === Domain Layer ===
+	fmt.Println("📦 Domain Layer")
+	domainDir := filepath.Join(baseDir, packageName)
+	_ = os.MkdirAll(domainDir, 0755)
 
-	// 2. Generate Repository
-	repoFile := filepath.Join(targetDir, "repository.go")
-	generateFile(repoFile, repoTemplate, data)
+	generateFile(filepath.Join(domainDir, packageName+".go"), entityTemplate, data)
+	generateFile(filepath.Join(domainDir, "repository.go"), repoTemplate, data)
+	generateFile(filepath.Join(domainDir, "events.go"), eventsTemplate, data)
 
-	// 3. Generate Domain Events
-	eventsFile := filepath.Join(targetDir, "events.go")
-	generateFile(eventsFile, eventsTemplate, data)
-
-	// 4. Generate Infrastructure Implementation (Persistence)
-	infraDir := "../../application/internal/infrastructure/persistence"
-	if _, err := os.Stat(infraDir); os.IsNotExist(err) {
-		infraDir = "application/internal/infrastructure/persistence"
-	}
+	// === Infrastructure Layer ===
+	fmt.Println("\n🔧 Infrastructure Layer")
 	_ = os.MkdirAll(infraDir, 0755)
+	generateFile(filepath.Join(infraDir, packageName+"_repo.go"), repoImplTemplate, data)
 
-	repoImplFile := filepath.Join(infraDir, packageName+"_repo.go")
-	generateFile(repoImplFile, repoImplTemplate, data)
+	// === Application Layer ===
+	fmt.Println("\n⚙️ Application Layer")
+	appModuleDir := filepath.Join(appDir, packageName)
+	_ = os.MkdirAll(appModuleDir, 0755)
 
-	// 5. Generate Application Layer (Commands & Queries)
-	appBaseDir := "../../application/internal/application"
-	if _, err := os.Stat(appBaseDir); os.IsNotExist(err) {
-		appBaseDir = "application/internal/application"
+	generateFile(filepath.Join(appModuleDir, "commands.go"), commandsTemplate, data)
+	generateFile(filepath.Join(appModuleDir, "queries.go"), queriesTemplate, data)
+	generateFile(filepath.Join(appModuleDir, "dto.go"), dtoTemplate, data)
+
+	// === Interfaces Layer (HTTP) ===
+	fmt.Println("\n🌐 Interfaces Layer")
+	_ = os.MkdirAll(interfacesDir, 0755)
+	generateFile(filepath.Join(interfacesDir, packageName+"_handler.go"), handlerTemplate, data)
+
+	// === Fx Module ===
+	fmt.Println("\n📌 Fx Module")
+	generateFile(filepath.Join(appModuleDir, "module.go"), fxModuleTemplate, data)
+
+	// === Summary ===
+	fmt.Println("\n" + strings.Repeat("─", 50))
+	fmt.Println("✅ Domain generation complete!")
+	fmt.Printf("   📁 Domain:      %s\n", domainDir)
+	fmt.Printf("   📁 Application: %s\n", appModuleDir)
+	fmt.Printf("   📁 Persistence: %s\n", infraDir)
+	fmt.Printf("   📁 HTTP:        %s\n", interfacesDir)
+	fmt.Println(strings.Repeat("─", 50))
+	fmt.Println("\n📝 Next steps:")
+	fmt.Println("   1. Add entity fields in " + packageName + ".go")
+	fmt.Println("   2. Update DTO fields in dto.go")
+	fmt.Println("   3. Import module in main.go:")
+	fmt.Printf("      %sapp.Module,\n", packageName)
+}
+
+func findPath(relative string) string {
+	// Try from tools/generator
+	path := "../../" + relative
+	if _, err := os.Stat(path); err == nil {
+		return path
 	}
-	appDir := filepath.Join(appBaseDir, packageName)
-	_ = os.MkdirAll(appDir, 0755)
-
-	commandsFile := filepath.Join(appDir, "commands.go")
-	generateFile(commandsFile, commandsTemplate, data)
-
-	queriesFile := filepath.Join(appDir, "queries.go")
-	generateFile(queriesFile, queriesTemplate, data)
-
-	fmt.Println("\n✅ Domain generation complete!")
-	fmt.Printf("   Domain:      %s\n", targetDir)
-	fmt.Printf("   Application: %s\n", appDir)
-	fmt.Printf("   Persistence: %s\n", infraDir)
+	// Try from project root
+	return relative
 }
 
 // generateFile creates a file from template if it doesn't exist (Lock mechanism)
 func generateFile(path string, tmpl string, data interface{}) {
 	if _, err := os.Stat(path); err == nil {
-		fmt.Printf("[LOCK] Skipping %s: file already exists\n", path)
+		fmt.Printf("   [SKIP] %s (exists)\n", filepath.Base(path))
 		return
 	}
 
 	f, err := os.Create(path)
 	if err != nil {
-		fmt.Printf("Error creating file %s: %v\n", path, err)
+		fmt.Printf("   [ERROR] %s: %v\n", filepath.Base(path), err)
 		return
 	}
 	defer f.Close()
 
 	t := template.Must(template.New("file").Parse(tmpl))
 	if err := t.Execute(f, data); err != nil {
-		fmt.Printf("Error executing template for %s: %v\n", path, err)
+		fmt.Printf("   [ERROR] %s: %v\n", filepath.Base(path), err)
 	} else {
-		fmt.Printf("[CREATED] %s\n", path)
+		fmt.Printf("   [NEW] %s\n", filepath.Base(path))
 	}
 }
+
+// ============================================================================
+// TEMPLATES
+// ============================================================================
 
 const entityTemplate = `package {{.PackageName}}
 
@@ -132,17 +147,30 @@ func (id {{.EntityName}}ID) String() string {
 // {{.EntityName}} is the aggregate root.
 type {{.EntityName}} struct {
 	ddd.BaseAggregateRoot
-	ID {{.EntityName}}ID ` + "`gorm:\"primaryKey\"`" + `
-	// Add your fields here
+	ID   {{.EntityName}}ID ` + "`gorm:\"primaryKey\"`" + `
+	Name string            ` + "`gorm:\"size:255\"`" + `
+	// TODO: Add more fields here
+}
+
+// TableName returns the table name for GORM.
+func ({{.EntityName}}) TableName() string {
+	return "{{.PackageName}}s"
 }
 
 // New{{.EntityName}} creates a new {{.EntityName}}.
-func New{{.EntityName}}(id string) *{{.EntityName}} {
+func New{{.EntityName}}(id, name string) *{{.EntityName}} {
 	e := &{{.EntityName}}{
-		ID: {{.EntityName}}ID(id),
+		ID:   {{.EntityName}}ID(id),
+		Name: name,
 	}
 	e.AddDomainEvent(New{{.EntityName}}CreatedEvent(id))
 	return e
+}
+
+// Update updates the entity fields.
+func (e *{{.EntityName}}) Update(name string) {
+	e.Name = name
+	e.AddDomainEvent(New{{.EntityName}}UpdatedEvent(string(e.ID)))
 }
 
 // GetID returns the entity ID.
@@ -160,7 +188,7 @@ import (
 // {{.EntityName}}Repository is the interface for {{.EntityName}} persistence.
 type {{.EntityName}}Repository interface {
 	orm.Repository[*{{.EntityName}}, {{.EntityName}}ID]
-	// Add custom query methods here
+	// TODO: Add custom query methods here
 }
 `
 
@@ -259,6 +287,11 @@ func New{{.EntityName}}Repository(db *gorm.DB) {{.PackageName}}.{{.EntityName}}R
 		db:             db,
 	}
 }
+
+// Migrate creates the table if it doesn't exist.
+func Migrate{{.EntityName}}(db *gorm.DB) error {
+	return db.AutoMigrate(&{{.PackageName}}.{{.EntityName}}{})
+}
 `
 
 const commandsTemplate = `package {{.PackageName}}app
@@ -271,8 +304,8 @@ import (
 
 // Create{{.EntityName}}Command is the command for creating a {{.EntityName}}.
 type Create{{.EntityName}}Command struct {
-	ID string
-	// Add command fields here
+	ID   string
+	Name string
 }
 
 // Create{{.EntityName}}Handler handles Create{{.EntityName}}Command.
@@ -280,21 +313,22 @@ type Create{{.EntityName}}Handler struct {
 	repo {{.PackageName}}.{{.EntityName}}Repository
 }
 
-// NewCreate{{.EntityName}}Handler creates a new handler.
 func NewCreate{{.EntityName}}Handler(repo {{.PackageName}}.{{.EntityName}}Repository) *Create{{.EntityName}}Handler {
 	return &Create{{.EntityName}}Handler{repo: repo}
 }
 
-// Handle processes the command.
-func (h *Create{{.EntityName}}Handler) Handle(ctx context.Context, cmd Create{{.EntityName}}Command) error {
-	entity := {{.PackageName}}.New{{.EntityName}}(cmd.ID)
-	return h.repo.Save(ctx, entity)
+func (h *Create{{.EntityName}}Handler) Handle(ctx context.Context, cmd Create{{.EntityName}}Command) (*{{.PackageName}}.{{.EntityName}}, error) {
+	entity := {{.PackageName}}.New{{.EntityName}}(cmd.ID, cmd.Name)
+	if err := h.repo.Save(ctx, entity); err != nil {
+		return nil, err
+	}
+	return entity, nil
 }
 
 // Update{{.EntityName}}Command is the command for updating a {{.EntityName}}.
 type Update{{.EntityName}}Command struct {
-	ID string
-	// Add update fields here
+	ID   string
+	Name string
 }
 
 // Update{{.EntityName}}Handler handles Update{{.EntityName}}Command.
@@ -302,20 +336,20 @@ type Update{{.EntityName}}Handler struct {
 	repo {{.PackageName}}.{{.EntityName}}Repository
 }
 
-// NewUpdate{{.EntityName}}Handler creates a new handler.
 func NewUpdate{{.EntityName}}Handler(repo {{.PackageName}}.{{.EntityName}}Repository) *Update{{.EntityName}}Handler {
 	return &Update{{.EntityName}}Handler{repo: repo}
 }
 
-// Handle processes the command.
-func (h *Update{{.EntityName}}Handler) Handle(ctx context.Context, cmd Update{{.EntityName}}Command) error {
+func (h *Update{{.EntityName}}Handler) Handle(ctx context.Context, cmd Update{{.EntityName}}Command) (*{{.PackageName}}.{{.EntityName}}, error) {
 	entity, err := h.repo.Find(ctx, {{.PackageName}}.{{.EntityName}}ID(cmd.ID))
 	if err != nil {
-		return err
+		return nil, err
 	}
-	// Update entity fields here
-	entity.AddDomainEvent({{.PackageName}}.New{{.EntityName}}UpdatedEvent(cmd.ID))
-	return h.repo.Save(ctx, entity)
+	entity.Update(cmd.Name)
+	if err := h.repo.Save(ctx, entity); err != nil {
+		return nil, err
+	}
+	return entity, nil
 }
 
 // Delete{{.EntityName}}Command is the command for deleting a {{.EntityName}}.
@@ -328,12 +362,10 @@ type Delete{{.EntityName}}Handler struct {
 	repo {{.PackageName}}.{{.EntityName}}Repository
 }
 
-// NewDelete{{.EntityName}}Handler creates a new handler.
 func NewDelete{{.EntityName}}Handler(repo {{.PackageName}}.{{.EntityName}}Repository) *Delete{{.EntityName}}Handler {
 	return &Delete{{.EntityName}}Handler{repo: repo}
 }
 
-// Handle processes the command.
 func (h *Delete{{.EntityName}}Handler) Handle(ctx context.Context, cmd Delete{{.EntityName}}Command) error {
 	return h.repo.Delete(ctx, {{.PackageName}}.{{.EntityName}}ID(cmd.ID))
 }
@@ -357,12 +389,10 @@ type Get{{.EntityName}}Handler struct {
 	repo {{.PackageName}}.{{.EntityName}}Repository
 }
 
-// NewGet{{.EntityName}}Handler creates a new handler.
 func NewGet{{.EntityName}}Handler(repo {{.PackageName}}.{{.EntityName}}Repository) *Get{{.EntityName}}Handler {
 	return &Get{{.EntityName}}Handler{repo: repo}
 }
 
-// Handle processes the query.
 func (h *Get{{.EntityName}}Handler) Handle(ctx context.Context, query Get{{.EntityName}}Query) (*{{.PackageName}}.{{.EntityName}}, error) {
 	return h.repo.Find(ctx, {{.PackageName}}.{{.EntityName}}ID(query.ID))
 }
@@ -375,13 +405,213 @@ type List{{.EntityName}}sHandler struct {
 	repo {{.PackageName}}.{{.EntityName}}Repository
 }
 
-// NewList{{.EntityName}}sHandler creates a new handler.
 func NewList{{.EntityName}}sHandler(repo {{.PackageName}}.{{.EntityName}}Repository) *List{{.EntityName}}sHandler {
 	return &List{{.EntityName}}sHandler{repo: repo}
 }
 
-// Handle processes the query.
 func (h *List{{.EntityName}}sHandler) Handle(ctx context.Context, query List{{.EntityName}}sQuery) ([]*{{.PackageName}}.{{.EntityName}}, error) {
 	return h.repo.FindAll(ctx)
+}
+`
+
+const dtoTemplate = `package {{.PackageName}}app
+
+import "github.com/soliton-go/application/internal/domain/{{.PackageName}}"
+
+// Create{{.EntityName}}Request is the request body for creating a {{.EntityName}}.
+type Create{{.EntityName}}Request struct {
+	Name string ` + "`json:\"name\" binding:\"required\"`" + `
+}
+
+// Update{{.EntityName}}Request is the request body for updating a {{.EntityName}}.
+type Update{{.EntityName}}Request struct {
+	Name string ` + "`json:\"name\" binding:\"required\"`" + `
+}
+
+// {{.EntityName}}Response is the response body for {{.EntityName}} data.
+type {{.EntityName}}Response struct {
+	ID   string ` + "`json:\"id\"`" + `
+	Name string ` + "`json:\"name\"`" + `
+}
+
+// To{{.EntityName}}Response converts entity to response.
+func To{{.EntityName}}Response(e *{{.PackageName}}.{{.EntityName}}) {{.EntityName}}Response {
+	return {{.EntityName}}Response{
+		ID:   string(e.ID),
+		Name: e.Name,
+	}
+}
+
+// To{{.EntityName}}ResponseList converts entities to response list.
+func To{{.EntityName}}ResponseList(entities []*{{.PackageName}}.{{.EntityName}}) []{{.EntityName}}Response {
+	result := make([]{{.EntityName}}Response, len(entities))
+	for i, e := range entities {
+		result[i] = To{{.EntityName}}Response(e)
+	}
+	return result
+}
+`
+
+const handlerTemplate = `package http
+
+import (
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+
+	{{.PackageName}}app "github.com/soliton-go/application/internal/application/{{.PackageName}}"
+)
+
+// {{.EntityName}}Handler handles HTTP requests for {{.EntityName}} operations.
+type {{.EntityName}}Handler struct {
+	createHandler *{{.PackageName}}app.Create{{.EntityName}}Handler
+	updateHandler *{{.PackageName}}app.Update{{.EntityName}}Handler
+	deleteHandler *{{.PackageName}}app.Delete{{.EntityName}}Handler
+	getHandler    *{{.PackageName}}app.Get{{.EntityName}}Handler
+	listHandler   *{{.PackageName}}app.List{{.EntityName}}sHandler
+}
+
+// New{{.EntityName}}Handler creates a new {{.EntityName}}Handler.
+func New{{.EntityName}}Handler(
+	createHandler *{{.PackageName}}app.Create{{.EntityName}}Handler,
+	updateHandler *{{.PackageName}}app.Update{{.EntityName}}Handler,
+	deleteHandler *{{.PackageName}}app.Delete{{.EntityName}}Handler,
+	getHandler *{{.PackageName}}app.Get{{.EntityName}}Handler,
+	listHandler *{{.PackageName}}app.List{{.EntityName}}sHandler,
+) *{{.EntityName}}Handler {
+	return &{{.EntityName}}Handler{
+		createHandler: createHandler,
+		updateHandler: updateHandler,
+		deleteHandler: deleteHandler,
+		getHandler:    getHandler,
+		listHandler:   listHandler,
+	}
+}
+
+// RegisterRoutes registers {{.EntityName}} routes.
+func (h *{{.EntityName}}Handler) RegisterRoutes(r *gin.Engine) {
+	api := r.Group("/api/{{.PackageName}}s")
+	{
+		api.POST("", h.Create)
+		api.GET("", h.List)
+		api.GET("/:id", h.Get)
+		api.PUT("/:id", h.Update)
+		api.DELETE("/:id", h.Delete)
+	}
+}
+
+// Create handles POST /api/{{.PackageName}}s
+func (h *{{.EntityName}}Handler) Create(c *gin.Context) {
+	var req {{.PackageName}}app.Create{{.EntityName}}Request
+	if err := c.ShouldBindJSON(&req); err != nil {
+		BadRequest(c, err.Error())
+		return
+	}
+
+	cmd := {{.PackageName}}app.Create{{.EntityName}}Command{
+		ID:   uuid.New().String(),
+		Name: req.Name,
+	}
+
+	entity, err := h.createHandler.Handle(c.Request.Context(), cmd)
+	if err != nil {
+		InternalError(c, err.Error())
+		return
+	}
+
+	Success(c, {{.PackageName}}app.To{{.EntityName}}Response(entity))
+}
+
+// Get handles GET /api/{{.PackageName}}s/:id
+func (h *{{.EntityName}}Handler) Get(c *gin.Context) {
+	id := c.Param("id")
+
+	entity, err := h.getHandler.Handle(c.Request.Context(), {{.PackageName}}app.Get{{.EntityName}}Query{ID: id})
+	if err != nil {
+		NotFound(c, "{{.PackageName}} not found")
+		return
+	}
+
+	Success(c, {{.PackageName}}app.To{{.EntityName}}Response(entity))
+}
+
+// List handles GET /api/{{.PackageName}}s
+func (h *{{.EntityName}}Handler) List(c *gin.Context) {
+	entities, err := h.listHandler.Handle(c.Request.Context(), {{.PackageName}}app.List{{.EntityName}}sQuery{})
+	if err != nil {
+		InternalError(c, err.Error())
+		return
+	}
+
+	Success(c, {{.PackageName}}app.To{{.EntityName}}ResponseList(entities))
+}
+
+// Update handles PUT /api/{{.PackageName}}s/:id
+func (h *{{.EntityName}}Handler) Update(c *gin.Context) {
+	id := c.Param("id")
+
+	var req {{.PackageName}}app.Update{{.EntityName}}Request
+	if err := c.ShouldBindJSON(&req); err != nil {
+		BadRequest(c, err.Error())
+		return
+	}
+
+	cmd := {{.PackageName}}app.Update{{.EntityName}}Command{
+		ID:   id,
+		Name: req.Name,
+	}
+
+	entity, err := h.updateHandler.Handle(c.Request.Context(), cmd)
+	if err != nil {
+		InternalError(c, err.Error())
+		return
+	}
+
+	Success(c, {{.PackageName}}app.To{{.EntityName}}Response(entity))
+}
+
+// Delete handles DELETE /api/{{.PackageName}}s/:id
+func (h *{{.EntityName}}Handler) Delete(c *gin.Context) {
+	id := c.Param("id")
+
+	cmd := {{.PackageName}}app.Delete{{.EntityName}}Command{ID: id}
+	if err := h.deleteHandler.Handle(c.Request.Context(), cmd); err != nil {
+		InternalError(c, err.Error())
+		return
+	}
+
+	Success(c, nil)
+}
+`
+
+const fxModuleTemplate = `package {{.PackageName}}app
+
+import (
+	"go.uber.org/fx"
+
+	"github.com/soliton-go/application/internal/domain/{{.PackageName}}"
+	"github.com/soliton-go/application/internal/infrastructure/persistence"
+	"gorm.io/gorm"
+)
+
+// Module provides all {{.EntityName}} dependencies for Fx.
+var Module = fx.Options(
+	// Repository
+	fx.Provide(func(db *gorm.DB) {{.PackageName}}.{{.EntityName}}Repository {
+		return persistence.New{{.EntityName}}Repository(db)
+	}),
+
+	// Command Handlers
+	fx.Provide(NewCreate{{.EntityName}}Handler),
+	fx.Provide(NewUpdate{{.EntityName}}Handler),
+	fx.Provide(NewDelete{{.EntityName}}Handler),
+
+	// Query Handlers
+	fx.Provide(NewGet{{.EntityName}}Handler),
+	fx.Provide(NewList{{.EntityName}}sHandler),
+)
+
+// RegisterMigration registers the {{.EntityName}} table migration.
+func RegisterMigration(db *gorm.DB) error {
+	return persistence.Migrate{{.EntityName}}(db)
 }
 `

@@ -1,0 +1,36 @@
+# Soliton-Go Configuration Example
+# Copy this file to config.yaml and modify as needed
+
+server:
+  port: 8080
+  mode: development  # development, production
+
+database:
+  driver: sqlite      # sqlite, postgres, mysql
+  # SQLite (recommended for development)
+  sqlite:
+    path: ./data.db
+  # PostgreSQL (recommended for production)
+  postgres:
+    host: localhost
+    port: 5432
+    user: postgres
+    password: postgres
+    database: soliton_dev
+    sslmode: disable
+  # MySQL
+  mysql:
+    host: localhost
+    port: 3306
+    user: root
+    password: ""
+    database: soliton_dev
+
+redis:
+  addr: localhost:6379
+  password: ""
+  db: 0
+
+log:
+  level: debug        # debug, info, warn, error
+  format: console     # console, json
