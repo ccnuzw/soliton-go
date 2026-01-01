@@ -67,8 +67,9 @@ soliton-go/
 | 文档 | 说明 |
 |------|------|
 | [QUICK_START.md](./QUICK_START.md) | 快速上手 |
-| [DEVELOPMENT_GUIDE.md](./DEVELOPMENT_GUIDE.md) | 开发指南 |
-| [GENERATOR_GUIDE.md](./GENERATOR_GUIDE.md) | 生成器使用 |
+| [docs/DEVELOPMENT_GUIDE.md](./docs/DEVELOPMENT_GUIDE.md) | 开发指南 |
+| [docs/GENERATOR_GUIDE.md](./docs/GENERATOR_GUIDE.md) | 生成器使用 |
+| [docs/SERVICE_GUIDE.md](./docs/SERVICE_GUIDE.md) | Service 详解 |
 
 ---
 
