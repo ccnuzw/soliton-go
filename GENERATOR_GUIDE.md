@@ -45,6 +45,7 @@ go build -o soliton-gen .
 | int64 | `field:int64` | `price:int64` |
 | text | `field:text` | `description:text` |
 | uuid | `field:uuid` | `user_id:uuid` |
+| time? | `field:time?` | `last_login_at:time?` |
 | enum | `field:enum(a\|b)` | `status:enum(active\|banned)` |
 
 ### 生成文件 (9个)
@@ -62,37 +63,13 @@ go build -o soliton-gen .
 ```bash
 ./soliton-gen service OrderService
 ./soliton-gen service OrderService --methods "CreateOrder,CancelOrder,GetUserOrders"
-./soliton-gen service PaymentService --methods "ProcessPayment,Refund"
 ```
 
 ### 生成文件 (2个)
 - `application/services/{name}_service.go` - 服务结构和方法
 - `application/services/{name}_dto.go` - 请求/响应 DTO
 
-### 使用场景
-- **下单服务**: 涉及 User + Product + Order 多个领域
-- **支付服务**: 涉及 Order + Payment + Wallet 多个领域
-- **库存服务**: 涉及 Product + Inventory + Warehouse 多个领域
-
-### 示例输出
-
-```go
-// OrderService handles cross-domain business logic.
-type OrderService struct {
-    userRepo  user.UserRepository
-    orderRepo order.OrderRepository
-    productRepo product.ProductRepository
-}
-
-// CreateOrder implements the CreateOrder use case.
-func (s *OrderService) CreateOrder(ctx context.Context, req CreateOrderRequest) (*CreateOrderResponse, error) {
-    // 1. 验证用户
-    // 2. 检查库存
-    // 3. 创建订单
-    // 4. 扣减库存
-    // 5. 发布事件
-}
-```
+📖 **详细文档**: [Service 应用服务使用指南](./docs/SERVICE_GUIDE.md)
 
 ---
 
@@ -100,7 +77,7 @@ func (s *OrderService) CreateOrder(ctx context.Context, req CreateOrderRequest) 
 
 | 场景 | 推荐方式 |
 |------|----------|
-| 小改动 (1-2字段) | 手动编辑 |
+| 小改动 | 手动编辑 |
 | 大改动 | `--force` 重新生成 |
 
 ```bash
