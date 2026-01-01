@@ -71,3 +71,17 @@ func (s *OrderService) GetUserOrders(ctx context.Context, req GetUserOrdersReque
 	return nil, errors.New("not implemented")
 }
 
+// ProcessPayment implements the ProcessPayment use case.
+func (s *OrderService) ProcessPayment(ctx context.Context, req ProcessPaymentRequest) (*ProcessPaymentResponse, error) {
+	// TODO: Implement business logic
+	// Example:
+	// 1. Validate request
+	// 2. Load entities from repositories
+	// 3. Execute domain logic
+	// 4. Save changes
+	// 5. Publish domain events
+	// 6. Return response
+
+	return nil, errors.New("not implemented")
+}
+

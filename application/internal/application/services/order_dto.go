@@ -55,3 +55,21 @@ type GetUserOrdersResponse struct {
 	// Data    any    `json:"data,omitempty"`
 }
 
+// ProcessPaymentRequest is the request for ProcessPayment.
+type ProcessPaymentRequest struct {
+	// TODO: Add request fields
+	// Example:
+	// UserID    string `json:"user_id"`
+	// ProductID string `json:"product_id"`
+	// Quantity  int    `json:"quantity"`
+}
+
+// ProcessPaymentResponse is the response for ProcessPayment.
+type ProcessPaymentResponse struct {
+	// TODO: Add response fields
+	// Example:
+	// Success bool   `json:"success"`
+	// Message string `json:"message"`
+	// Data    any    `json:"data,omitempty"`
+}
+
