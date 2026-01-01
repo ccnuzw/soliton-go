@@ -34,15 +34,13 @@ func NewResolver(
 
 // User represents the GraphQL User type.
 type User struct {
-	ID    string `json:"id"`
-	Name  string `json:"name"`
-	Email string `json:"email"`
+	ID   string `json:"id"`
+	Name string `json:"name"`
 }
 
 // CreateUserInput represents the input for creating a user.
 type CreateUserInput struct {
-	Name  string `json:"name"`
-	Email string `json:"email"`
+	Name string `json:"name"`
 }
 
 // QueryResolver implements the Query resolvers.
@@ -73,9 +71,8 @@ func (r *QueryResolver) User(ctx context.Context, id string) (*User, error) {
 		return nil, err
 	}
 	return &User{
-		ID:    string(u.ID),
-		Name:  u.Name,
-		Email: u.Email,
+		ID:   string(u.ID),
+		Name: u.Name,
 	}, nil
 }
 
@@ -90,9 +87,8 @@ func (r *QueryResolver) Users(ctx context.Context) ([]*User, error) {
 	var result []*User
 	for _, u := range users {
 		result = append(result, &User{
-			ID:    string(u.ID),
-			Name:  u.Name,
-			Email: u.Email,
+			ID:   string(u.ID),
+			Name: u.Name,
 		})
 	}
 	return result, nil
@@ -103,18 +99,17 @@ func (r *MutationResolver) CreateUser(ctx context.Context, input CreateUserInput
 	id := uuid.New().String()
 
 	cmd := userapp.CreateUserCommand{
-		ID:    id,
-		Name:  input.Name,
-		Email: input.Email,
+		ID:   id,
+		Name: input.Name,
 	}
 
-	if err := r.createHandler.Handle(ctx, cmd); err != nil {
+	u, err := r.createHandler.Handle(ctx, cmd)
+	if err != nil {
 		return nil, err
 	}
 
 	return &User{
-		ID:    id,
-		Name:  input.Name,
-		Email: input.Email,
+		ID:   string(u.ID),
+		Name: u.Name,
 	}, nil
 }

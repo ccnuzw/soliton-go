@@ -7,74 +7,60 @@ import (
 	"github.com/soliton-go/framework/event"
 )
 
-// UserCreatedEvent is published when a new user is created.
+// UserCreatedEvent is published when a new User is created.
 type UserCreatedEvent struct {
 	ddd.BaseDomainEvent
 	UserID string `json:"user_id"`
-	Name   string `json:"name"`
-	Email  string `json:"email"`
 }
 
-// EventName returns the name of the event.
 func (e UserCreatedEvent) EventName() string {
 	return "user.created"
 }
 
-// NewUserCreatedEvent creates a new UserCreatedEvent.
-func NewUserCreatedEvent(userID, name, email string) UserCreatedEvent {
+func NewUserCreatedEvent(id string) UserCreatedEvent {
 	return UserCreatedEvent{
 		BaseDomainEvent: ddd.NewBaseDomainEvent(),
-		UserID:          userID,
-		Name:            name,
-		Email:           email,
+		UserID: id,
 	}
 }
 
-// UserUpdatedEvent is published when a user is updated.
+// UserUpdatedEvent is published when a User is updated.
 type UserUpdatedEvent struct {
 	ddd.BaseDomainEvent
 	UserID string `json:"user_id"`
-	Name   string `json:"name"`
-	Email  string `json:"email"`
 }
 
-// EventName returns the name of the event.
 func (e UserUpdatedEvent) EventName() string {
 	return "user.updated"
 }
 
-// NewUserUpdatedEvent creates a new UserUpdatedEvent.
-func NewUserUpdatedEvent(userID, name, email string) UserUpdatedEvent {
+func NewUserUpdatedEvent(id string) UserUpdatedEvent {
 	return UserUpdatedEvent{
 		BaseDomainEvent: ddd.NewBaseDomainEvent(),
-		UserID:          userID,
-		Name:            name,
-		Email:           email,
+		UserID: id,
 	}
 }
 
-// UserDeletedEvent is published when a user is deleted.
+// UserDeletedEvent is published when a User is deleted.
 type UserDeletedEvent struct {
 	ddd.BaseDomainEvent
-	UserID    string    `json:"user_id"`
-	DeletedAt time.Time `json:"deleted_at"`
+	UserID string    `json:"user_id"`
+	DeletedAt         time.Time `json:"deleted_at"`
 }
 
-// EventName returns the name of the event.
 func (e UserDeletedEvent) EventName() string {
 	return "user.deleted"
 }
 
-// NewUserDeletedEvent creates a new UserDeletedEvent.
-func NewUserDeletedEvent(userID string) UserDeletedEvent {
+func NewUserDeletedEvent(id string) UserDeletedEvent {
 	return UserDeletedEvent{
 		BaseDomainEvent: ddd.NewBaseDomainEvent(),
-		UserID:          userID,
-		DeletedAt:       time.Now(),
+		UserID: id,
+		DeletedAt: time.Now(),
 	}
 }
 
-// init registers user events with the global event registry.
+// init registers events with the global registry.
 func init() {
 	event.RegisterEvent("user.created", func() ddd.DomainEvent {
 		return &UserCreatedEvent{}
