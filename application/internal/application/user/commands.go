@@ -11,11 +11,6 @@ type CreateUserCommand struct {
 	ID string
 	Username string
 	Email string
-	PasswordHash string
-	Phone string
-	Nickname string
-	Role user.UserRole
-	Status user.UserStatus
 }
 
 // CreateUserHandler handles CreateUserCommand.
@@ -28,7 +23,7 @@ func NewCreateUserHandler(repo user.UserRepository) *CreateUserHandler {
 }
 
 func (h *CreateUserHandler) Handle(ctx context.Context, cmd CreateUserCommand) (*user.User, error) {
-	entity := user.NewUser(cmd.ID, cmd.Username, cmd.Email, cmd.PasswordHash, cmd.Phone, cmd.Nickname, cmd.Role, cmd.Status)
+	entity := user.NewUser(cmd.ID, cmd.Username, cmd.Email)
 	if err := h.repo.Save(ctx, entity); err != nil {
 		return nil, err
 	}
@@ -40,11 +35,6 @@ type UpdateUserCommand struct {
 	ID string
 	Username string
 	Email string
-	PasswordHash string
-	Phone string
-	Nickname string
-	Role user.UserRole
-	Status user.UserStatus
 }
 
 // UpdateUserHandler handles UpdateUserCommand.
@@ -61,7 +51,7 @@ func (h *UpdateUserHandler) Handle(ctx context.Context, cmd UpdateUserCommand) (
 	if err != nil {
 		return nil, err
 	}
-	entity.Update(cmd.Username, cmd.Email, cmd.PasswordHash, cmd.Phone, cmd.Nickname, cmd.Role, cmd.Status)
+	entity.Update(cmd.Username, cmd.Email)
 	if err := h.repo.Save(ctx, entity); err != nil {
 		return nil, err
 	}

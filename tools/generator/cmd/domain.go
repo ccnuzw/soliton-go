@@ -11,6 +11,7 @@ import (
 )
 
 var fieldsFlag string
+var forceFlag bool
 
 var domainCmd = &cobra.Command{
 	Use:   "domain [name]",
@@ -26,13 +27,17 @@ var domainCmd = &cobra.Command{
 
 Examples:
   soliton-gen domain User
-  soliton-gen domain User --fields "username,email,password,status:enum(active,inactive)"
-  soliton-gen domain Product --fields "name,price:int,stock:int,description:text,status:enum(draft,active)"
-  soliton-gen domain Order --fields "user_id,total:int,status:enum(pending,paid,shipped),address"`,
+  soliton-gen domain User --fields "username,email,password,status:enum(active|inactive)"
+  soliton-gen domain User --fields "..." --force  # Overwrite existing files
+  soliton-gen domain Product --fields "name,price:int,stock:int,status:enum(draft|active)"`,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		name := args[0]
-		fmt.Printf("🚀 Generating domain: %s\n\n", name)
+		if forceFlag {
+			fmt.Printf("🚀 Generating domain: %s (force mode)\n\n", name)
+		} else {
+			fmt.Printf("🚀 Generating domain: %s\n\n", name)
+		}
 
 		generateDomain(name, fieldsFlag)
 	},
@@ -40,7 +45,8 @@ Examples:
 
 func init() {
 	rootCmd.AddCommand(domainCmd)
-	domainCmd.Flags().StringVarP(&fieldsFlag, "fields", "f", "", "Comma-separated list of fields (e.g., 'name,email,status:enum(active,inactive)')")
+	domainCmd.Flags().StringVarP(&fieldsFlag, "fields", "f", "", "Comma-separated list of fields (e.g., 'name,email,status:enum(active|inactive)')")
+	domainCmd.Flags().BoolVar(&forceFlag, "force", false, "Force overwrite existing files")
 }
 
 // Field represents a parsed field definition
@@ -307,9 +313,13 @@ func findPath(relative string) string {
 
 // generateFileWithData creates a file from template with TemplateData
 func generateFileWithData(path string, tmpl string, data TemplateData) {
+	exists := false
 	if _, err := os.Stat(path); err == nil {
-		fmt.Printf("   [SKIP] %s (exists)\n", filepath.Base(path))
-		return
+		if !forceFlag {
+			fmt.Printf("   [SKIP] %s (exists, use --force to overwrite)\n", filepath.Base(path))
+			return
+		}
+		exists = true
 	}
 
 	f, err := os.Create(path)
@@ -330,7 +340,11 @@ func generateFileWithData(path string, tmpl string, data TemplateData) {
 	if err := t.Execute(f, data); err != nil {
 		fmt.Printf("   [ERROR] %s: %v\n", filepath.Base(path), err)
 	} else {
-		fmt.Printf("   [NEW] %s\n", filepath.Base(path))
+		if exists {
+			fmt.Printf("   [OVERWRITE] %s\n", filepath.Base(path))
+		} else {
+			fmt.Printf("   [NEW] %s\n", filepath.Base(path))
+		}
 	}
 }
 

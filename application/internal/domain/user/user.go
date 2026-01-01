@@ -13,35 +13,12 @@ func (id UserID) String() string {
 	return string(id)
 }
 
-// UserRole represents the Role enum.
-type UserRole string
-
-const (
-	UserRoleAdmin UserRole = "admin"
-	UserRoleSeller UserRole = "seller"
-	UserRoleCustomer UserRole = "customer"
-)
-
-// UserStatus represents the Status enum.
-type UserStatus string
-
-const (
-	UserStatusActive UserStatus = "active"
-	UserStatusInactive UserStatus = "inactive"
-	UserStatusBanned UserStatus = "banned"
-)
-
 // User is the aggregate root.
 type User struct {
 	ddd.BaseAggregateRoot
 	ID UserID `gorm:"primaryKey"`
 	Username string `gorm:"size:255"`
 	Email string `gorm:"size:255"`
-	PasswordHash string `gorm:"size:255"`
-	Phone string `gorm:"size:255"`
-	Nickname string `gorm:"size:255"`
-	Role UserRole `gorm:"size:50;default:'admin'"`
-	Status UserStatus `gorm:"size:50;default:'active'"`
 	CreatedAt time.Time `gorm:"autoCreateTime"`
 	UpdatedAt time.Time `gorm:"autoUpdateTime"`
 }
@@ -52,30 +29,20 @@ func (User) TableName() string {
 }
 
 // NewUser creates a new User.
-func NewUser(id string, username string, email string, passwordHash string, phone string, nickname string, role UserRole, status UserStatus) *User {
+func NewUser(id string, username string, email string) *User {
 	e := &User{
 		ID: UserID(id),
 		Username: username,
 		Email: email,
-		PasswordHash: passwordHash,
-		Phone: phone,
-		Nickname: nickname,
-		Role: role,
-		Status: status,
 	}
 	e.AddDomainEvent(NewUserCreatedEvent(id))
 	return e
 }
 
 // Update updates the entity fields.
-func (e *User) Update(username string, email string, passwordHash string, phone string, nickname string, role UserRole, status UserStatus) {
+func (e *User) Update(username string, email string) {
 	e.Username = username
 	e.Email = email
-	e.PasswordHash = passwordHash
-	e.Phone = phone
-	e.Nickname = nickname
-	e.Role = role
-	e.Status = status
 	e.AddDomainEvent(NewUserUpdatedEvent(string(e.ID)))
 }
 

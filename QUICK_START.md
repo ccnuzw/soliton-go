@@ -27,103 +27,95 @@ go build -o soliton-gen .
 
 ```bash
 # User - 用户管理
-./soliton-gen domain User --fields "username,email,password_hash,phone,nickname,role:enum(admin|seller|customer),status:enum(active|inactive|banned)"
+./soliton-gen domain User --fields "username,email,password_hash,role:enum(admin|seller|customer),status:enum(active|inactive|banned)"
 
 # Product - 商品管理
-./soliton-gen domain Product --fields "name,sku,description:text,price:int64,original_price:int64,stock:int,category_id:uuid,status:enum(draft|active|inactive)"
+./soliton-gen domain Product --fields "name,sku,price:int64,stock:int,status:enum(draft|active|inactive)"
 
 # Order - 订单管理
-./soliton-gen domain Order --fields "user_id:uuid,order_no,total_amount:int64,status:enum(pending|paid|shipped|completed|cancelled),receiver_name,receiver_phone,receiver_address:text"
+./soliton-gen domain Order --fields "user_id:uuid,order_no,total_amount:int64,status:enum(pending|paid|shipped|completed|cancelled)"
 ```
 
-### 支持的字段类型
+### 🔄 修改字段后重新生成
 
-| 类型 | 写法 | Go 类型 | GORM 标签 |
-|------|------|---------|-----------|
-| string | `field` | `string` | `size:255` |
-| text | `field:text` | `string` | `type:text` |
-| int | `field:int` | `int` | `not null` |
-| int64 | `field:int64` | `int64` | `not null` |
-| float | `field:float` | `float64` | - |
-| bool | `field:bool` | `bool` | `default:false` |
-| uuid | `field:uuid` | `string` | `size:36;index` |
-| time | `field:time` | `time.Time` | `autoCreateTime` |
-| **enum** | `field:enum(a\|b\|c)` | 自定义枚举类型 | `size:50` |
+```bash
+# 使用 --force 强制覆盖已存在的文件
+./soliton-gen domain User --fields "username,email,age:int,status:enum(active|banned)" --force
+```
 
 ---
 
-## 4. 📁 生成文件清单
+## 4. 📋 支持的字段类型
 
-每个领域模块生成 **9 个文件**：
+| 类型 | 写法 | Go 类型 |
+|------|------|---------|
+| string | `field` | `string` |
+| text | `field:text` | `string` |
+| int | `field:int` | `int` |
+| int64 | `field:int64` | `int64` |
+| uuid | `field:uuid` | `string` |
+| **enum** | `field:enum(a\|b\|c)` | 枚举类型 |
+
+---
+
+## 5. 📁 生成文件清单 (9个)
 
 ```
 domain/{name}/
-├── {name}.go          # Entity + ID + Enum类型
+├── {name}.go          # Entity + Enum
 ├── repository.go      # Repository 接口
-└── events.go          # 领域事件 (Created/Updated/Deleted)
+└── events.go          # 领域事件
 
 application/{name}/
-├── commands.go        # Create/Update/Delete Handlers
-├── queries.go         # Get/List Handlers
-├── dto.go             # Request/Response DTOs
-└── module.go          # Fx 依赖注入模块
+├── commands.go        # Create/Update/Delete
+├── queries.go         # Get/List
+├── dto.go             # Request/Response
+└── module.go          # Fx 模块
 
 infrastructure/persistence/
-└── {name}_repo.go     # Repository 实现 + 数据库迁移
+└── {name}_repo.go     # Repository 实现
 
 interfaces/http/
-└── {name}_handler.go  # HTTP CRUD Handler
+└── {name}_handler.go  # HTTP Handler
 ```
 
 ---
 
-## 5. 🏗 配置 main.go
+## 6. 🏗 配置 main.go
 
 ```go
-import (
-    userapp "github.com/soliton-go/application/internal/application/user"
-    productapp "github.com/soliton-go/application/internal/application/product"
-    orderapp "github.com/soliton-go/application/internal/application/order"
-    "github.com/soliton-go/application/internal/interfaces/http"
-)
-
-func main() {
-    fx.New(
-        // 数据库
-        fx.Provide(orm.NewGormDB),
+fx.New(
+    fx.Provide(orm.NewGormDB),
+    
+    // 一行导入模块
+    userapp.Module,
+    productapp.Module,
+    orderapp.Module,
+    
+    // HTTP Handlers
+    fx.Provide(http.NewUserHandler),
+    fx.Provide(http.NewProductHandler),
+    fx.Provide(http.NewOrderHandler),
+    
+    fx.Invoke(func(db *gorm.DB, h1 *http.UserHandler, h2 *http.ProductHandler, h3 *http.OrderHandler) {
+        // 自动建表
+        userapp.RegisterMigration(db)
+        productapp.RegisterMigration(db)
+        orderapp.RegisterMigration(db)
         
-        // 领域模块 (一行导入所有依赖)
-        userapp.Module,
-        productapp.Module,
-        orderapp.Module,
-        
-        // HTTP Handlers
-        fx.Provide(http.NewUserHandler),
-        fx.Provide(http.NewProductHandler),
-        fx.Provide(http.NewOrderHandler),
-        
-        // 启动
-        fx.Invoke(func(db *gorm.DB, userH *http.UserHandler, productH *http.ProductHandler, orderH *http.OrderHandler) {
-            // 自动建表
-            userapp.RegisterMigration(db)
-            productapp.RegisterMigration(db)
-            orderapp.RegisterMigration(db)
-            
-            // 注册路由
-            r := gin.Default()
-            userH.RegisterRoutes(r)
-            productH.RegisterRoutes(r)
-            orderH.RegisterRoutes(r)
-            
-            r.Run(":8080")
-        }),
-    ).Run()
-}
+        // 注册路由
+        r := gin.Default()
+        h1.RegisterRoutes(r)
+        h2.RegisterRoutes(r)
+        h3.RegisterRoutes(r)
+        r.Run(":8080")
+    }),
+).Run()
 ```
 
 ---
 
-## 6. 🏃 运行
+## 7. 🏃 运行
 
 ```bash
 go run ./cmd/main.go
@@ -133,24 +125,19 @@ go run ./cmd/main.go
 
 | 模块 | 端点 |
 |------|------|
-| User | `/api/users` (POST/GET/PUT/DELETE) |
-| Product | `/api/products` (POST/GET/PUT/DELETE) |
-| Order | `/api/orders` (POST/GET/PUT/DELETE) |
+| User | `/api/users` |
+| Product | `/api/products` |
+| Order | `/api/orders` |
 
 ---
 
-## 7. ⚡ 开发流程总结
+## 8. ⚡ 开发流程
 
 ```
-1. soliton-gen domain Xxx --fields "..."  # 一条命令生成完整模块
-2. main.go 导入 xxxapp.Module            # 一行注入所有依赖
-3. go run ./cmd/main.go                   # 启动服务
-```
+1. soliton-gen domain Xxx --fields "..."  # 生成
+2. main.go 导入 xxxapp.Module            # 注入
+3. go run ./cmd/main.go                   # 启动
 
-**自动生成，无需手写：**
-- ✅ Entity + Enum 类型
-- ✅ Repository 接口和实现
-- ✅ Commands/Queries/DTOs
-- ✅ HTTP Handler
-- ✅ 依赖注入模块
-- ✅ 数据库迁移
+# 修改字段后
+4. soliton-gen domain Xxx --fields "..." --force  # 重新生成
+```
