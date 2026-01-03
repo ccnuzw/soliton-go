@@ -1049,12 +1049,18 @@ func wireMainGoNew(mainGoPath, entityName, packageName, modulePath, original str
 	result := original
 	modified := false
 
+	// 0. Replace blank gorm import with normal import (needed for fx.Invoke)
+	if strings.Contains(result, "_ \"gorm.io/gorm\"") && !strings.Contains(result, "\t\"gorm.io/gorm\"") {
+		result = strings.Replace(result, "_ \"gorm.io/gorm\"", "\"gorm.io/gorm\"", 1)
+		modified = true
+	}
+
 	// 1. Add app import after // soliton-gen:imports
-	appImport := fmt.Sprintf("\t%sapp \"%s/internal/application/%s\"", packageName, modulePath, packageName)
+	appImport := fmt.Sprintf("%sapp \"%s/internal/application/%s\"", packageName, modulePath, packageName)
 	if !strings.Contains(result, appImport) {
 		result = strings.Replace(result,
 			"// soliton-gen:imports",
-			appImport+"\n\t// soliton-gen:imports",
+			"\t"+appImport+"\n\t// soliton-gen:imports",
 			1)
 		modified = true
 	}
@@ -1070,21 +1076,21 @@ func wireMainGoNew(mainGoPath, entityName, packageName, modulePath, original str
 	}
 
 	// 3. Add module after // soliton-gen:modules
-	moduleCode := fmt.Sprintf("\t\t%sapp.Module,", packageName)
+	moduleCode := fmt.Sprintf("%sapp.Module,", packageName)
 	if !strings.Contains(result, moduleCode) {
 		result = strings.Replace(result,
 			"// soliton-gen:modules",
-			moduleCode+"\n\t\t// soliton-gen:modules",
+			"\t\t"+moduleCode+"\n\t\t// soliton-gen:modules",
 			1)
 		modified = true
 	}
 
 	// 4. Add handler after // soliton-gen:handlers
-	handlerCode := fmt.Sprintf("\t\tfx.Provide(interfaceshttp.New%sHandler),", entityName)
+	handlerCode := fmt.Sprintf("fx.Provide(interfaceshttp.New%sHandler),", entityName)
 	if !strings.Contains(result, handlerCode) {
 		result = strings.Replace(result,
 			"// soliton-gen:handlers",
-			handlerCode+"\n\t\t// soliton-gen:handlers",
+			"\t\t"+handlerCode+"\n\t\t// soliton-gen:handlers",
 			1)
 		modified = true
 	}
@@ -1092,10 +1098,10 @@ func wireMainGoNew(mainGoPath, entityName, packageName, modulePath, original str
 	// 5. Add route registration after // soliton-gen:routes
 	routeCheck := fmt.Sprintf("h *interfaceshttp.%sHandler", entityName)
 	if !strings.Contains(result, routeCheck) {
-		routeCode := fmt.Sprintf("\t\tfx.Invoke(func(db *gorm.DB, r *gin.Engine, h *interfaceshttp.%sHandler) {\n\t\t\t%sapp.RegisterMigration(db)\n\t\t\th.RegisterRoutes(r)\n\t\t}),", entityName, packageName)
+		routeCode := fmt.Sprintf("fx.Invoke(func(db *gorm.DB, r *gin.Engine, h *interfaceshttp.%sHandler) {\n\t\t\t%sapp.RegisterMigration(db)\n\t\t\th.RegisterRoutes(r)\n\t\t}),", entityName, packageName)
 		result = strings.Replace(result,
 			"// soliton-gen:routes",
-			routeCode+"\n\t\t// soliton-gen:routes",
+			"\t\t"+routeCode+"\n\t\t// soliton-gen:routes",
 			1)
 		modified = true
 	}
