@@ -1059,7 +1059,7 @@ func wireMainGoNew(mainGoPath, entityName, packageName, modulePath, original str
 	appImport := fmt.Sprintf("%sapp \"%s/internal/application/%s\"", packageName, modulePath, packageName)
 	if !strings.Contains(result, appImport) {
 		result = strings.Replace(result,
-			"// soliton-gen:imports",
+			"\t// soliton-gen:imports",
 			"\t"+appImport+"\n\t// soliton-gen:imports",
 			1)
 		modified = true
@@ -1069,7 +1069,7 @@ func wireMainGoNew(mainGoPath, entityName, packageName, modulePath, original str
 	httpImport := fmt.Sprintf("interfaceshttp \"%s/internal/interfaces/http\"", modulePath)
 	if !strings.Contains(result, httpImport) {
 		result = strings.Replace(result,
-			"// soliton-gen:imports",
+			"\t// soliton-gen:imports",
 			fmt.Sprintf("\tinterfaceshttp \"%s/internal/interfaces/http\"\n\t// soliton-gen:imports", modulePath),
 			1)
 		modified = true
@@ -1079,7 +1079,7 @@ func wireMainGoNew(mainGoPath, entityName, packageName, modulePath, original str
 	moduleCode := fmt.Sprintf("%sapp.Module,", packageName)
 	if !strings.Contains(result, moduleCode) {
 		result = strings.Replace(result,
-			"// soliton-gen:modules",
+			"\t\t// soliton-gen:modules",
 			"\t\t"+moduleCode+"\n\t\t// soliton-gen:modules",
 			1)
 		modified = true
@@ -1089,7 +1089,7 @@ func wireMainGoNew(mainGoPath, entityName, packageName, modulePath, original str
 	handlerCode := fmt.Sprintf("fx.Provide(interfaceshttp.New%sHandler),", entityName)
 	if !strings.Contains(result, handlerCode) {
 		result = strings.Replace(result,
-			"// soliton-gen:handlers",
+			"\t\t// soliton-gen:handlers",
 			"\t\t"+handlerCode+"\n\t\t// soliton-gen:handlers",
 			1)
 		modified = true
@@ -1100,7 +1100,7 @@ func wireMainGoNew(mainGoPath, entityName, packageName, modulePath, original str
 	if !strings.Contains(result, routeCheck) {
 		routeCode := fmt.Sprintf("fx.Invoke(func(db *gorm.DB, r *gin.Engine, h *interfaceshttp.%sHandler) {\n\t\t\t%sapp.RegisterMigration(db)\n\t\t\th.RegisterRoutes(r)\n\t\t}),", entityName, packageName)
 		result = strings.Replace(result,
-			"// soliton-gen:routes",
+			"\t\t// soliton-gen:routes",
 			"\t\t"+routeCode+"\n\t\t// soliton-gen:routes",
 			1)
 		modified = true

@@ -13,9 +13,9 @@ import (
 	"github.com/soliton-go/framework/core/logger"
 	"github.com/soliton-go/framework/orm"
 
-		userapp "github.com/soliton-go/test-project/internal/application/user"
-		interfaceshttp "github.com/soliton-go/test-project/internal/interfaces/http"
-		productapp "github.com/soliton-go/test-project/internal/application/product"
+	userapp "github.com/soliton-go/test-project/internal/application/user"
+	interfaceshttp "github.com/soliton-go/test-project/internal/interfaces/http"
+	productapp "github.com/soliton-go/test-project/internal/application/product"
 	// soliton-gen:imports
 )
 
@@ -28,19 +28,19 @@ func main() {
 			NewRouter,
 		),
 
-				userapp.Module,
-				productapp.Module,
+		userapp.Module,
+		productapp.Module,
 		// soliton-gen:modules
 
-				fx.Provide(interfaceshttp.NewUserHandler),
-				fx.Provide(interfaceshttp.NewProductHandler),
+		fx.Provide(interfaceshttp.NewUserHandler),
+		fx.Provide(interfaceshttp.NewProductHandler),
 		// soliton-gen:handlers
 
-				fx.Invoke(func(db *gorm.DB, r *gin.Engine, h *interfaceshttp.UserHandler) {
+		fx.Invoke(func(db *gorm.DB, r *gin.Engine, h *interfaceshttp.UserHandler) {
 			userapp.RegisterMigration(db)
 			h.RegisterRoutes(r)
 		}),
-				fx.Invoke(func(db *gorm.DB, r *gin.Engine, h *interfaceshttp.ProductHandler) {
+		fx.Invoke(func(db *gorm.DB, r *gin.Engine, h *interfaceshttp.ProductHandler) {
 			productapp.RegisterMigration(db)
 			h.RegisterRoutes(r)
 		}),
