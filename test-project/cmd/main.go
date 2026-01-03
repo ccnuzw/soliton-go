@@ -12,9 +12,10 @@ import (
 	"github.com/soliton-go/framework/core/logger"
 	"github.com/soliton-go/framework/orm"
 
-	// Import your modules here:
-	// userapp "github.com/soliton-go/test-project/internal/application/user"
-	// interfaceshttp "github.com/soliton-go/test-project/internal/interfaces/http"
+	// Uncomment these imports after generating domains:
+	userapp "github.com/soliton-go/test-project/internal/application/user"
+	interfaceshttp "github.com/soliton-go/test-project/internal/interfaces/http"
+	"gorm.io/gorm"
 )
 
 func main() {
@@ -27,16 +28,16 @@ func main() {
 		),
 
 		// Modules - uncomment after generating domains:
-		// userapp.Module,
+		userapp.Module,
 
 		// HTTP Handlers - uncomment after generating domains:
-		// fx.Provide(interfaceshttp.NewUserHandler),
+		fx.Provide(interfaceshttp.NewUserHandler),
 
 		// Register routes and migrations - uncomment after generating domains:
-		// fx.Invoke(func(db *gorm.DB, r *gin.Engine, h *interfaceshttp.UserHandler) {
-		// 	userapp.RegisterMigration(db)
-		// 	h.RegisterRoutes(r)
-		// }),
+		fx.Invoke(func(db *gorm.DB, r *gin.Engine, h *interfaceshttp.UserHandler) {
+			userapp.RegisterMigration(db)
+			h.RegisterRoutes(r)
+		}),
 
 		// Start server
 		fx.Invoke(StartServer),

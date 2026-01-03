@@ -194,7 +194,8 @@ import (
 	"github.com/soliton-go/framework/core/logger"
 	"github.com/soliton-go/framework/orm"
 
-	// Import your modules here:
+	// Uncomment these imports after generating domains:
+	// "gorm.io/gorm"
 	// userapp "{{.ModuleName}}/internal/application/user"
 	// interfaceshttp "{{.ModuleName}}/internal/interfaces/http"
 )

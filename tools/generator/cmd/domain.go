@@ -644,12 +644,11 @@ func (h *Create{{.EntityName}}Handler) Handle(ctx context.Context, cmd Create{{.
 
 	// Optional: Publish domain events
 	// Uncomment to enable event publishing:
-	// events := entity.DomainEvents()
+	// events := entity.PullDomainEvents()
 	// if len(events) > 0 {
 	//     if err := h.eventBus.Publish(ctx, events...); err != nil {
 	//         return nil, err
 	//     }
-	//     entity.ClearDomainEvents()
 	// }
 
 	return entity, nil
