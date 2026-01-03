@@ -11,6 +11,8 @@ import (
 )
 
 var moduleName string
+var frameworkVersion string
+var frameworkReplace string
 
 var initCmd = &cobra.Command{
 	Use:   "init [project-name]",
@@ -40,6 +42,8 @@ Examples:
 func init() {
 	rootCmd.AddCommand(initCmd)
 	initCmd.Flags().StringVarP(&moduleName, "module", "m", "", "Go module name (default: github.com/soliton-go/<project-name>)")
+	initCmd.Flags().StringVar(&frameworkVersion, "framework-version", "", "Framework version (default: auto)")
+	initCmd.Flags().StringVar(&frameworkReplace, "framework-replace", "", "Replace github.com/soliton-go/framework with a local path")
 }
 
 func initProject(projectName, module string) {
@@ -49,9 +53,28 @@ func initProject(projectName, module string) {
 		return
 	}
 
+	frameworkVersionValue := frameworkVersion
+	frameworkReplaceValue := frameworkReplace
+
+	if frameworkReplaceValue == "" {
+		if info, err := os.Stat("framework"); err == nil && info.IsDir() {
+			frameworkReplaceValue = filepath.ToSlash(filepath.Join("..", "framework"))
+		}
+	}
+
+	if frameworkVersionValue == "" {
+		if frameworkReplaceValue != "" {
+			frameworkVersionValue = "v0.0.0-00010101000000-000000000000"
+		} else {
+			frameworkVersionValue = "v0.1.0"
+		}
+	}
+
 	data := map[string]string{
-		"ProjectName": projectName,
-		"ModuleName":  module,
+		"ProjectName":      projectName,
+		"ModuleName":       module,
+		"FrameworkVersion": frameworkVersionValue,
+		"FrameworkReplace": frameworkReplaceValue,
 	}
 
 	// === Create directory structure ===
@@ -103,9 +126,9 @@ func initProject(projectName, module string) {
 
 	fmt.Println("\n📝 Next steps:")
 	fmt.Printf("   cd %s\n", projectName)
-	fmt.Println("   go mod tidy")
+	fmt.Println("   GOWORK=off go mod tidy   # skip go.work if in monorepo")
 	fmt.Println("   soliton-gen domain User --fields \"username,email,status:enum(active|inactive)\"")
-	fmt.Println("   go run ./cmd/main.go")
+	fmt.Println("   GOWORK=off go run ./cmd/main.go")
 }
 
 func generateInitFile(path string, tmpl string, data map[string]string) {
@@ -145,58 +168,58 @@ const goModTemplate = `module {{.ModuleName}}
 go 1.22
 
 require (
-	github.com/soliton-go/framework v0.1.0
-	github.com/gin-gonic/gin v1.9.1
+	github.com/soliton-go/framework {{.FrameworkVersion}}
+	github.com/gin-gonic/gin v1.11.0
 	github.com/google/uuid v1.6.0
-	go.uber.org/fx v1.22.0
-	gorm.io/driver/sqlite v1.5.5
-	gorm.io/gorm v1.25.7
+	go.uber.org/fx v1.24.0
+	gorm.io/gorm v1.31.1
 )
+{{ if .FrameworkReplace }}
+
+replace github.com/soliton-go/framework => {{.FrameworkReplace}}
+{{ end }}
 `
 
 const mainTemplate = `package main
 
 import (
-	"log"
+	"context"
+	"fmt"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/fx"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
+	"go.uber.org/zap"
+	_ "gorm.io/gorm" // required for fx.Invoke with *gorm.DB
 
-	// Import your modules here:
-	// userapp "{{.ModuleName}}/internal/application/user"
-	// "{{.ModuleName}}/internal/interfaces/http"
+	"github.com/soliton-go/framework/core/config"
+	"github.com/soliton-go/framework/core/logger"
+	"github.com/soliton-go/framework/orm"
+
+	// soliton-gen:imports
 )
 
 func main() {
 	fx.New(
-		// Database
-		fx.Provide(NewDB),
+		fx.Provide(
+			config.NewConfig,
+			logger.NewLogger,
+			orm.NewGormDB,
+			NewRouter,
+		),
 
-		// Modules - uncomment after generating domains:
-		// userapp.Module,
+		// soliton-gen:modules
 
-		// HTTP Handlers - uncomment after generating domains:
-		// fx.Provide(http.NewUserHandler),
+		// soliton-gen:handlers
+
+		// soliton-gen:routes
 
 		// Start server
 		fx.Invoke(StartServer),
 	).Run()
 }
 
-// NewDB creates a new GORM database connection.
-func NewDB() *gorm.DB {
-	db, err := gorm.Open(sqlite.Open("data.db"), &gorm.Config{})
-	if err != nil {
-		log.Fatalf("failed to connect database: %v", err)
-	}
-	log.Println("✅ Database connected")
-	return db
-}
-
-// StartServer starts the HTTP server.
-func StartServer(db *gorm.DB) {
+// NewRouter creates the Gin engine and registers base routes.
+func NewRouter() *gin.Engine {
 	r := gin.Default()
 
 	// Health check
@@ -204,13 +227,26 @@ func StartServer(db *gorm.DB) {
 		c.JSON(200, gin.H{"status": "ok"})
 	})
 
-	// Register routes - uncomment after generating domains:
-	// userHandler.RegisterRoutes(r)
+	return r
+}
 
-	log.Println("🚀 Server starting on :8080")
-	if err := r.Run(":8080"); err != nil {
-		log.Fatalf("failed to start server: %v", err)
-	}
+// StartServer starts the HTTP server with Fx lifecycle.
+func StartServer(lc fx.Lifecycle, cfg *config.Config, logger *zap.Logger, r *gin.Engine) {
+	addr := fmt.Sprintf("%s:%d", cfg.GetString("server.host"), cfg.GetInt("server.port"))
+	lc.Append(fx.Hook{
+		OnStart: func(ctx context.Context) error {
+			logger.Info("server starting", zap.String("addr", addr))
+			go func() {
+				if err := r.Run(addr); err != nil {
+					logger.Fatal("server stopped", zap.Error(err))
+				}
+			}()
+			return nil
+		},
+		OnStop: func(ctx context.Context) error {
+			return nil
+		},
+	})
 }
 `
 
@@ -349,13 +385,13 @@ A Go project built with [Soliton-Go](https://github.com/soliton-go/framework) fr
 
 ` + "```bash" + `
 # Install dependencies
-go mod tidy
+GOWORK=off go mod tidy
 
-# Generate domain modules
-soliton-gen domain User --fields "username,email,status:enum(active|inactive)"
+# Generate domain modules (--wire auto-injects into main.go)
+soliton-gen domain User --fields "username,email,status:enum(active|inactive)" --wire
 
 # Run the server
-go run ./cmd/main.go
+GOWORK=off go run ./cmd/main.go
 ` + "```" + `
 
 ## Project Structure
@@ -383,7 +419,10 @@ After generating domains, the following endpoints are available:
 | GET | /api/users | List users |
 | GET | /api/users/:id | Get user |
 | PUT | /api/users/:id | Update user |
+| PATCH | /api/users/:id | Partial update user |
 | DELETE | /api/users/:id | Delete user |
+
+> **Note**: If running in a monorepo with go.work, use ` + "`GOWORK=off`" + ` prefix for go commands.
 `
 
 const makefileTemplate = `.PHONY: run build test clean gen

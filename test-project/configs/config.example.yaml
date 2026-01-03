@@ -1,0 +1,22 @@
+# Server Configuration
+server:
+  host: 0.0.0.0
+  port: 8080
+
+# Database Configuration
+database:
+  # Options: sqlite, postgres, mysql
+  driver: sqlite
+  dsn: data.db
+
+  # PostgreSQL example:
+  # driver: postgres
+  # dsn: host=localhost user=postgres password=secret dbname=myapp port=5432 sslmode=disable
+
+  # MySQL example:
+  # driver: mysql
+  # dsn: user:password@tcp(127.0.0.1:3306)/myapp?charset=utf8mb4&parseTime=True&loc=Local
+
+# Logging
+log:
+  level: info  # debug, info, warn, error

@@ -34,6 +34,7 @@ Examples:
 func init() {
 	rootCmd.AddCommand(serviceCmd)
 	serviceCmd.Flags().StringVar(&serviceMethods, "methods", "", "Comma-separated list of service methods (e.g., 'CreateOrder,CancelOrder')")
+	serviceCmd.Flags().BoolVar(&forceFlag, "force", false, "Force overwrite existing files")
 }
 
 // ServiceMethod represents a service method
@@ -47,6 +48,7 @@ type ServiceData struct {
 	ServiceName string
 	PackageName string
 	Methods     []ServiceMethod
+	ModulePath  string
 }
 
 func generateService(name string, methodsStr string) {
@@ -86,21 +88,28 @@ func generateService(name string, methodsStr string) {
 
 	packageName := strings.ToLower(strings.TrimSuffix(serviceName, "Service"))
 
+	layout, err := ResolveProjectLayout()
+	if err != nil {
+		fmt.Printf("❌ %v\n", err)
+		return
+	}
+
 	data := ServiceData{
 		ServiceName: serviceName,
 		PackageName: packageName,
 		Methods:     methods,
+		ModulePath:  layout.ModulePath,
 	}
 
 	// Determine paths
-	appDir := findPath("application/internal/application")
-	serviceDir := filepath.Join(appDir, "services")
+	serviceDir := filepath.Join(layout.AppDir, "services")
 	_ = os.MkdirAll(serviceDir, 0755)
 
 	// Generate files
 	fmt.Println("📦 Application Service")
 	generateServiceFile(filepath.Join(serviceDir, packageName+"_service.go"), serviceTemplate, data)
 	generateServiceFile(filepath.Join(serviceDir, packageName+"_dto.go"), serviceDTOTemplate, data)
+	generateServiceFile(filepath.Join(serviceDir, "module.go"), serviceModuleTemplate, data)
 
 	// Summary
 	fmt.Println("\n" + strings.Repeat("─", 50))
@@ -165,8 +174,8 @@ import (
 	"errors"
 
 	// Import your domain repositories here:
-	// "github.com/soliton-go/application/internal/domain/user"
-	// "github.com/soliton-go/application/internal/domain/order"
+	// "{{.ModulePath}}/internal/domain/user"
+	// "{{.ModulePath}}/internal/domain/order"
 )
 
 // {{.ServiceName}} handles cross-domain business logic.
@@ -210,20 +219,24 @@ const serviceDTOTemplate = `package services
 {{range .Methods}}
 // {{.Name}}Request is the request for {{.Name}}.
 type {{.Name}}Request struct {
-	// TODO: Add request fields
-	// Example:
-	// UserID    string ` + "`json:\"user_id\"`" + `
-	// ProductID string ` + "`json:\"product_id\"`" + `
-	// Quantity  int    ` + "`json:\"quantity\"`" + `
+	// TODO: Replace Example with real request fields.
+	Example string ` + "`json:\"example\"`" + `
 }
 
 // {{.Name}}Response is the response for {{.Name}}.
 type {{.Name}}Response struct {
-	// TODO: Add response fields
-	// Example:
-	// Success bool   ` + "`json:\"success\"`" + `
-	// Message string ` + "`json:\"message\"`" + `
-	// Data    any    ` + "`json:\"data,omitempty\"`" + `
+	// TODO: Replace Example with real response fields.
+	Example string ` + "`json:\"example\"`" + `
 }
 {{end}}
+`
+
+const serviceModuleTemplate = `package services
+
+import "go.uber.org/fx"
+
+// Module provides application service dependencies for Fx.
+var Module = fx.Options(
+	// fx.Provide(New{{.ServiceName}}),
+)
 `

@@ -1,6 +1,6 @@
 module github.com/soliton-go/application
 
-go 1.25.1
+go 1.22
 
 replace github.com/soliton-go/framework => ../framework
 
