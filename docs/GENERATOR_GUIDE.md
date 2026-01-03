@@ -41,22 +41,37 @@ go build -o soliton-gen .
 
 ### --wire 自动接线
 使用 `--wire` 标志时，生成器会自动修改 `main.go`：
-- 取消注释所需 imports（gorm、module、handler）
-- 取消注释 Module 注册
-- 取消注释 Handler Provider
-- 取消注释路由和迁移注册
+- 插入模块 import 和 handler import
+- 添加 Module 注册
+- 添加 Handler Provider
+- 添加路由和迁移注册
 
-> **注意**: `--wire` 仅在 main.go 保持 init 模板结构时生效。如已手动修改，请手动接线。
+**多模块支持**: 模板使用标记行 (`// soliton-gen:xxx`)，支持追加多个模块：
+```go
+// soliton-gen:imports    <- 自动插入 import
+// soliton-gen:modules    <- 自动插入模块
+// soliton-gen:handlers   <- 自动插入 Handler
+// soliton-gen:routes     <- 自动插入路由注册
+```
+
+### 全部参数
+| 参数 | 说明 | 示例 |
+|------|------|------|
+| `--fields`, `-f` | 定义字段 | `--fields "name,age:int"` |
+| `--wire` | 自动注入 main.go | `--wire` |
+| `--force` | 强制覆盖文件 | `--force` |
+| `--table` | 自定义表名 | `--table "custom_users"` |
+| `--route` | 自定义路由 | `--route "members"` |
 
 ### 字段类型
-| 类型 | 格式 | 示例 |
-|------|------|------|
-| string | `field` | `username` |
-| int64 | `field:int64` | `price:int64` |
-| text | `field:text` | `description:text` |
-| uuid | `field:uuid` | `user_id:uuid` |
-| time? | `field:time?` | `last_login_at:time?` |
-| enum | `field:enum(a\|b)` | `status:enum(active\|banned)` |
+| 类型 | 格式 | 示例 | 说明 |
+|------|------|------|------|
+| string | `field` | `username` | 默认类型 |
+| int64 | `field:int64` | `price:int64` | 64位整数 |
+| text | `field:text` | `description:text` | GORM text 类型 |
+| uuid | `field:uuid` | `user_id:uuid` | 带索引的 UUID |
+| time? | `field:time?` | `login_at:time?` | 可选时间字段，无 binding:required |
+| enum | `field:enum(a\|b)` | `status:enum(active\|banned)` | 生成枚举类型 |
 
 ### 生成文件 (9个)
 - `domain/{name}/` - 实体 + Repository + Events

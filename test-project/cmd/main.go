@@ -7,15 +7,16 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 
 	"github.com/soliton-go/framework/core/config"
 	"github.com/soliton-go/framework/core/logger"
 	"github.com/soliton-go/framework/orm"
 
-	// Uncomment these imports after generating domains:
-	"gorm.io/gorm"
-	userapp "github.com/soliton-go/test-project/internal/application/user"
-	interfaceshttp "github.com/soliton-go/test-project/internal/interfaces/http"
+		userapp "github.com/soliton-go/test-project/internal/application/user"
+		interfaceshttp "github.com/soliton-go/test-project/internal/interfaces/http"
+		productapp "github.com/soliton-go/test-project/internal/application/product"
+	// soliton-gen:imports
 )
 
 func main() {
@@ -27,17 +28,23 @@ func main() {
 			NewRouter,
 		),
 
-		// Modules - uncomment after generating domains:
-		userapp.Module,
+				userapp.Module,
+				productapp.Module,
+		// soliton-gen:modules
 
-		// HTTP Handlers - uncomment after generating domains:
-		fx.Provide(interfaceshttp.NewUserHandler),
+				fx.Provide(interfaceshttp.NewUserHandler),
+				fx.Provide(interfaceshttp.NewProductHandler),
+		// soliton-gen:handlers
 
-		// Register routes and migrations - uncomment after generating domains:
-		fx.Invoke(func(db *gorm.DB, r *gin.Engine, h *interfaceshttp.UserHandler) {
+				fx.Invoke(func(db *gorm.DB, r *gin.Engine, h *interfaceshttp.UserHandler) {
 			userapp.RegisterMigration(db)
 			h.RegisterRoutes(r)
 		}),
+				fx.Invoke(func(db *gorm.DB, r *gin.Engine, h *interfaceshttp.ProductHandler) {
+			productapp.RegisterMigration(db)
+			h.RegisterRoutes(r)
+		}),
+		// soliton-gen:routes
 
 		// Start server
 		fx.Invoke(StartServer),

@@ -773,7 +773,7 @@ import (
 // Create{{.EntityName}}Request is the request body for creating a {{.EntityName}}.
 type Create{{.EntityName}}Request struct {
 {{- range .Fields}}
-	{{.Name}} {{if .IsEnum}}string{{else}}{{.AppGoType}}{{end}} ` + "`json:\"{{.SnakeName}}\" binding:\"required\"`" + `
+	{{.Name}} {{if .IsEnum}}string{{else}}{{.AppGoType}}{{end}} ` + "`json:\"{{.SnakeName}}\"{{if .IsPointer}}{{else}} binding:\"required\"{{end}}`" + `
 {{- end}}
 }
 
@@ -1020,7 +1020,8 @@ func RegisterMigration(db *gorm.DB) error {
 }
 `
 
-// wireMainGo attempts to inject module into main.go using string matching.
+// wireMainGo attempts to inject module into main.go using marker comments.
+// Supports multiple modules by appending to marker lines.
 // Returns true if successful, false if main.go structure is not recognized.
 func wireMainGo(mainGoPath, entityName, packageName, modulePath string) bool {
 	content, err := os.ReadFile(mainGoPath)
@@ -1030,52 +1031,107 @@ func wireMainGo(mainGoPath, entityName, packageName, modulePath string) bool {
 
 	original := string(content)
 
-	// Check for template markers
-	if !strings.Contains(original, "// Uncomment these imports after generating domains:") {
-		return false
+	// Check for new template markers
+	if strings.Contains(original, "// soliton-gen:imports") {
+		return wireMainGoNew(mainGoPath, entityName, packageName, modulePath, original)
 	}
 
+	// Try legacy mode for old templates
+	if strings.Contains(original, "// Uncomment these imports after generating domains:") {
+		return wireMainGoLegacy(mainGoPath, entityName, packageName, modulePath, original)
+	}
+
+	return false
+}
+
+// wireMainGoNew handles new template format with marker comments
+func wireMainGoNew(mainGoPath, entityName, packageName, modulePath, original string) bool {
 	result := original
 	modified := false
 
-	// 1. Uncomment gorm import: `\t// "gorm.io/gorm"` -> `\t"gorm.io/gorm"`
-	if strings.Contains(result, "\t// \"gorm.io/gorm\"") {
-		result = strings.Replace(result, "\t// \"gorm.io/gorm\"", "\t\"gorm.io/gorm\"", 1)
+	// 1. Add app import after // soliton-gen:imports
+	appImport := fmt.Sprintf("\t%sapp \"%s/internal/application/%s\"", packageName, modulePath, packageName)
+	if !strings.Contains(result, appImport) {
+		result = strings.Replace(result,
+			"// soliton-gen:imports",
+			appImport+"\n\t// soliton-gen:imports",
+			1)
 		modified = true
 	}
 
-	// 2. Uncomment app import
-	oldAppImport := fmt.Sprintf("\t// %sapp \"%s/internal/application/%s\"", packageName, modulePath, packageName)
-	newAppImport := fmt.Sprintf("\t%sapp \"%s/internal/application/%s\"", packageName, modulePath, packageName)
-	if strings.Contains(result, oldAppImport) {
-		result = strings.Replace(result, oldAppImport, newAppImport, 1)
+	// 2. Add interfaceshttp import if not present
+	httpImport := fmt.Sprintf("interfaceshttp \"%s/internal/interfaces/http\"", modulePath)
+	if !strings.Contains(result, httpImport) {
+		result = strings.Replace(result,
+			"// soliton-gen:imports",
+			fmt.Sprintf("\tinterfaceshttp \"%s/internal/interfaces/http\"\n\t// soliton-gen:imports", modulePath),
+			1)
 		modified = true
 	}
 
-	// 3. Uncomment http import
-	oldHttpImport := fmt.Sprintf("\t// interfaceshttp \"%s/internal/interfaces/http\"", modulePath)
-	newHttpImport := fmt.Sprintf("\tinterfaceshttp \"%s/internal/interfaces/http\"", modulePath)
-	if strings.Contains(result, oldHttpImport) {
-		result = strings.Replace(result, oldHttpImport, newHttpImport, 1)
+	// 3. Add module after // soliton-gen:modules
+	moduleCode := fmt.Sprintf("\t\t%sapp.Module,", packageName)
+	if !strings.Contains(result, moduleCode) {
+		result = strings.Replace(result,
+			"// soliton-gen:modules",
+			moduleCode+"\n\t\t// soliton-gen:modules",
+			1)
 		modified = true
 	}
 
-	// 4. Uncomment module
-	oldModule := fmt.Sprintf("\t\t// %sapp.Module,", packageName)
-	newModule := fmt.Sprintf("\t\t%sapp.Module,", packageName)
-	if strings.Contains(result, oldModule) {
-		result = strings.Replace(result, oldModule, newModule, 1)
-		modified = true
-	}
-	// 5. Uncomment handler
-	oldHandler := fmt.Sprintf("\t\t// fx.Provide(interfaceshttp.New%sHandler),", entityName)
-	newHandler := fmt.Sprintf("\t\tfx.Provide(interfaceshttp.New%sHandler),", entityName)
-	if strings.Contains(result, oldHandler) {
-		result = strings.Replace(result, oldHandler, newHandler, 1)
+	// 4. Add handler after // soliton-gen:handlers
+	handlerCode := fmt.Sprintf("\t\tfx.Provide(interfaceshttp.New%sHandler),", entityName)
+	if !strings.Contains(result, handlerCode) {
+		result = strings.Replace(result,
+			"// soliton-gen:handlers",
+			handlerCode+"\n\t\t// soliton-gen:handlers",
+			1)
 		modified = true
 	}
 
-	// 6. Uncomment invoke block
+	// 5. Add route registration after // soliton-gen:routes
+	routeCheck := fmt.Sprintf("h *interfaceshttp.%sHandler", entityName)
+	if !strings.Contains(result, routeCheck) {
+		routeCode := fmt.Sprintf("\t\tfx.Invoke(func(db *gorm.DB, r *gin.Engine, h *interfaceshttp.%sHandler) {\n\t\t\t%sapp.RegisterMigration(db)\n\t\t\th.RegisterRoutes(r)\n\t\t}),", entityName, packageName)
+		result = strings.Replace(result,
+			"// soliton-gen:routes",
+			routeCode+"\n\t\t// soliton-gen:routes",
+			1)
+		modified = true
+	}
+
+	if !modified {
+		return true // Already wired
+	}
+
+	return os.WriteFile(mainGoPath, []byte(result), 0644) == nil
+}
+
+// wireMainGoLegacy handles old template format with commented placeholders
+func wireMainGoLegacy(mainGoPath, entityName, packageName, modulePath, original string) bool {
+	result := original
+	modified := false
+
+	// Uncomment gorm, app, http imports, module, handler, invoke
+	replacements := []struct{ old, new string }{
+		{"\t// \"gorm.io/gorm\"", "\t\"gorm.io/gorm\""},
+		{fmt.Sprintf("\t// %sapp \"%s/internal/application/%s\"", packageName, modulePath, packageName),
+			fmt.Sprintf("\t%sapp \"%s/internal/application/%s\"", packageName, modulePath, packageName)},
+		{fmt.Sprintf("\t// interfaceshttp \"%s/internal/interfaces/http\"", modulePath),
+			fmt.Sprintf("\tinterfaceshttp \"%s/internal/interfaces/http\"", modulePath)},
+		{fmt.Sprintf("\t\t// %sapp.Module,", packageName), fmt.Sprintf("\t\t%sapp.Module,", packageName)},
+		{fmt.Sprintf("\t\t// fx.Provide(interfaceshttp.New%sHandler),", entityName),
+			fmt.Sprintf("\t\tfx.Provide(interfaceshttp.New%sHandler),", entityName)},
+	}
+
+	for _, r := range replacements {
+		if strings.Contains(result, r.old) {
+			result = strings.Replace(result, r.old, r.new, 1)
+			modified = true
+		}
+	}
+
+	// Uncomment invoke block
 	oldInvoke := fmt.Sprintf("\t\t// fx.Invoke(func(db *gorm.DB, r *gin.Engine, h *interfaceshttp.%sHandler) {\n\t\t// \t%sapp.RegisterMigration(db)\n\t\t// \th.RegisterRoutes(r)\n\t\t// }),", entityName, packageName)
 	newInvoke := fmt.Sprintf("\t\tfx.Invoke(func(db *gorm.DB, r *gin.Engine, h *interfaceshttp.%sHandler) {\n\t\t\t%sapp.RegisterMigration(db)\n\t\t\th.RegisterRoutes(r)\n\t\t}),", entityName, packageName)
 	if strings.Contains(result, oldInvoke) {
@@ -1084,47 +1140,8 @@ func wireMainGo(mainGoPath, entityName, packageName, modulePath string) bool {
 	}
 
 	if !modified {
-		return false // No changes made
-	}
-
-	// Write back
-	if err := os.WriteFile(mainGoPath, []byte(result), 0644); err != nil {
 		return false
 	}
 
-	return true
-}
-
-// buildInvokeBlock creates the fx.Invoke block for route registration
-func buildInvokeBlock(content, entityName, packageName, marker string) string {
-	// Find and replace the commented invoke block
-	handlerType := fmt.Sprintf("*interfaceshttp.%sHandler", entityName)
-	handlerVar := fmt.Sprintf("h%s", entityName)
-
-	invokeCode := fmt.Sprintf(`fx.Invoke(func(db *gorm.DB, r *gin.Engine, %s %s) {
-		%sapp.RegisterMigration(db)
-		%s.RegisterRoutes(r)
-	}),`, handlerVar, handlerType, packageName, handlerVar)
-
-	// Try to find and replace the commented invoke block
-	oldBlock := `// fx.Invoke(func(db *gorm.DB, r *gin.Engine, h *interfaceshttp.` + entityName + `Handler) {
-		// 	` + packageName + `app.` + `RegisterMigration(db)
-		// 	h.RegisterRoutes(r)
-		// }),`
-
-	if strings.Contains(content, oldBlock) {
-		return strings.Replace(content, oldBlock, invokeCode, 1)
-	}
-
-	// If the exact block is not found, just add a new invoke after the marker
-	if strings.Contains(content, marker) && !strings.Contains(content, invokeCode) {
-		// Check if there's already an invoke block, if so, we need to modify it
-		if strings.Contains(content, "fx.Invoke(func(db *gorm.DB") {
-			// Already has an invoke, try to add handler to it
-			return content
-		}
-		return strings.Replace(content, marker, marker+"\n\t\t"+invokeCode, 1)
-	}
-
-	return content
+	return os.WriteFile(mainGoPath, []byte(result), 0644) == nil
 }

@@ -42,6 +42,7 @@ GOWORK=off go mod tidy && GOWORK=off go run ./cmd/main.go
 | int64 | `price:int64` | `Price int64` |
 | text | `desc:text` | `Desc string` (GORM: text) |
 | uuid | `user_id:uuid` | `UserId string` (带索引) |
+| time? | `login_at:time?` | `LoginAt *time.Time` (可选字段) |
 | enum | `status:enum(a\|b\|c)` | 生成枚举类型和常量 |
 
 ## 🔌 命令列表
@@ -54,9 +55,18 @@ GOWORK=off go mod tidy && GOWORK=off go run ./cmd/main.go
 
 ### --wire 自动接线
 ```bash
+# 支持多模块自动注入
 soliton-gen domain User --fields "..." --wire
+soliton-gen domain Product --fields "..." --wire
 ```
-使用 `--wire` 标志可自动将模块注入 main.go，无需手动取消注释。
+`--wire` 使用标记行追加模块，支持多模块无需手动接线。
+
+### 其他参数
+| 参数 | 说明 |
+|------|------|
+| `--table "xxx"` | 自定义数据库表名 |
+| `--route "xxx"` | 自定义 API 路由基路径 |
+| `--force` | 强制覆盖已存在文件 |
 
 ---
 

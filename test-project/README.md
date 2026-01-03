@@ -6,13 +6,13 @@ A Go project built with [Soliton-Go](https://github.com/soliton-go/framework) fr
 
 ```bash
 # Install dependencies
-go mod tidy
+GOWORK=off go mod tidy
 
-# Generate domain modules
-soliton-gen domain User --fields "username,email,status:enum(active|inactive)"
+# Generate domain modules (--wire auto-injects into main.go)
+soliton-gen domain User --fields "username,email,status:enum(active|inactive)" --wire
 
 # Run the server
-go run ./cmd/main.go
+GOWORK=off go run ./cmd/main.go
 ```
 
 ## Project Structure
