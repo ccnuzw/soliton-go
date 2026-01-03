@@ -13,9 +13,9 @@ import (
 	"github.com/soliton-go/framework/orm"
 
 	// Uncomment these imports after generating domains:
+	"gorm.io/gorm"
 	userapp "github.com/soliton-go/test-project/internal/application/user"
 	interfaceshttp "github.com/soliton-go/test-project/internal/interfaces/http"
-	"gorm.io/gorm"
 )
 
 func main() {

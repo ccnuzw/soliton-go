@@ -14,6 +14,7 @@ var fieldsFlag string
 var forceFlag bool
 var tableNameFlag string
 var routeBaseFlag string
+var wireFlag bool
 
 var domainCmd = &cobra.Command{
 	Use:   "domain [name]",
@@ -51,6 +52,7 @@ func init() {
 	domainCmd.Flags().BoolVar(&forceFlag, "force", false, "Force overwrite existing files")
 	domainCmd.Flags().StringVar(&tableNameFlag, "table", "", "Override database table name")
 	domainCmd.Flags().StringVar(&routeBaseFlag, "route", "", "Override route base path (e.g., users)")
+	domainCmd.Flags().BoolVar(&wireFlag, "wire", false, "Auto-wire module into main.go (requires init template structure)")
 }
 
 // Field represents a parsed field definition
@@ -364,9 +366,24 @@ func generateDomain(name string, fieldsStr string) {
 	}
 
 	fmt.Println("\n📝 Next steps:")
-	fmt.Println("   1. Review generated code")
-	fmt.Println("   2. Import module in main.go:")
-	fmt.Printf("      %sapp.Module,\n", packageName)
+	if wireFlag {
+		// Try to wire main.go
+		mainGoPath := filepath.Join(filepath.Dir(layout.InternalDir), "cmd", "main.go")
+		if wireMainGo(mainGoPath, entityName, packageName, layout.ModulePath) {
+			fmt.Println("   ✅ main.go updated automatically!")
+			fmt.Println("   Run: GOWORK=off go run ./cmd/main.go")
+		} else {
+			fmt.Println("   ⚠️  Could not auto-wire main.go (structure not recognized)")
+			fmt.Println("   1. Review generated code")
+			fmt.Println("   2. Import module in main.go manually:")
+			fmt.Printf("      %sapp.Module,\n", packageName)
+		}
+	} else {
+		fmt.Println("   1. Review generated code")
+		fmt.Println("   2. Import module in main.go:")
+		fmt.Printf("      %sapp.Module,\n", packageName)
+		fmt.Println("   Tip: Use --wire flag to auto-inject into main.go")
+	}
 }
 
 // generateFileWithData creates a file from template with TemplateData
@@ -756,7 +773,7 @@ import (
 // Create{{.EntityName}}Request is the request body for creating a {{.EntityName}}.
 type Create{{.EntityName}}Request struct {
 {{- range .Fields}}
-	{{.Name}} {{if .IsEnum}}string{{else}}{{.AppGoType}}{{end}} {{.JsonTag}}
+	{{.Name}} {{if .IsEnum}}string{{else}}{{.AppGoType}}{{end}} ` + "`json:\"{{.SnakeName}}\" binding:\"required\"`" + `
 {{- end}}
 }
 
@@ -1002,3 +1019,112 @@ func RegisterMigration(db *gorm.DB) error {
 	return persistence.Migrate{{.EntityName}}(db)
 }
 `
+
+// wireMainGo attempts to inject module into main.go using string matching.
+// Returns true if successful, false if main.go structure is not recognized.
+func wireMainGo(mainGoPath, entityName, packageName, modulePath string) bool {
+	content, err := os.ReadFile(mainGoPath)
+	if err != nil {
+		return false
+	}
+
+	original := string(content)
+
+	// Check for template markers
+	if !strings.Contains(original, "// Uncomment these imports after generating domains:") {
+		return false
+	}
+
+	result := original
+	modified := false
+
+	// 1. Uncomment gorm import: `\t// "gorm.io/gorm"` -> `\t"gorm.io/gorm"`
+	if strings.Contains(result, "\t// \"gorm.io/gorm\"") {
+		result = strings.Replace(result, "\t// \"gorm.io/gorm\"", "\t\"gorm.io/gorm\"", 1)
+		modified = true
+	}
+
+	// 2. Uncomment app import
+	oldAppImport := fmt.Sprintf("\t// %sapp \"%s/internal/application/%s\"", packageName, modulePath, packageName)
+	newAppImport := fmt.Sprintf("\t%sapp \"%s/internal/application/%s\"", packageName, modulePath, packageName)
+	if strings.Contains(result, oldAppImport) {
+		result = strings.Replace(result, oldAppImport, newAppImport, 1)
+		modified = true
+	}
+
+	// 3. Uncomment http import
+	oldHttpImport := fmt.Sprintf("\t// interfaceshttp \"%s/internal/interfaces/http\"", modulePath)
+	newHttpImport := fmt.Sprintf("\tinterfaceshttp \"%s/internal/interfaces/http\"", modulePath)
+	if strings.Contains(result, oldHttpImport) {
+		result = strings.Replace(result, oldHttpImport, newHttpImport, 1)
+		modified = true
+	}
+
+	// 4. Uncomment module
+	oldModule := fmt.Sprintf("\t\t// %sapp.Module,", packageName)
+	newModule := fmt.Sprintf("\t\t%sapp.Module,", packageName)
+	if strings.Contains(result, oldModule) {
+		result = strings.Replace(result, oldModule, newModule, 1)
+		modified = true
+	}
+	// 5. Uncomment handler
+	oldHandler := fmt.Sprintf("\t\t// fx.Provide(interfaceshttp.New%sHandler),", entityName)
+	newHandler := fmt.Sprintf("\t\tfx.Provide(interfaceshttp.New%sHandler),", entityName)
+	if strings.Contains(result, oldHandler) {
+		result = strings.Replace(result, oldHandler, newHandler, 1)
+		modified = true
+	}
+
+	// 6. Uncomment invoke block
+	oldInvoke := fmt.Sprintf("\t\t// fx.Invoke(func(db *gorm.DB, r *gin.Engine, h *interfaceshttp.%sHandler) {\n\t\t// \t%sapp.RegisterMigration(db)\n\t\t// \th.RegisterRoutes(r)\n\t\t// }),", entityName, packageName)
+	newInvoke := fmt.Sprintf("\t\tfx.Invoke(func(db *gorm.DB, r *gin.Engine, h *interfaceshttp.%sHandler) {\n\t\t\t%sapp.RegisterMigration(db)\n\t\t\th.RegisterRoutes(r)\n\t\t}),", entityName, packageName)
+	if strings.Contains(result, oldInvoke) {
+		result = strings.Replace(result, oldInvoke, newInvoke, 1)
+		modified = true
+	}
+
+	if !modified {
+		return false // No changes made
+	}
+
+	// Write back
+	if err := os.WriteFile(mainGoPath, []byte(result), 0644); err != nil {
+		return false
+	}
+
+	return true
+}
+
+// buildInvokeBlock creates the fx.Invoke block for route registration
+func buildInvokeBlock(content, entityName, packageName, marker string) string {
+	// Find and replace the commented invoke block
+	handlerType := fmt.Sprintf("*interfaceshttp.%sHandler", entityName)
+	handlerVar := fmt.Sprintf("h%s", entityName)
+
+	invokeCode := fmt.Sprintf(`fx.Invoke(func(db *gorm.DB, r *gin.Engine, %s %s) {
+		%sapp.RegisterMigration(db)
+		%s.RegisterRoutes(r)
+	}),`, handlerVar, handlerType, packageName, handlerVar)
+
+	// Try to find and replace the commented invoke block
+	oldBlock := `// fx.Invoke(func(db *gorm.DB, r *gin.Engine, h *interfaceshttp.` + entityName + `Handler) {
+		// 	` + packageName + `app.` + `RegisterMigration(db)
+		// 	h.RegisterRoutes(r)
+		// }),`
+
+	if strings.Contains(content, oldBlock) {
+		return strings.Replace(content, oldBlock, invokeCode, 1)
+	}
+
+	// If the exact block is not found, just add a new invoke after the marker
+	if strings.Contains(content, marker) && !strings.Contains(content, invokeCode) {
+		// Check if there's already an invoke block, if so, we need to modify it
+		if strings.Contains(content, "fx.Invoke(func(db *gorm.DB") {
+			// Already has an invoke, try to add handler to it
+			return content
+		}
+		return strings.Replace(content, marker, marker+"\n\t\t"+invokeCode, 1)
+	}
+
+	return content
+}

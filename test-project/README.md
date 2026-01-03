@@ -40,4 +40,7 @@ After generating domains, the following endpoints are available:
 | GET | /api/users | List users |
 | GET | /api/users/:id | Get user |
 | PUT | /api/users/:id | Update user |
+| PATCH | /api/users/:id | Partial update user |
 | DELETE | /api/users/:id | Delete user |
+
+> **Note**: If running in a monorepo with go.work, use `GOWORK=off` prefix for go commands.

@@ -16,10 +16,14 @@
 # 1. 编译生成器
 cd tools/generator && go build -o soliton-gen .
 
-# 2. 一键生成带完整字段的 User 模块
-./soliton-gen domain User --fields "username,email,password_hash,role:enum(admin|user),status:enum(active|banned)"
+# 2. 创建新项目
+./soliton-gen init my-project && cd my-project
 
-# 3. 查看生成的 9 个文件
+# 3. 生成领域模块 (--wire 自动接入 main.go)
+soliton-gen domain User --fields "username,email,status:enum(active|inactive)" --wire
+
+# 4. 运行
+GOWORK=off go mod tidy && GOWORK=off go run ./cmd/main.go
 ```
 
 **生成结果：**
@@ -39,6 +43,20 @@ cd tools/generator && go build -o soliton-gen .
 | text | `desc:text` | `Desc string` (GORM: text) |
 | uuid | `user_id:uuid` | `UserId string` (带索引) |
 | enum | `status:enum(a\|b\|c)` | 生成枚举类型和常量 |
+
+## 🔌 命令列表
+
+| 命令 | 说明 |
+|------|------|
+| `init <name>` | 初始化新项目（含 DDD 目录结构） |
+| `domain <name>` | 生成领域模块（Entity/Repo/Handler 等） |
+| `service <name>` | 生成应用服务（跨领域业务逻辑） |
+
+### --wire 自动接线
+```bash
+soliton-gen domain User --fields "..." --wire
+```
+使用 `--wire` 标志可自动将模块注入 main.go，无需手动取消注释。
 
 ---
 

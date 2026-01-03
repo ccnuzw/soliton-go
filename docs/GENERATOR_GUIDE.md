@@ -36,7 +36,17 @@ go build -o soliton-gen .
 ./soliton-gen domain User
 ./soliton-gen domain User --fields "username,email,status:enum(active|inactive)"
 ./soliton-gen domain User --fields "..." --force  # 强制覆盖
+./soliton-gen domain User --fields "..." --wire   # 自动接入 main.go
 ```
+
+### --wire 自动接线
+使用 `--wire` 标志时，生成器会自动修改 `main.go`：
+- 取消注释所需 imports（gorm、module、handler）
+- 取消注释 Module 注册
+- 取消注释 Handler Provider
+- 取消注释路由和迁移注册
+
+> **注意**: `--wire` 仅在 main.go 保持 init 模板结构时生效。如已手动修改，请手动接线。
 
 ### 字段类型
 | 类型 | 格式 | 示例 |
@@ -92,15 +102,16 @@ go build -o soliton-gen .
 # 1. 初始化项目
 ./soliton-gen init my-shop && cd my-shop
 
-# 2. 生成领域模块
-soliton-gen domain User --fields "username,email,role:enum(admin|customer)"
-soliton-gen domain Product --fields "name,price:int64,stock:int"
-soliton-gen domain Order --fields "user_id:uuid,total:int64,status:enum(pending|paid)"
+# 2. 生成领域模块 (--wire 自动接入)
+soliton-gen domain User --fields "username,email,role:enum(admin|customer)" --wire
+soliton-gen domain Product --fields "name,price:int64,stock:int" --wire
+soliton-gen domain Order --fields "user_id:uuid,total:int64,status:enum(pending|paid)" --wire
 
 # 3. 生成跨领域服务
 soliton-gen service OrderService --methods "CreateOrder,CancelOrder"
 
-# 4. 更新 main.go (取消注释导入)
-# 5. 运行
-go mod tidy && go run ./cmd/main.go
+# 4. 运行（在 monorepo 中需要 GOWORK=off）
+GOWORK=off go mod tidy && GOWORK=off go run ./cmd/main.go
 ```
+
+> **Monorepo 提示**: 如果在包含 `go.work` 的 monorepo 中运行，请使用 `GOWORK=off` 前缀。

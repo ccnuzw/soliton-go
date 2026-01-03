@@ -5,7 +5,6 @@ import (
 	"github.com/google/uuid"
 
 	userapp "github.com/soliton-go/test-project/internal/application/user"
-	"github.com/soliton-go/test-project/internal/domain/user"
 )
 
 // UserHandler handles HTTP requests for User operations.
@@ -59,7 +58,6 @@ func (h *UserHandler) Create(c *gin.Context) {
 		ID: uuid.New().String(),
 		Username: req.Username,
 		Email: req.Email,
-		Status: user.UserStatus(req.Status),
 	}
 
 	entity, err := h.createHandler.Handle(c.Request.Context(), cmd)
@@ -109,7 +107,6 @@ func (h *UserHandler) Update(c *gin.Context) {
 		ID: id,
 		Username: req.Username,
 		Email: req.Email,
-		Status: EnumPtr(req.Status, func(v string) user.UserStatus { return user.UserStatus(v) }),
 	}
 
 	entity, err := h.updateHandler.Handle(c.Request.Context(), cmd)

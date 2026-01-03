@@ -126,9 +126,9 @@ func initProject(projectName, module string) {
 
 	fmt.Println("\n📝 Next steps:")
 	fmt.Printf("   cd %s\n", projectName)
-	fmt.Println("   go mod tidy")
+	fmt.Println("   GOWORK=off go mod tidy   # skip go.work if in monorepo")
 	fmt.Println("   soliton-gen domain User --fields \"username,email,status:enum(active|inactive)\"")
-	fmt.Println("   go run ./cmd/main.go")
+	fmt.Println("   GOWORK=off go run ./cmd/main.go")
 }
 
 func generateInitFile(path string, tmpl string, data map[string]string) {
@@ -393,13 +393,13 @@ A Go project built with [Soliton-Go](https://github.com/soliton-go/framework) fr
 
 ` + "```bash" + `
 # Install dependencies
-go mod tidy
+GOWORK=off go mod tidy
 
-# Generate domain modules
-soliton-gen domain User --fields "username,email,status:enum(active|inactive)"
+# Generate domain modules (--wire auto-injects into main.go)
+soliton-gen domain User --fields "username,email,status:enum(active|inactive)" --wire
 
 # Run the server
-go run ./cmd/main.go
+GOWORK=off go run ./cmd/main.go
 ` + "```" + `
 
 ## Project Structure
@@ -427,7 +427,10 @@ After generating domains, the following endpoints are available:
 | GET | /api/users | List users |
 | GET | /api/users/:id | Get user |
 | PUT | /api/users/:id | Update user |
+| PATCH | /api/users/:id | Partial update user |
 | DELETE | /api/users/:id | Delete user |
+
+> **Note**: If running in a monorepo with go.work, use ` + "`GOWORK=off`" + ` prefix for go commands.
 `
 
 const makefileTemplate = `.PHONY: run build test clean gen
