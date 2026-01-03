@@ -12,6 +12,8 @@ import (
 
 var fieldsFlag string
 var forceFlag bool
+var tableNameFlag string
+var routeBaseFlag string
 
 var domainCmd = &cobra.Command{
 	Use:   "domain [name]",
@@ -47,6 +49,8 @@ func init() {
 	rootCmd.AddCommand(domainCmd)
 	domainCmd.Flags().StringVarP(&fieldsFlag, "fields", "f", "", "Comma-separated list of fields (e.g., 'name,email,status:enum(active|inactive)')")
 	domainCmd.Flags().BoolVar(&forceFlag, "force", false, "Force overwrite existing files")
+	domainCmd.Flags().StringVar(&tableNameFlag, "table", "", "Override database table name")
+	domainCmd.Flags().StringVar(&routeBaseFlag, "route", "", "Override route base path (e.g., users)")
 }
 
 // Field represents a parsed field definition
@@ -61,10 +65,11 @@ type Field struct {
 	IsEnum     bool     // Is this an enum type
 	EnumValues []string // Enum values if IsEnum is true
 	EnumType   string   // Enum type name (e.g., "UserStatus")
+	IsPointer  bool     // True if GoType is a pointer type
 }
 
 // parseFields parses the --fields flag value into Field structs
-func parseFields(fieldsStr string, entityName string) []Field {
+func parseFields(fieldsStr string, entityName string, packageName string) []Field {
 	if fieldsStr == "" {
 		// Default field if none specified
 		return []Field{
@@ -73,6 +78,7 @@ func parseFields(fieldsStr string, entityName string) []Field {
 				SnakeName: "name",
 				CamelName: "name",
 				GoType:    "string",
+				AppGoType: "string",
 				GormTag:   "`gorm:\"size:255\"`",
 				JsonTag:   "`json:\"name\"`",
 			},
@@ -88,7 +94,7 @@ func parseFields(fieldsStr string, entityName string) []Field {
 			continue
 		}
 
-		field := parseFieldDefinition(part, entityName)
+		field := parseFieldDefinition(part, entityName, packageName)
 		fields = append(fields, field)
 	}
 
@@ -96,7 +102,7 @@ func parseFields(fieldsStr string, entityName string) []Field {
 }
 
 // parseFieldDefinition parses a single field definition
-func parseFieldDefinition(def string, entityName string) Field {
+func parseFieldDefinition(def string, entityName string, packageName string) Field {
 	// Check for type specification (field:type or field:enum(...))
 	colonIdx := strings.Index(def, ":")
 
@@ -128,13 +134,14 @@ func parseFieldDefinition(def string, entityName string) Field {
 		field.EnumValues = strings.Split(enumContent, "|")
 		field.EnumType = entityName + pascalName
 		field.GoType = field.EnumType
-		field.AppGoType = strings.ToLower(entityName) + "." + field.EnumType // e.g., "user.UserRole"
+		field.AppGoType = packageName + "." + field.EnumType // e.g., "user.UserRole"
 		field.GormTag = fmt.Sprintf("`gorm:\"size:50;default:'%s'\"`", field.EnumValues[0])
 		field.JsonTag = fmt.Sprintf("`json:\"%s\"`", snakeName)
 	} else {
 		// Regular type
 		field.GoType, field.GormTag = mapFieldType(fieldType, snakeName)
 		field.AppGoType = field.GoType // Same for non-enum types
+		field.IsPointer = strings.HasPrefix(field.GoType, "*")
 		field.JsonTag = fmt.Sprintf("`json:\"%s\"`", snakeName)
 	}
 
@@ -157,7 +164,7 @@ func mapFieldType(typeName string, snakeName string) (goType, gormTag string) {
 	case "bool", "boolean":
 		return "bool", "`gorm:\"default:false\"`"
 	case "time", "datetime", "timestamp":
-		return "time.Time", "`gorm:\"autoCreateTime\"`"
+		return "time.Time", "`gorm:\"type:timestamp\"`"
 	case "time?", "datetime?":
 		return "*time.Time", ""
 	case "uuid", "id":
@@ -199,6 +206,44 @@ func toCamelCase(s string) string {
 	return strings.ToLower(string(pascal[0])) + pascal[1:]
 }
 
+func pluralize(name string) string {
+	lower := strings.ToLower(name)
+	if strings.HasSuffix(lower, "s") || strings.HasSuffix(lower, "x") || strings.HasSuffix(lower, "z") ||
+		strings.HasSuffix(lower, "ch") || strings.HasSuffix(lower, "sh") {
+		return lower + "es"
+	}
+	if strings.HasSuffix(lower, "y") && len(lower) > 1 {
+		prev := lower[len(lower)-2]
+		if prev != 'a' && prev != 'e' && prev != 'i' && prev != 'o' && prev != 'u' {
+			return lower[:len(lower)-1] + "ies"
+		}
+	}
+	return lower + "s"
+}
+
+func enumConst(value string) string {
+	var cleaned strings.Builder
+	for _, r := range value {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') {
+			cleaned.WriteRune(r)
+		} else {
+			cleaned.WriteByte('_')
+		}
+	}
+
+	normalized := strings.Trim(cleaned.String(), "_")
+	if normalized == "" {
+		return "Value"
+	}
+
+	normalized = strings.ToLower(normalized)
+	result := toPascalCase(normalized)
+	if len(result) > 0 && result[0] >= '0' && result[0] <= '9' {
+		return "Value" + result
+	}
+	return result
+}
+
 // TemplateData holds all data for template generation
 type TemplateData struct {
 	PackageName string
@@ -206,6 +251,9 @@ type TemplateData struct {
 	Fields      []Field
 	HasTime     bool
 	HasEnums    bool
+	ModulePath  string
+	TableName   string
+	RouteBase   string
 }
 
 func generateDomain(name string, fieldsStr string) {
@@ -213,8 +261,14 @@ func generateDomain(name string, fieldsStr string) {
 	entityName := toPascalCase(name)
 	packageName := strings.ToLower(name)
 
+	layout, err := ResolveProjectLayout()
+	if err != nil {
+		fmt.Printf("❌ %v\n", err)
+		return
+	}
+
 	// Parse fields
-	fields := parseFields(fieldsStr, entityName)
+	fields := parseFields(fieldsStr, entityName, packageName)
 
 	// Check for special types
 	hasTime := false
@@ -228,11 +282,15 @@ func generateDomain(name string, fieldsStr string) {
 		}
 	}
 
-	// Determine base paths
-	baseDir := findPath("application/internal/domain")
-	infraDir := findPath("application/internal/infrastructure/persistence")
-	appDir := findPath("application/internal/application")
-	interfacesDir := findPath("application/internal/interfaces/http")
+	tableName := tableNameFlag
+	if tableName == "" {
+		tableName = pluralize(packageName)
+	}
+
+	routeBase := routeBaseFlag
+	if routeBase == "" {
+		routeBase = pluralize(packageName)
+	}
 
 	data := TemplateData{
 		PackageName: packageName,
@@ -240,11 +298,14 @@ func generateDomain(name string, fieldsStr string) {
 		Fields:      fields,
 		HasTime:     hasTime,
 		HasEnums:    hasEnums,
+		ModulePath:  layout.ModulePath,
+		TableName:   tableName,
+		RouteBase:   routeBase,
 	}
 
 	// === Domain Layer ===
 	fmt.Println("📦 Domain Layer")
-	domainDir := filepath.Join(baseDir, packageName)
+	domainDir := filepath.Join(layout.DomainDir, packageName)
 	_ = os.MkdirAll(domainDir, 0755)
 
 	generateFileWithData(filepath.Join(domainDir, packageName+".go"), entityTemplateV2, data)
@@ -253,12 +314,12 @@ func generateDomain(name string, fieldsStr string) {
 
 	// === Infrastructure Layer ===
 	fmt.Println("\n🔧 Infrastructure Layer")
-	_ = os.MkdirAll(infraDir, 0755)
-	generateFileWithData(filepath.Join(infraDir, packageName+"_repo.go"), repoImplTemplateV2, data)
+	_ = os.MkdirAll(layout.InfraDir, 0755)
+	generateFileWithData(filepath.Join(layout.InfraDir, packageName+"_repo.go"), repoImplTemplateV2, data)
 
 	// === Application Layer ===
 	fmt.Println("\n⚙️ Application Layer")
-	appModuleDir := filepath.Join(appDir, packageName)
+	appModuleDir := filepath.Join(layout.AppDir, packageName)
 	_ = os.MkdirAll(appModuleDir, 0755)
 
 	generateFileWithData(filepath.Join(appModuleDir, "commands.go"), commandsTemplateV2, data)
@@ -267,8 +328,15 @@ func generateDomain(name string, fieldsStr string) {
 
 	// === Interfaces Layer (HTTP) ===
 	fmt.Println("\n🌐 Interfaces Layer")
-	_ = os.MkdirAll(interfacesDir, 0755)
-	generateFileWithData(filepath.Join(interfacesDir, packageName+"_handler.go"), handlerTemplateV2, data)
+	_ = os.MkdirAll(layout.InterfacesDir, 0755)
+
+	// Generate helpers.go if it doesn't exist
+	helpersPath := filepath.Join(layout.InterfacesDir, "helpers.go")
+	if _, err := os.Stat(helpersPath); os.IsNotExist(err) {
+		generateFileWithData(helpersPath, helpersTemplate, data)
+	}
+
+	generateFileWithData(filepath.Join(layout.InterfacesDir, packageName+"_handler.go"), handlerTemplateV2, data)
 
 	// === Fx Module ===
 	fmt.Println("\n📌 Fx Module")
@@ -279,8 +347,8 @@ func generateDomain(name string, fieldsStr string) {
 	fmt.Println("✅ Domain generation complete!")
 	fmt.Printf("   📁 Domain:      %s\n", domainDir)
 	fmt.Printf("   📁 Application: %s\n", appModuleDir)
-	fmt.Printf("   📁 Persistence: %s\n", infraDir)
-	fmt.Printf("   📁 HTTP:        %s\n", interfacesDir)
+	fmt.Printf("   📁 Persistence: %s\n", layout.InfraDir)
+	fmt.Printf("   📁 HTTP:        %s\n", layout.InterfacesDir)
 	fmt.Println(strings.Repeat("─", 50))
 
 	// Print fields info
@@ -299,16 +367,6 @@ func generateDomain(name string, fieldsStr string) {
 	fmt.Println("   1. Review generated code")
 	fmt.Println("   2. Import module in main.go:")
 	fmt.Printf("      %sapp.Module,\n", packageName)
-}
-
-func findPath(relative string) string {
-	// Try from tools/generator
-	path := "../../" + relative
-	if _, err := os.Stat(path); err == nil {
-		return path
-	}
-	// Try from project root
-	return relative
 }
 
 // generateFileWithData creates a file from template with TemplateData
@@ -331,9 +389,10 @@ func generateFileWithData(path string, tmpl string, data TemplateData) {
 
 	// Create template with helper functions
 	funcMap := template.FuncMap{
-		"title": strings.Title,
-		"lower": strings.ToLower,
-		"upper": strings.ToUpper,
+		"title":     strings.Title,
+		"lower":     strings.ToLower,
+		"upper":     strings.ToUpper,
+		"enumConst": enumConst,
 	}
 
 	t := template.Must(template.New("file").Funcs(funcMap).Parse(tmpl))
@@ -376,7 +435,7 @@ type {{.EnumType}} string
 const (
 {{- $enumType := .EnumType}}
 {{- range $i, $v := .EnumValues}}
-	{{$enumType}}{{$v | title}} {{$enumType}} = "{{$v}}"
+	{{$enumType}}{{$v | enumConst}} {{$enumType}} = "{{$v}}"
 {{- end}}
 )
 {{- end}}
@@ -395,7 +454,7 @@ type {{.EntityName}} struct {
 
 // TableName returns the table name for GORM.
 func ({{.EntityName}}) TableName() string {
-	return "{{.PackageName}}s"
+	return "{{.TableName}}"
 }
 
 // New{{.EntityName}} creates a new {{.EntityName}}.
@@ -411,9 +470,17 @@ func New{{.EntityName}}(id string{{range .Fields}}, {{.CamelName}} {{.GoType}}{{
 }
 
 // Update updates the entity fields.
-func (e *{{.EntityName}}) Update({{range $i, $f := .Fields}}{{if $i}}, {{end}}{{$f.CamelName}} {{$f.GoType}}{{end}}) {
+func (e *{{.EntityName}}) Update({{range $i, $f := .Fields}}{{if $i}}, {{end}}{{$f.CamelName}} {{if $f.IsEnum}}*{{$f.GoType}}{{else if $f.IsPointer}}{{$f.GoType}}{{else}}*{{$f.GoType}}{{end}}{{end}}) {
 {{- range .Fields}}
-	e.{{.Name}} = {{.CamelName}}
+{{- if .IsPointer}}
+	if {{.CamelName}} != nil {
+		e.{{.Name}} = {{.CamelName}}
+	}
+{{- else}}
+	if {{.CamelName}} != nil {
+		e.{{.Name}} = *{{.CamelName}}
+	}
+{{- end}}
 {{- end}}
 	e.AddDomainEvent(New{{.EntityName}}UpdatedEvent(string(e.ID)))
 }
@@ -516,7 +583,7 @@ func init() {
 const repoImplTemplateV2 = `package persistence
 
 import (
-	"github.com/soliton-go/application/internal/domain/{{.PackageName}}"
+	"{{.ModulePath}}/internal/domain/{{.PackageName}}"
 	"github.com/soliton-go/framework/orm"
 	"gorm.io/gorm"
 )
@@ -547,7 +614,7 @@ import (
 	"time"
 {{- end}}
 
-	"github.com/soliton-go/application/internal/domain/{{.PackageName}}"
+	"{{.ModulePath}}/internal/domain/{{.PackageName}}"
 )
 
 // Create{{.EntityName}}Command is the command for creating a {{.EntityName}}.
@@ -561,6 +628,8 @@ type Create{{.EntityName}}Command struct {
 // Create{{.EntityName}}Handler handles Create{{.EntityName}}Command.
 type Create{{.EntityName}}Handler struct {
 	repo {{.PackageName}}.{{.EntityName}}Repository
+	// Optional: Add event bus for domain event publishing
+	// eventBus event.EventBus
 }
 
 func NewCreate{{.EntityName}}Handler(repo {{.PackageName}}.{{.EntityName}}Repository) *Create{{.EntityName}}Handler {
@@ -572,6 +641,17 @@ func (h *Create{{.EntityName}}Handler) Handle(ctx context.Context, cmd Create{{.
 	if err := h.repo.Save(ctx, entity); err != nil {
 		return nil, err
 	}
+
+	// Optional: Publish domain events
+	// Uncomment to enable event publishing:
+	// events := entity.DomainEvents()
+	// if len(events) > 0 {
+	//     if err := h.eventBus.Publish(ctx, events...); err != nil {
+	//         return nil, err
+	//     }
+	//     entity.ClearDomainEvents()
+	// }
+
 	return entity, nil
 }
 
@@ -579,7 +659,7 @@ func (h *Create{{.EntityName}}Handler) Handle(ctx context.Context, cmd Create{{.
 type Update{{.EntityName}}Command struct {
 	ID string
 {{- range .Fields}}
-	{{.Name}} {{.AppGoType}}
+	{{.Name}} {{if .IsEnum}}*{{.AppGoType}}{{else if .IsPointer}}{{.AppGoType}}{{else}}*{{.AppGoType}}{{end}}
 {{- end}}
 }
 
@@ -628,7 +708,7 @@ const queriesTemplateV2 = `package {{.PackageName}}app
 import (
 	"context"
 
-	"github.com/soliton-go/application/internal/domain/{{.PackageName}}"
+	"{{.ModulePath}}/internal/domain/{{.PackageName}}"
 )
 
 // Get{{.EntityName}}Query is the query for getting a single {{.EntityName}}.
@@ -671,7 +751,7 @@ const dtoTemplateV2 = `package {{.PackageName}}app
 import (
 	"time"
 
-	"github.com/soliton-go/application/internal/domain/{{.PackageName}}"
+	"{{.ModulePath}}/internal/domain/{{.PackageName}}"
 )
 
 // Create{{.EntityName}}Request is the request body for creating a {{.EntityName}}.
@@ -684,7 +764,7 @@ type Create{{.EntityName}}Request struct {
 // Update{{.EntityName}}Request is the request body for updating a {{.EntityName}}.
 type Update{{.EntityName}}Request struct {
 {{- range .Fields}}
-	{{.Name}} {{if .IsEnum}}string{{else}}{{.AppGoType}}{{end}} {{.JsonTag}}
+	{{.Name}} {{if .IsEnum}}*string{{else if .IsPointer}}{{.AppGoType}}{{else}}*{{.AppGoType}}{{end}} ` + "`json:\"{{.SnakeName}},omitempty\"`" + `
 {{- end}}
 }
 
@@ -720,15 +800,28 @@ func To{{.EntityName}}ResponseList(entities []*{{.PackageName}}.{{.EntityName}})
 }
 `
 
+const helpersTemplate = `package http
+
+// enumPtr is a helper function to convert *string to *T for enum types.
+// This is useful for handling optional enum fields in update requests.
+func EnumPtr[T any](v *string, parse func(string) T) *T {
+	if v == nil {
+		return nil
+	}
+	parsed := parse(*v)
+	return &parsed
+}
+`
+
 const handlerTemplateV2 = `package http
 
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	{{.PackageName}}app "github.com/soliton-go/application/internal/application/{{.PackageName}}"
+	{{.PackageName}}app "{{.ModulePath}}/internal/application/{{.PackageName}}"
 {{- if .HasEnums}}
-	"github.com/soliton-go/application/internal/domain/{{.PackageName}}"
+	"{{.ModulePath}}/internal/domain/{{.PackageName}}"
 {{- end}}
 )
 
@@ -760,12 +853,13 @@ func New{{.EntityName}}Handler(
 
 // RegisterRoutes registers {{.EntityName}} routes.
 func (h *{{.EntityName}}Handler) RegisterRoutes(r *gin.Engine) {
-	api := r.Group("/api/{{.PackageName}}s")
+	api := r.Group("/api/{{.RouteBase}}")
 	{
 		api.POST("", h.Create)
 		api.GET("", h.List)
 		api.GET("/:id", h.Get)
 		api.PUT("/:id", h.Update)
+		api.PATCH("/:id", h.Update)
 		api.DELETE("/:id", h.Delete)
 	}
 }
@@ -831,7 +925,11 @@ func (h *{{.EntityName}}Handler) Update(c *gin.Context) {
 	cmd := {{.PackageName}}app.Update{{.EntityName}}Command{
 		ID: id,
 {{- range .Fields}}
-		{{.Name}}: {{if .IsEnum}}{{$.PackageName}}.{{.EnumType}}(req.{{.Name}}){{else}}req.{{.Name}}{{end}},
+	{{- if .IsEnum}}
+		{{.Name}}: EnumPtr(req.{{.Name}}, func(v string) {{.AppGoType}} { return {{$.PackageName}}.{{.EnumType}}(v) }),
+	{{- else}}
+		{{.Name}}: req.{{.Name}},
+	{{- end}}
 {{- end}}
 	}
 
@@ -863,8 +961,8 @@ const fxModuleTemplateV2 = `package {{.PackageName}}app
 import (
 	"go.uber.org/fx"
 
-	"github.com/soliton-go/application/internal/domain/{{.PackageName}}"
-	"github.com/soliton-go/application/internal/infrastructure/persistence"
+	"{{.ModulePath}}/internal/domain/{{.PackageName}}"
+	"{{.ModulePath}}/internal/infrastructure/persistence"
 	"gorm.io/gorm"
 )
 
@@ -883,6 +981,21 @@ var Module = fx.Options(
 	// Query Handlers
 	fx.Provide(NewGet{{.EntityName}}Handler),
 	fx.Provide(NewList{{.EntityName}}sHandler),
+
+	// Optional: Register with CQRS bus
+	// Uncomment to enable CQRS pattern:
+	// fx.Invoke(func(cmdBus *cqrs.InMemoryCommandBus, queryBus *cqrs.InMemoryQueryBus,
+	//     createHandler *Create{{.EntityName}}Handler,
+	//     updateHandler *Update{{.EntityName}}Handler,
+	//     deleteHandler *Delete{{.EntityName}}Handler,
+	//     getHandler *Get{{.EntityName}}Handler,
+	//     listHandler *List{{.EntityName}}sHandler) {
+	//     cmdBus.Register(Create{{.EntityName}}Command{}, createHandler.Handle)
+	//     cmdBus.Register(Update{{.EntityName}}Command{}, updateHandler.Handle)
+	//     cmdBus.Register(Delete{{.EntityName}}Command{}, deleteHandler.Handle)
+	//     queryBus.Register(Get{{.EntityName}}Query{}, getHandler.Handle)
+	//     queryBus.Register(List{{.EntityName}}sQuery{}, listHandler.Handle)
+	// }),
 )
 
 // RegisterMigration registers the {{.EntityName}} table migration.
