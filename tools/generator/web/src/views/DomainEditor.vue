@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { api, type FieldConfig, type DomainConfig, type GenerationResult, type FieldType, type DomainListItem, type FieldDetail } from '../api'
+import { ref, onMounted, computed } from 'vue'
+import { api, type DomainConfig, type GenerationResult, type DomainListItem, type FieldConfig, type FieldType, type FieldDetail } from '../api'
+import { showSuccess } from '../toast'
 
 const loading = ref(false)
 const result = ref<GenerationResult | null>(null)
@@ -11,6 +12,7 @@ const domains = ref<DomainListItem[]>([])
 const activeTab = ref<'new' | 'existing'>('new')
 const loadingDomains = ref(false)
 const editingDomain = ref<string | null>(null)
+const searchQuery = ref('')
 
 const config = ref<DomainConfig>({
   name: '',
@@ -20,6 +22,17 @@ const config = ref<DomainConfig>({
   soft_delete: false,
   wire: true,
   force: false,
+})
+
+const filteredDomains = computed(() => {
+  if (!domains.value || !searchQuery.value.trim()) {
+    return domains.value || []
+  }
+  const query = searchQuery.value.toLowerCase()
+  return domains.value.filter(domain => 
+    domain.name.toLowerCase().includes(query) ||
+    domain.fields.some(field => field.toLowerCase().includes(query))
+  )
 })
 
 onMounted(async () =>{
@@ -41,6 +54,21 @@ async function loadDomains() {
     console.error('Failed to load domains:', e)
   } finally {
     loadingDomains.value = false
+  }
+}
+
+async function deleteDomain(domainName: string, event: Event) {
+  event.stopPropagation() // 防止触发卡片点击
+  
+  if (!confirm(`确定要删除领域模块 "${domainName}" 吗？\n\n这将删除整个目录及其所有文件，此操作不可恢复！`)) {
+    return
+  }
+
+  try {
+    await api.deleteDomain(domainName)
+    await loadDomains() // 刷新列表
+  } catch (e: any) {
+    alert(`删除失败: ${e.message}`)
   }
 }
 
@@ -132,7 +160,7 @@ async function generate() {
   error.value = ''
   loading.value = true
   try {
-    const validFields = config.value.fields.filter(f => f.name.trim())
+    const validFields = config.value.fields.filter(f => f.name && f.type)
     result.value = await api.generateDomain({
       ...config.value,
       fields: validFields,
@@ -140,6 +168,11 @@ async function generate() {
     showPreview.value = true
     // Reload domains list
     await loadDomains()
+    
+    // 显示成功提示
+    if (result.value.success) {
+      showSuccess(result.value.message || '生成成功！')
+    }
   } catch (e: any) {
     error.value = e.message
   } finally {
@@ -191,33 +224,56 @@ function getStatusText(status: string): string {
         :class="{ active: activeTab === 'existing' }"
         @click="activeTab = 'existing'"
       >
-        📋 已生成模块 ({{ domains.length }})
+        📋 已生成模块 ({{ domains?.length || 0 }})
       </button>
     </div>
 
     <!-- Existing Domains List -->
     <div v-if="activeTab === 'existing'" class="domains-list">
+      <!-- Search Box -->
+      <div class="search-box">
+        <input 
+          v-model="searchQuery" 
+          type="text" 
+          placeholder="🔍 搜索领域模块或字段..."
+          class="search-input"
+        />
+        <span v-if="searchQuery" class="search-clear" @click="searchQuery = ''">✕</span>
+      </div>
+
       <div v-if="loadingDomains" class="loading">加载中...</div>
-      <div v-else-if="domains.length === 0" class="empty">
+      <div v-else-if="filteredDomains.length === 0 && !searchQuery" class="empty">
         <p>暂无已生成的领域模块</p>
         <p class="hint">点击"新建模块"开始创建</p>
       </div>
+      <div v-else-if="filteredDomains.length === 0 && searchQuery" class="empty">
+        <p>未找到匹配的模块</p>
+        <p class="hint">尝试其他关键词</p>
+      </div>
       <div v-else class="domain-grid">
         <div 
-          v-for="domain in domains" 
+          v-for="domain in filteredDomains" 
           :key="domain.name"
           class="domain-card"
           @click="loadDomain(domain.name)"
         >
           <div class="domain-header">
             <h3>{{ domain.name }}</h3>
-            <span class="badge">{{ domain.fields.length }} 字段</span>
+            <div class="header-actions">
+              <span class="badge">{{ domain.fields?.length || 0 }} 字段</span>
+              <button 
+                class="btn-delete" 
+                @click="deleteDomain(domain.name, $event)"
+                title="删除模块"
+              >
+                🗑️
+              </button>
+            </div>
           </div>
           <div class="domain-fields">
-            <span v-for="(field, idx) in domain.fields.slice(0, 5)" :key="idx" class="field-tag">
+            <span v-for="(field, idx) in domain.fields" :key="idx" class="field-tag">
               {{ field }}
             </span>
-            <span v-if="domain.fields.length > 5" class="more">+{{ domain.fields.length - 5 }}</span>
           </div>
           <div class="domain-action">
             点击编辑 →
@@ -309,6 +365,10 @@ function getStatusText(status: string): string {
               <input type="checkbox" v-model="config.force" />
               强制覆盖 Force
             </label>
+            <div v-if="config.force" class="force-warning">
+              ⚠️ <strong>警告：</strong>强制覆盖将<strong>永久删除</strong>所有手动修改的代码！<br>
+              只在首次生成后立即修改字段时使用。一旦开始写业务逻辑，请勿勾选此选项。
+            </div>
           </div>
         </div>
 
@@ -404,6 +464,43 @@ h1 {
   min-height: 400px;
 }
 
+.search-box {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 12px 40px 12px 16px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.search-clear {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 18px;
+  padding: 4px 8px;
+  transition: color 0.2s;
+}
+
+.search-clear:hover {
+  color: var(--error);
+}
+
 .loading, .empty {
   text-align: center;
   padding: 60px 20px;
@@ -446,6 +543,29 @@ h1 {
 .domain-header h3 {
   margin: 0;
   font-size: 1.2rem;
+  flex: 1;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-delete {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  opacity: 0.6;
+}
+
+.btn-delete:hover {
+  opacity: 1;
+  background: rgba(239, 68, 68, 0.1);
 }
 
 .badge {
@@ -461,7 +581,27 @@ h1 {
   flex-wrap: wrap;
   gap: 6px;
   margin-bottom: 12px;
-  min-height: 28px;
+  max-height: 120px;
+  overflow-y: auto;
+  padding: 2px;
+}
+
+.domain-fields::-webkit-scrollbar {
+  width: 6px;
+}
+
+.domain-fields::-webkit-scrollbar-track {
+  background: var(--bg-input);
+  border-radius: 3px;
+}
+
+.domain-fields::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+.domain-fields::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
 }
 
 .field-tag {

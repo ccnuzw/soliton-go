@@ -1,17 +1,112 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { api, type ServiceConfig, type GenerationResult } from '../api'
+import { ref, onMounted, computed, watch } from 'vue'
+import { api, type ServiceConfig, type GenerationResult, type ServiceListItem, type ServiceDetectionResult } from '../api'
+import { showSuccess } from '../toast'
 
 const loading = ref(false)
 const result = ref<GenerationResult | null>(null)
 const error = ref('')
 const showPreview = ref(false)
+const services = ref<ServiceListItem[]>([])
+const activeTab = ref<'new' | 'existing'>('new')
+const loadingServices = ref(false)
+const editingService = ref<string | null>(null)
+const searchQuery = ref('')
+const detectionResult = ref<ServiceDetectionResult | null>(null)
+const showDetection = ref(false)
+const manualMode = ref(false)
 
 const config = ref<ServiceConfig>({
   name: '',
   methods: [''],
-  force: false,
+  force: false,  // 默认不勾选
 })
+
+const filteredServices = computed(() => {
+  if (!services.value || !searchQuery.value.trim()) {
+    return services.value || []
+  }
+  const query = searchQuery.value.toLowerCase()
+  return services.value.filter(service => 
+    service.name.toLowerCase().includes(query) ||
+    service.methods.some(method => method.toLowerCase().includes(query))
+  )
+})
+
+onMounted(async () => {
+  await loadServices()
+})
+
+async function loadServices() {
+  loadingServices.value = true
+  try {
+    const res = await api.listServices()
+    services.value = res.services
+  } catch (e) {
+    console.error('Failed to load services:', e)
+  } finally {
+    loadingServices.value = false
+  }
+}
+
+async function deleteService(serviceName: string, event: Event) {
+  event.stopPropagation() // 防止触发卡片点击
+  
+  if (!confirm(`确定要删除应用服务 "${serviceName}" 吗？\n\n这将删除服务文件，此操作不可恢复！`)) {
+    return
+  }
+
+  try {
+    await api.deleteService(serviceName)
+    await loadServices() // 刷新列表
+  } catch (e: any) {
+    alert(`删除失败: ${e.message}`)
+  }
+}
+
+async function detectServiceType() {
+  if (!config.value.name || config.value.name.trim() === '') {
+    showDetection.value = false
+    return
+  }
+  
+  try {
+    const result = await api.detectServiceType(config.value.name)
+    detectionResult.value = result
+    showDetection.value = true
+  } catch (e) {
+    console.error('检测失败:', e)
+    showDetection.value = false
+  }
+}
+
+// Watch service name changes for auto-detection
+let detectTimeout: number | null = null
+watch(() => config.value.name, () => {
+  if (detectTimeout) clearTimeout(detectTimeout)
+  detectTimeout = setTimeout(detectServiceType, 500) as unknown as number
+})
+
+async function loadService(serviceName: string) {
+  loading.value = true
+  error.value = ''
+  try {
+    const detail = await api.getServiceDetail(serviceName)
+    
+    config.value = {
+      name: detail.name,
+      methods: detail.methods.map(m => m.name),
+      force: true, // Auto-enable force when editing
+    }
+
+    editingService.value = serviceName
+    activeTab.value = 'new' // Switch to editor tab
+  } catch (e: any) {
+    error.value = `加载失败: ${e.message}`
+  } finally {
+    loading.value = false
+  }
+}
 
 function addMethod() {
   config.value.methods.push('')
@@ -50,6 +145,12 @@ async function generate() {
       methods: validMethods,
     })
     showPreview.value = true
+    await loadServices()
+    
+    // 显示成功提示
+    if (result.value.success) {
+      showSuccess(result.value.message || '生成成功！')
+    }
   } catch (e: any) {
     error.value = e.message
   } finally {
@@ -58,9 +159,14 @@ async function generate() {
 }
 
 function reset() {
-  config.value = { name: '', methods: [''], force: false }
+  config.value = {
+    name: '',
+    methods: [''],
+    force: false,
+  }
   result.value = null
   showPreview.value = false
+  editingService.value = null
 }
 
 function getStatusText(status: string): string {
@@ -78,7 +184,87 @@ function getStatusText(status: string): string {
   <div class="editor">
     <h1>⚙️ 生成应用服务 Service</h1>
 
-    <div class="layout">
+    <!-- Tabs -->
+    <div class="tabs">
+      <button 
+        class="tab" 
+        :class="{ active: activeTab === 'new' }"
+        @click="activeTab = 'new'"
+      >
+        ✨ 新建服务
+      </button>
+      <button 
+        class="tab" 
+        :class="{ active: activeTab === 'existing' }"
+        @click="activeTab = 'existing'"
+      >
+        📋 已生成服务 ({{ services?.length || 0 }})
+      </button>
+    </div>
+
+    <!-- Existing Services List -->
+    <div v-if="activeTab === 'existing'" class="services-list">
+      <!-- Search Box -->
+      <div class="search-box">
+        <input 
+          v-model="searchQuery" 
+          type="text" 
+          placeholder="🔍 搜索应用服务或方法..."
+          class="search-input"
+        />
+        <span v-if="searchQuery" class="search-clear" @click="searchQuery = ''">✕</span>
+      </div>
+
+      <div v-if="loadingServices" class="loading">加载中...</div>
+      <div v-else-if="filteredServices.length === 0 && !searchQuery" class="empty">
+        <p>暂无已生成的应用服务</p>
+        <p class="hint">点击"新建服务"开始创建</p>
+      </div>
+      <div v-else-if="filteredServices.length === 0 && searchQuery" class="empty">
+        <p>未找到匹配的服务</p>
+        <p class="hint">尝试其他关键词</p>
+      </div>
+      <div v-else class="service-grid">
+        <div 
+          v-for="service in filteredServices" 
+          :key="service.name"
+          class="service-card"
+          @click="loadService(service.name)"
+        >
+          <div class="service-header">
+            <h3>{{ service.name }}</h3>
+            <div class="header-actions">
+              <span class="badge">{{ service.methods?.length || 0 }} 方法</span>
+              <button 
+                class="btn-delete" 
+                @click="deleteService(service.name, $event)"
+                title="删除服务"
+              >
+                🗑️
+              </button>
+            </div>
+          </div>
+          <div class="service-methods">
+            <span v-for="(method, idx) in service.methods" :key="idx" class="method-tag">
+              {{ method }}
+            </span>
+          </div>
+          <div class="service-action">
+            点击编辑 →
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Editor (New/Edit) -->
+    <div v-if="activeTab === 'new'">
+      <!-- Editing indicator -->
+      <div v-if="editingService" class="editing-banner">
+        ✏️ 正在编辑: <strong>{{ editingService }}</strong>
+        <button class="btn-small" @click="reset">取消编辑</button>
+      </div>
+
+      <div class="layout">
       <!-- Left: Form -->
       <div class="form-panel">
         <!-- Usage Guide -->
@@ -99,6 +285,36 @@ function getStatusText(status: string): string {
           </label>
           <input v-model="config.name" placeholder="OrderService / PaymentService" />
           <span class="hint">如果未包含 "Service" 后缀会自动添加</span>
+        </div>
+
+        <!-- Detection Result -->
+        <div v-if="showDetection && detectionResult" class="detection-result">
+          <div class="detection-header">
+            <div class="detection-icon">
+              {{ detectionResult.domain_exists ? '✅' : 'ℹ️' }}
+            </div>
+            <div class="detection-content">
+              <p class="detection-message">{{ detectionResult.message }}</p>
+              <div class="detection-details">
+                <span class="detail-item">
+                  <strong>类型:</strong> {{ detectionResult.service_type === 'domain_service' ? '领域服务' : '跨领域服务' }}
+                </span>
+                <span class="detail-item">
+                  <strong>目标:</strong> {{ detectionResult.target_dir }}
+                </span>
+                <span v-if="detectionResult.should_reuse_dto" class="detail-item highlight">
+                  ✅ 复用现有 DTO
+                </span>
+              </div>
+            </div>
+            <button 
+              class="btn-toggle-manual" 
+              @click="manualMode = !manualMode"
+              type="button"
+            >
+              {{ manualMode ? '🔄 自动' : '⚙️ 手动' }}
+            </button>
+          </div>
         </div>
 
         <div class="methods-section">
@@ -125,6 +341,10 @@ function getStatusText(status: string): string {
               <input type="checkbox" v-model="config.force" />
               强制覆盖 Force
             </label>
+            <div v-if="config.force" class="force-warning">
+              ⚠️ <strong>警告：</strong>强制覆盖将<strong>永久删除</strong>所有手动修改的代码！<br>
+              只在首次生成后立即修改时使用。一旦开始写业务逻辑，请勿勾选此选项。
+            </div>
           </div>
         </div>
 
@@ -169,8 +389,9 @@ function getStatusText(status: string): string {
           生成另一个
         </button>
       </div>
-    </div>
-  </div>
+      </div> <!-- end layout -->
+    </div> <!-- end activeTab === 'new' -->
+  </div> <!-- end editor -->
 </template>
 
 <style scoped>
@@ -182,6 +403,303 @@ function getStatusText(status: string): string {
 
 h1 {
   margin-bottom: 24px;
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  border-bottom: 2px solid var(--border);
+}
+
+.tab {
+  padding: 12px 24px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.2s;
+  margin-bottom: -2px;
+}
+
+.tab:hover {
+  color: var(--text);
+}
+
+.tab.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+
+.services-list {
+  min-height: 400px;
+}
+
+.search-box {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 12px 40px 12px 16px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.search-clear {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 18px;
+  padding: 4px 8px;
+  transition: color 0.2s;
+}
+
+.search-clear:hover {
+  color: var(--error);
+}
+
+.loading, .empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-muted);
+}
+
+.empty .hint {
+  margin-top: 8px;
+  font-size: 0.9rem;
+}
+
+.service-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.service-card {
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.service-card:hover {
+  border-color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+}
+
+.service-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.service-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  flex: 1;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-delete {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  opacity: 0.6;
+}
+
+.btn-delete:hover {
+  opacity: 1;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.badge {
+  padding: 4px 8px;
+  background: rgba(99, 102, 241, 0.2);
+  color: var(--primary);
+  border-radius: 4px;
+  font-size: 0.75rem;
+}
+
+.service-methods {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+  max-height: 120px;
+  overflow-y: auto;
+  padding: 2px;
+}
+
+.service-methods::-webkit-scrollbar {
+  width: 6px;
+}
+
+.service-methods::-webkit-scrollbar-track {
+  background: var(--bg-input);
+  border-radius: 3px;
+}
+
+.service-methods::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+.service-methods::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+}
+
+.method-tag {
+  padding: 2px 8px;
+  background: var(--bg-input);
+  border-radius: 4px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.more {
+  padding: 2px 8px;
+  color: var(--primary);
+  font-size: 0.8rem;
+}
+
+.service-action {
+  color: var(--primary);
+  font-size: 0.9rem;
+  text-align: right;
+}
+
+.editing-banner {
+  background: rgba(245, 158, 11, 0.2);
+  border: 1px solid var(--warning);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.detection-result {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);
+  border: 2px solid rgba(99, 102, 241, 0.3);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.detection-header {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.detection-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.detection-content {
+  flex: 1;
+}
+
+.detection-message {
+  margin: 0 0 12px 0;
+  font-size: 1rem;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.detection-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.detail-item {
+  padding: 4px 12px;
+  background: var(--bg-input);
+  border-radius: 6px;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.detail-item strong {
+  color: var(--text);
+}
+
+.detail-item.highlight {
+  background: rgba(34, 197, 94, 0.2);
+  color: var(--success, #22c55e);
+  font-weight: 500;
+}
+
+.btn-toggle-manual {
+  padding: 8px 16px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-toggle-manual:hover {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.btn-small {
+  padding: 6px 12px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.9rem;
 }
 
 .layout {

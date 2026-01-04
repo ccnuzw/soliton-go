@@ -4,7 +4,8 @@ package core
 // SERVICE TEMPLATES
 // ============================================================================
 
-const ServiceTemplate = `package services
+// ServiceTemplate is the template for generating a service file.
+const ServiceTemplate = `package {{.PackageName}}
 
 import (
 	"context"

@@ -85,6 +85,32 @@ export interface DomainDetail {
   }
 }
 
+export interface ServiceListItem {
+  name: string
+  methods: string[]
+}
+
+export interface ServiceMethodDetail {
+  name: string
+  camel_name: string
+}
+
+export interface ServiceDetail {
+  name: string
+  methods: ServiceMethodDetail[]
+}
+
+export interface ServiceDetectionResult {
+  service_name: string
+  domain_name: string
+  domain_exists: boolean
+  service_type: 'domain_service' | 'cross_domain_service'
+  target_dir: string
+  should_reuse_dto: boolean
+  existing_dto_path?: string
+  message: string
+}
+
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE}${url}`, {
     headers: {
@@ -92,12 +118,12 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
     },
     ...options,
   })
-  
+
   if (!response.ok) {
     const error = await response.json()
     throw new Error(error.error || 'Request failed')
   }
-  
+
   return response.json()
 }
 
@@ -134,6 +160,11 @@ export const api = {
   getDomainDetail: (name: string) =>
     request<DomainDetail>(`/domains/${name}`),
 
+  deleteDomain: (name: string) =>
+    request<{ success: boolean; message: string }>(`/domains/${name}`, {
+      method: 'DELETE',
+    }),
+
   getFieldTypes: () =>
     request<{ types: FieldType[] }>('/field-types'),
 
@@ -148,6 +179,20 @@ export const api = {
     request<GenerationResult>('/services/preview', {
       method: 'POST',
       body: JSON.stringify(config),
+    }),
+
+  listServices: () =>
+    request<{ services: ServiceListItem[] }>('/services/list'),
+
+  detectServiceType: (name: string) =>
+    request<ServiceDetectionResult>(`/services/detect/${name}`),
+
+  getServiceDetail: (name: string) =>
+    request<ServiceDetail>(`/services/${name}`),
+
+  deleteService: (name: string) =>
+    request<{ success: boolean; message: string }>(`/services/${name}`, {
+      method: 'DELETE',
     }),
 
   // Layout

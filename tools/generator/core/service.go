@@ -53,15 +53,46 @@ func generateServiceInternal(cfg ServiceConfig, previewOnly bool) (*GenerationRe
 		ModulePath:  layout.ModulePath,
 	}
 
-	// Determine paths
-	serviceDir := filepath.Join(layout.AppDir, "services")
+	// Auto-detect: check if domain exists
+	domainPath := filepath.Join(layout.DomainDir, packageName)
+	domainExists := IsDir(domainPath)
+
+	// Determine paths based on detection
+	var serviceDir string
+	var serviceFileName string
+	var dtoFileName string
+	var shouldGenerateDTO bool
+
+	if domainExists {
+		// Domain exists -> generate in application/{domain}/
+		serviceDir = filepath.Join(layout.InternalDir, "application", packageName)
+		serviceFileName = "service.go"
+		dtoFileName = "dto.go"
+
+		// Check if DTO already exists
+		dtoPath := filepath.Join(serviceDir, dtoFileName)
+		shouldGenerateDTO = !IsFile(dtoPath)
+
+		// Update package name to match domain application package
+		data.PackageName = packageName + "app"
+	} else {
+		// Domain doesn't exist -> generate in application/{service}/
+		serviceDir = filepath.Join(layout.InternalDir, "application", packageName)
+		serviceFileName = "service.go"
+		dtoFileName = "dto.go"
+		shouldGenerateDTO = true
+
+		// Use service name as package
+		data.PackageName = packageName + "app"
+	}
+
 	if !previewOnly {
 		_ = os.MkdirAll(serviceDir, 0755)
 	}
 
 	// Generate service file
 	serviceFile := generateServiceFile(
-		filepath.Join(serviceDir, packageName+"_service.go"),
+		filepath.Join(serviceDir, serviceFileName),
 		ServiceTemplate,
 		data,
 		cfg.Force,
@@ -69,22 +100,24 @@ func generateServiceInternal(cfg ServiceConfig, previewOnly bool) (*GenerationRe
 	)
 	result.Files = append(result.Files, serviceFile)
 
-	// Generate DTO file
-	dtoFile := generateServiceFile(
-		filepath.Join(serviceDir, packageName+"_dto.go"),
-		ServiceDTOTemplate,
-		data,
-		cfg.Force,
-		previewOnly,
-	)
-	result.Files = append(result.Files, dtoFile)
+	// Generate DTO file (only if needed)
+	if shouldGenerateDTO {
+		dtoFile := generateServiceFile(
+			filepath.Join(serviceDir, dtoFileName),
+			ServiceDTOTemplate,
+			data,
+			cfg.Force,
+			previewOnly,
+		)
+		result.Files = append(result.Files, dtoFile)
+	}
 
 	// Generate or update module.go
 	if !previewOnly {
-		generateOrUpdateServiceModuleGo(filepath.Join(serviceDir, "module.go"), serviceName)
+		generateOrUpdateServiceModuleGo(filepath.Join(serviceDir, "module.go"), serviceName, data.PackageName)
 	}
 
-	result.Message = fmt.Sprintf("Service %s generated successfully", serviceName)
+	result.Message = fmt.Sprintf("Service %s 生成成功", serviceName)
 
 	// Check for errors
 	for _, f := range result.Files {
@@ -160,7 +193,7 @@ func generateServiceFile(path string, tmpl string, data ServiceData, force bool,
 	return genFile
 }
 
-func generateOrUpdateServiceModuleGo(path string, serviceName string) {
+func generateOrUpdateServiceModuleGo(path string, serviceName string, packageName string) {
 	provideCode := fmt.Sprintf("fx.Provide(New%s),", serviceName)
 
 	// Check if file exists
@@ -194,7 +227,7 @@ func generateOrUpdateServiceModuleGo(path string, serviceName string) {
 	}
 
 	// File doesn't exist, create new one with marker
-	newContent := fmt.Sprintf(`package services
+	newContent := fmt.Sprintf(`package %s
 
 import "go.uber.org/fx"
 
@@ -203,7 +236,7 @@ var Module = fx.Options(
 	%s
 	// soliton-gen:services
 )
-`, provideCode)
+`, packageName, provideCode)
 
 	_ = os.WriteFile(path, []byte(newContent), 0644)
 }

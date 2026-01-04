@@ -156,7 +156,7 @@ func generateDomainInternal(cfg DomainConfig, previewOnly bool) (*GenerationResu
 			result.Message = fmt.Sprintf("Domain %s generated (manual wiring required)", entityName)
 		}
 	} else {
-		result.Message = fmt.Sprintf("Domain %s generated successfully", entityName)
+		result.Message = fmt.Sprintf("Domain %s 生成成功", entityName)
 	}
 
 	// Check for errors

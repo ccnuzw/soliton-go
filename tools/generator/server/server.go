@@ -45,11 +45,16 @@ func Start(host string, port int) {
 		api.POST("/domains/preview", handlers.PreviewDomain)
 		api.GET("/domains/list", handlers.ListDomains)
 		api.GET("/domains/:name", handlers.GetDomainDetail)
+		api.DELETE("/domains/:name", handlers.DeleteDomain)
 		api.GET("/field-types", handlers.GetFieldTypes)
 
 		// Service endpoints
 		api.POST("/services", handlers.GenerateService)
 		api.POST("/services/preview", handlers.PreviewService)
+		api.GET("/services/list", handlers.ListServices)
+		api.GET("/services/detect/:name", handlers.DetectServiceType)
+		api.GET("/services/:name", handlers.GetServiceDetail)
+		api.DELETE("/services/:name", handlers.DeleteService)
 
 		// Utility endpoints
 		api.GET("/layout", handlers.GetProjectLayout)

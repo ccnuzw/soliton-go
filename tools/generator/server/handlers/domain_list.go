@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -282,4 +283,38 @@ func toSnakeCase(s string) string {
 		result = append(result, r)
 	}
 	return strings.ToLower(string(result))
+}
+
+// DeleteDomain handles DELETE /api/domains/:name
+func DeleteDomain(c *gin.Context) {
+	domainName := c.Param("name")
+	if domainName == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "domain name is required"})
+		return
+	}
+
+	layout, err := core.ResolveProjectLayout()
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "no project detected"})
+		return
+	}
+
+	// Domain directory path
+	domainDir := filepath.Join(layout.DomainDir, domainName)
+
+	if !core.IsDir(domainDir) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "domain not found"})
+		return
+	}
+
+	// Delete the entire domain directory
+	if err := os.RemoveAll(domainDir); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete domain"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": fmt.Sprintf("Domain %s deleted successfully", domainName),
+	})
 }
