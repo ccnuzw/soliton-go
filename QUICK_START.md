@@ -36,6 +36,13 @@ go build -o soliton-gen .
 ./soliton-gen domain Order --fields "user_id:uuid,order_no,total_amount:int64,status:enum(pending|paid|shipped|completed|cancelled)"
 ```
 
+### 🆕 启用软删除
+
+```bash
+# 使用 --soft-delete 添加 DeletedAt 字段
+./soliton-gen domain User --fields "username,email" --soft-delete --wire
+```
+
 ### 🔄 修改字段后重新生成
 
 ```bash
@@ -136,6 +143,23 @@ GOWORK=off go run ./cmd/main.go
 | User | `/api/users` |
 | Product | `/api/products` |
 | Order | `/api/orders` |
+
+**🆕 分页查询：**
+```bash
+# 获取第1页，每页20条
+curl "http://localhost:8080/api/users?page=1&page_size=20"
+```
+
+响应包含分页信息：
+```json
+{
+  "items": [...],
+  "total": 100,
+  "page": 1,
+  "page_size": 20,
+  "total_pages": 5
+}
+```
 
 ---
 

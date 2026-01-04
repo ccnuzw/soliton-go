@@ -292,6 +292,21 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// Error codes
+const (
+	CodeSuccess      = 0     // Success
+	CodeBadRequest   = 400   // Bad request (validation error)
+	CodeUnauthorized = 401   // Unauthorized
+	CodeForbidden    = 403   // Forbidden
+	CodeNotFound     = 404   // Resource not found
+	CodeInternal     = 500   // Internal server error
+
+	// Business error codes (1000+)
+	CodeValidation   = 1001  // Validation failed
+	CodeDuplicate    = 1002  // Duplicate entry
+	CodeConflict     = 1003  // Business conflict
+)
+
 // Response is the standard API response.
 type Response struct {
 	Code    int         ` + "`json:\"code\"`" + `
@@ -302,7 +317,7 @@ type Response struct {
 // Success returns a successful response.
 func Success(c *gin.Context, data interface{}) {
 	c.JSON(http.StatusOK, Response{
-		Code:    0,
+		Code:    CodeSuccess,
 		Message: "success",
 		Data:    data,
 	})
@@ -311,7 +326,7 @@ func Success(c *gin.Context, data interface{}) {
 // BadRequest returns a 400 error response.
 func BadRequest(c *gin.Context, message string) {
 	c.JSON(http.StatusBadRequest, Response{
-		Code:    400,
+		Code:    CodeBadRequest,
 		Message: message,
 	})
 }
@@ -319,7 +334,7 @@ func BadRequest(c *gin.Context, message string) {
 // NotFound returns a 404 error response.
 func NotFound(c *gin.Context, message string) {
 	c.JSON(http.StatusNotFound, Response{
-		Code:    404,
+		Code:    CodeNotFound,
 		Message: message,
 	})
 }
@@ -327,7 +342,15 @@ func NotFound(c *gin.Context, message string) {
 // InternalError returns a 500 error response.
 func InternalError(c *gin.Context, message string) {
 	c.JSON(http.StatusInternalServerError, Response{
-		Code:    500,
+		Code:    CodeInternal,
+		Message: message,
+	})
+}
+
+// ValidationError returns a validation error response.
+func ValidationError(c *gin.Context, message string) {
+	c.JSON(http.StatusBadRequest, Response{
+		Code:    CodeValidation,
 		Message: message,
 	})
 }
@@ -388,6 +411,9 @@ GOWORK=off go mod tidy
 # Generate domain modules (--wire auto-injects into main.go)
 soliton-gen domain User --fields "username,email,status:enum(active|inactive)" --wire
 
+# Enable soft delete (optional)
+soliton-gen domain User --fields "username,email" --soft-delete --wire
+
 # Run the server
 GOWORK=off go run ./cmd/main.go
 ` + "```" + `
@@ -414,11 +440,30 @@ After generating domains, the following endpoints are available:
 |--------|----------|-------------|
 | GET | /health | Health check |
 | POST | /api/users | Create user |
-| GET | /api/users | List users |
+| GET | /api/users | List users (with pagination) |
 | GET | /api/users/:id | Get user |
 | PUT | /api/users/:id | Update user |
 | PATCH | /api/users/:id | Partial update user |
 | DELETE | /api/users/:id | Delete user |
+
+### Pagination
+
+List endpoints support pagination:
+
+` + "```bash" + `
+curl "http://localhost:8080/api/users?page=1&page_size=20"
+` + "```" + `
+
+Response:
+` + "```json" + `
+{
+  "items": [...],
+  "total": 100,
+  "page": 1,
+  "page_size": 20,
+  "total_pages": 5
+}
+` + "```" + `
 
 > **Note**: If running in a monorepo with go.work, use ` + "`GOWORK=off`" + ` prefix for go commands.
 `

@@ -1,6 +1,8 @@
 package http
 
 import (
+	"strconv"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
@@ -82,15 +84,27 @@ func (h *UserHandler) Get(c *gin.Context) {
 	Success(c, userapp.ToUserResponse(entity))
 }
 
-// List handles GET /api/users
+// List handles GET /api/users?page=1&page_size=20
 func (h *UserHandler) List(c *gin.Context) {
-	entities, err := h.listHandler.Handle(c.Request.Context(), userapp.ListUsersQuery{})
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+
+	result, err := h.listHandler.Handle(c.Request.Context(), userapp.ListUsersQuery{
+		Page:     page,
+		PageSize: pageSize,
+	})
 	if err != nil {
 		InternalError(c, err.Error())
 		return
 	}
 
-	Success(c, userapp.ToUserResponseList(entities))
+	Success(c, gin.H{
+		"items":       userapp.ToUserResponseList(result.Items),
+		"total":       result.Total,
+		"page":        result.Page,
+		"page_size":   result.PageSize,
+		"total_pages": result.TotalPages,
+	})
 }
 
 // Update handles PUT /api/users/:id

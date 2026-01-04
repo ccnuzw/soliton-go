@@ -1,6 +1,8 @@
 package http
 
 import (
+	"strconv"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
@@ -82,15 +84,27 @@ func (h *ProductHandler) Get(c *gin.Context) {
 	Success(c, productapp.ToProductResponse(entity))
 }
 
-// List handles GET /api/products
+// List handles GET /api/products?page=1&page_size=20
 func (h *ProductHandler) List(c *gin.Context) {
-	entities, err := h.listHandler.Handle(c.Request.Context(), productapp.ListProductsQuery{})
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+
+	result, err := h.listHandler.Handle(c.Request.Context(), productapp.ListProductsQuery{
+		Page:     page,
+		PageSize: pageSize,
+	})
 	if err != nil {
 		InternalError(c, err.Error())
 		return
 	}
 
-	Success(c, productapp.ToProductResponseList(entities))
+	Success(c, gin.H{
+		"items":       productapp.ToProductResponseList(result.Items),
+		"total":       result.Total,
+		"page":        result.Page,
+		"page_size":   result.PageSize,
+		"total_pages": result.TotalPages,
+	})
 }
 
 // Update handles PUT /api/products/:id

@@ -15,6 +15,7 @@ var forceFlag bool
 var tableNameFlag string
 var routeBaseFlag string
 var wireFlag bool
+var softDeleteFlag bool
 
 var domainCmd = &cobra.Command{
 	Use:   "domain [name]",
@@ -53,6 +54,7 @@ func init() {
 	domainCmd.Flags().StringVar(&tableNameFlag, "table", "", "Override database table name")
 	domainCmd.Flags().StringVar(&routeBaseFlag, "route", "", "Override route base path (e.g., users)")
 	domainCmd.Flags().BoolVar(&wireFlag, "wire", false, "Auto-wire module into main.go (requires init template structure)")
+	domainCmd.Flags().BoolVar(&softDeleteFlag, "soft-delete", false, "Enable soft delete (adds deleted_at field)")
 }
 
 // Field represents a parsed field definition
@@ -326,6 +328,7 @@ type TemplateData struct {
 	ModulePath  string
 	TableName   string
 	RouteBase   string
+	SoftDelete  bool
 }
 
 func generateDomain(name string, fieldsStr string) {
@@ -373,6 +376,7 @@ func generateDomain(name string, fieldsStr string) {
 		ModulePath:  layout.ModulePath,
 		TableName:   tableName,
 		RouteBase:   routeBase,
+		SoftDelete:  softDeleteFlag,
 	}
 
 	// === Domain Layer ===
@@ -506,6 +510,9 @@ import (
 	"time"
 
 	"github.com/soliton-go/framework/ddd"
+{{- if .SoftDelete}}
+	"gorm.io/gorm"
+{{- end}}
 )
 
 // {{.EntityName}}ID is a strong typed ID.
@@ -539,6 +546,9 @@ type {{.EntityName}} struct {
 {{- end}}
 	CreatedAt time.Time ` + "`gorm:\"autoCreateTime\"`" + `
 	UpdatedAt time.Time ` + "`gorm:\"autoUpdateTime\"`" + `
+{{- if .SoftDelete}}
+	DeletedAt gorm.DeletedAt ` + "`gorm:\"index\"`" + `
+{{- end}}
 }
 
 // TableName returns the table name for GORM.
@@ -583,13 +593,16 @@ func (e *{{.EntityName}}) GetID() ddd.ID {
 const repoTemplateV2 = `package {{.PackageName}}
 
 import (
+	"context"
+
 	"github.com/soliton-go/framework/orm"
 )
 
 // {{.EntityName}}Repository is the interface for {{.EntityName}} persistence.
 type {{.EntityName}}Repository interface {
 	orm.Repository[*{{.EntityName}}, {{.EntityName}}ID]
-	// TODO: Add custom query methods here
+	// FindPaginated returns a page of entities with total count.
+	FindPaginated(ctx context.Context, page, pageSize int) ([]*{{.EntityName}}, int64, error)
 }
 `
 
@@ -672,6 +685,8 @@ func init() {
 const repoImplTemplateV2 = `package persistence
 
 import (
+	"context"
+
 	"{{.ModulePath}}/internal/domain/{{.PackageName}}"
 	"github.com/soliton-go/framework/orm"
 	"gorm.io/gorm"
@@ -687,6 +702,25 @@ func New{{.EntityName}}Repository(db *gorm.DB) {{.PackageName}}.{{.EntityName}}R
 		GormRepository: orm.NewGormRepository[*{{.PackageName}}.{{.EntityName}}, {{.PackageName}}.{{.EntityName}}ID](db),
 		db:             db,
 	}
+}
+
+// FindPaginated returns a page of entities with total count.
+func (r *{{.EntityName}}RepoImpl) FindPaginated(ctx context.Context, page, pageSize int) ([]*{{.PackageName}}.{{.EntityName}}, int64, error) {
+	var entities []*{{.PackageName}}.{{.EntityName}}
+	var total int64
+
+	// Count total
+	if err := r.db.WithContext(ctx).Model(&{{.PackageName}}.{{.EntityName}}{}).Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// Get page
+	offset := (page - 1) * pageSize
+	if err := r.db.WithContext(ctx).Offset(offset).Limit(pageSize).Find(&entities).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return entities, total, nil
 }
 
 // Migrate creates the table if it doesn't exist.
@@ -817,8 +851,20 @@ func (h *Get{{.EntityName}}Handler) Handle(ctx context.Context, query Get{{.Enti
 	return h.repo.Find(ctx, {{.PackageName}}.{{.EntityName}}ID(query.ID))
 }
 
-// List{{.EntityName}}sQuery is the query for listing all {{.EntityName}}s.
-type List{{.EntityName}}sQuery struct{}
+// List{{.EntityName}}sQuery is the query for listing {{.EntityName}}s with pagination.
+type List{{.EntityName}}sQuery struct {
+	Page     int // Page number (1-based)
+	PageSize int // Items per page (default: 20, max: 100)
+}
+
+// List{{.EntityName}}sResult is the paginated result for List{{.EntityName}}sQuery.
+type List{{.EntityName}}sResult struct {
+	Items      []*{{.PackageName}}.{{.EntityName}}
+	Total      int64
+	Page       int
+	PageSize   int
+	TotalPages int
+}
 
 // List{{.EntityName}}sHandler handles List{{.EntityName}}sQuery.
 type List{{.EntityName}}sHandler struct {
@@ -829,8 +875,38 @@ func NewList{{.EntityName}}sHandler(repo {{.PackageName}}.{{.EntityName}}Reposit
 	return &List{{.EntityName}}sHandler{repo: repo}
 }
 
-func (h *List{{.EntityName}}sHandler) Handle(ctx context.Context, query List{{.EntityName}}sQuery) ([]*{{.PackageName}}.{{.EntityName}}, error) {
-	return h.repo.FindAll(ctx)
+func (h *List{{.EntityName}}sHandler) Handle(ctx context.Context, query List{{.EntityName}}sQuery) (*List{{.EntityName}}sResult, error) {
+	// Normalize pagination parameters
+	page := query.Page
+	if page < 1 {
+		page = 1
+	}
+	pageSize := query.PageSize
+	if pageSize < 1 {
+		pageSize = 20
+	}
+	if pageSize > 100 {
+		pageSize = 100
+	}
+
+	// Get total count and items
+	items, total, err := h.repo.FindPaginated(ctx, page, pageSize)
+	if err != nil {
+		return nil, err
+	}
+
+	totalPages := int(total) / pageSize
+	if int(total)%pageSize > 0 {
+		totalPages++
+	}
+
+	return &List{{.EntityName}}sResult{
+		Items:      items,
+		Total:      total,
+		Page:       page,
+		PageSize:   pageSize,
+		TotalPages: totalPages,
+	}, nil
 }
 `
 
@@ -904,6 +980,8 @@ func EnumPtr[T any](v *string, parse func(string) T) *T {
 const handlerTemplateV2 = `package http
 
 import (
+	"strconv"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
@@ -989,15 +1067,27 @@ func (h *{{.EntityName}}Handler) Get(c *gin.Context) {
 	Success(c, {{.PackageName}}app.To{{.EntityName}}Response(entity))
 }
 
-// List handles GET /api/{{.PackageName}}s
+// List handles GET /api/{{.PackageName}}s?page=1&page_size=20
 func (h *{{.EntityName}}Handler) List(c *gin.Context) {
-	entities, err := h.listHandler.Handle(c.Request.Context(), {{.PackageName}}app.List{{.EntityName}}sQuery{})
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+
+	result, err := h.listHandler.Handle(c.Request.Context(), {{.PackageName}}app.List{{.EntityName}}sQuery{
+		Page:     page,
+		PageSize: pageSize,
+	})
 	if err != nil {
 		InternalError(c, err.Error())
 		return
 	}
 
-	Success(c, {{.PackageName}}app.To{{.EntityName}}ResponseList(entities))
+	Success(c, gin.H{
+		"items":       {{.PackageName}}app.To{{.EntityName}}ResponseList(result.Items),
+		"total":       result.Total,
+		"page":        result.Page,
+		"page_size":   result.PageSize,
+		"total_pages": result.TotalPages,
+	})
 }
 
 // Update handles PUT /api/{{.PackageName}}s/:id

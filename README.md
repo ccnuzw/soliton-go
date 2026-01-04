@@ -64,12 +64,53 @@ soliton-gen domain Product --fields "..." --wire
 ```
 `--wire` 使用标记行追加模块，支持多模块无需手动接线。
 
-### 其他参数
+### Domain 命令参数
 | 参数 | 说明 |
 |------|------|
+| `--fields "..."` | 指定字段列表 |
 | `--table "xxx"` | 自定义数据库表名 |
 | `--route "xxx"` | 自定义 API 路由基路径 |
+| `--soft-delete` | 🆕 启用软删除 (`DeletedAt` 字段) |
 | `--force` | 强制覆盖已存在文件 |
+| `--wire` | 自动接入 main.go |
+
+## 🆕 新增功能
+
+### 分页查询
+生成的 List API 自动支持分页：
+```bash
+curl "http://localhost:8080/api/users?page=1&page_size=20"
+```
+返回结果：
+```json
+{
+  "code": 0,
+  "data": {
+    "items": [...],
+    "total": 100,
+    "page": 1,
+    "page_size": 20,
+    "total_pages": 5
+  }
+}
+```
+
+### 软删除
+```bash
+soliton-gen domain User --fields "username,email" --soft-delete
+```
+自动添加 `DeletedAt gorm.DeletedAt` 字段，删除操作变为软删除。
+
+### 错误码常量
+生成的 `response.go` 包含预定义错误码：
+```go
+const (
+    CodeSuccess      = 0     // 成功
+    CodeBadRequest   = 400   // 请求错误
+    CodeValidation   = 1001  // 验证失败
+    CodeDuplicate    = 1002  // 重复条目
+)
+```
 
 ---
 
