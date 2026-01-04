@@ -55,6 +55,28 @@ GOWORK=off go mod tidy && GOWORK=off go run ./cmd/main.go
 | `init <name>` | 初始化新项目（含 DDD 目录结构） |
 | `domain <name>` | 生成领域模块（Entity/Repo/Handler 等） |
 | `service <name>` | 生成应用服务（跨领域业务逻辑） |
+| `serve` | 🆕 启动 Web GUI（可视化代码生成器） |
+
+### 🎨 Web GUI - 可视化代码生成
+
+```bash
+# 启动 Web 界面
+soliton-gen serve
+
+# 自定义端口
+soliton-gen serve --port 8080
+```
+
+**功能特性：**
+- ✨ 可视化字段编辑器，支持拖拽
+- 👁️ 生成前预览代码
+- 🔌 自动注入模块到 main.go
+- 📖 详细的操作提示和使用指南
+- 🌐 中英双语界面
+
+访问 http://127.0.0.1:3000 即可使用图形界面进行项目初始化、领域生成和服务生成。
+
+详细使用说明请查看：[Web GUI 使用指南](./tools/generator/WEB_GUI_GUIDE.md)
 
 ### --wire 自动接线
 ```bash
@@ -139,6 +161,7 @@ soliton-go/
 | 文档 | 说明 |
 |------|------|
 | [QUICK_START.md](./QUICK_START.md) | 快速上手 |
+| [tools/generator/WEB_GUI_GUIDE.md](./tools/generator/WEB_GUI_GUIDE.md) | 🆕 Web GUI 使用指南 |
 | [docs/DEVELOPMENT_GUIDE.md](./docs/DEVELOPMENT_GUIDE.md) | 开发指南 |
 | [docs/GENERATOR_GUIDE.md](./docs/GENERATOR_GUIDE.md) | 生成器使用 |
 | [docs/SERVICE_GUIDE.md](./docs/SERVICE_GUIDE.md) | Service 详解 |
