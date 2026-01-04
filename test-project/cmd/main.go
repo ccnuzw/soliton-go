@@ -36,13 +36,19 @@ func main() {
 		fx.Provide(interfaceshttp.NewProductHandler),
 		// soliton-gen:handlers
 
-		fx.Invoke(func(db *gorm.DB, r *gin.Engine, h *interfaceshttp.UserHandler) {
-			userapp.RegisterMigration(db)
+		fx.Invoke(func(db *gorm.DB, r *gin.Engine, h *interfaceshttp.UserHandler) error {
+			if err := userapp.RegisterMigration(db); err != nil {
+				return err
+			}
 			h.RegisterRoutes(r)
+			return nil
 		}),
-		fx.Invoke(func(db *gorm.DB, r *gin.Engine, h *interfaceshttp.ProductHandler) {
-			productapp.RegisterMigration(db)
+		fx.Invoke(func(db *gorm.DB, r *gin.Engine, h *interfaceshttp.ProductHandler) error {
+			if err := productapp.RegisterMigration(db); err != nil {
+				return err
+			}
 			h.RegisterRoutes(r)
+			return nil
 		}),
 		// soliton-gen:routes
 

@@ -9,7 +9,7 @@ import (
 // CreateProductRequest is the request body for creating a Product.
 type CreateProductRequest struct {
 	Name string `json:"name" binding:"required"`
-	Price int64 `json:"price" binding:"required"`
+	Price int64 `json:"price"`
 }
 
 // UpdateProductRequest is the request body for updating a Product.

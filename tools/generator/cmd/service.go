@@ -109,7 +109,7 @@ func generateService(name string, methodsStr string) {
 	fmt.Println("📦 Application Service")
 	generateServiceFile(filepath.Join(serviceDir, packageName+"_service.go"), serviceTemplate, data)
 	generateServiceFile(filepath.Join(serviceDir, packageName+"_dto.go"), serviceDTOTemplate, data)
-	generateServiceFile(filepath.Join(serviceDir, "module.go"), serviceModuleTemplate, data)
+	generateOrUpdateModuleGo(filepath.Join(serviceDir, "module.go"), serviceName)
 
 	// Summary
 	fmt.Println("\n" + strings.Repeat("─", 50))
@@ -161,6 +161,68 @@ func generateServiceFile(path string, tmpl string, data ServiceData) {
 			fmt.Printf("   [NEW] %s\n", filepath.Base(path))
 		}
 	}
+}
+
+// generateOrUpdateModuleGo creates or updates module.go to include the new service.
+// If the file exists and contains the marker comment, the new service is appended.
+// Otherwise, a new file is created with the marker comment for future updates.
+func generateOrUpdateModuleGo(path string, serviceName string) {
+	provideCode := fmt.Sprintf("fx.Provide(New%s),", serviceName)
+
+	// Check if file exists
+	content, err := os.ReadFile(path)
+	if err == nil {
+		// File exists, check if service is already registered
+		if strings.Contains(string(content), provideCode) {
+			fmt.Printf("   [SKIP] %s (%s already registered)\n", filepath.Base(path), serviceName)
+			return
+		}
+
+		// Append new service to existing module.go
+		result := string(content)
+		marker := "// soliton-gen:services"
+
+		if strings.Contains(result, marker) {
+			// Has marker, insert before it
+			result = strings.Replace(result,
+				"\t"+marker,
+				"\t"+provideCode+"\n\t"+marker,
+				1)
+		} else {
+			// No marker, try to find fx.Options( and insert before closing )
+			// Look for pattern like "fx.Options(\n...)\n"
+			insertPoint := strings.LastIndex(result, ")")
+			if insertPoint > 0 {
+				// Find the last ) which closes fx.Options
+				result = result[:insertPoint] + "\t" + provideCode + "\n" + result[insertPoint:]
+			}
+		}
+
+		if err := os.WriteFile(path, []byte(result), 0644); err != nil {
+			fmt.Printf("   [ERROR] %s: %v\n", filepath.Base(path), err)
+			return
+		}
+		fmt.Printf("   [UPDATED] %s (added %s)\n", filepath.Base(path), serviceName)
+		return
+	}
+
+	// File doesn't exist, create new one with marker
+	newContent := fmt.Sprintf(`package services
+
+import "go.uber.org/fx"
+
+// Module provides application service dependencies for Fx.
+var Module = fx.Options(
+	%s
+	// soliton-gen:services
+)
+`, provideCode)
+
+	if err := os.WriteFile(path, []byte(newContent), 0644); err != nil {
+		fmt.Printf("   [ERROR] %s: %v\n", filepath.Base(path), err)
+		return
+	}
+	fmt.Printf("   [NEW] %s\n", filepath.Base(path))
 }
 
 // ============================================================================
@@ -219,14 +281,17 @@ const serviceDTOTemplate = `package services
 {{range .Methods}}
 // {{.Name}}Request is the request for {{.Name}}.
 type {{.Name}}Request struct {
-	// TODO: Replace Example with real request fields.
-	Example string ` + "`json:\"example\"`" + `
+	// Add your request fields here.
+	// Common patterns:
+	ID string ` + "`json:\"id,omitempty\"`" + ` // Entity ID (for Get/Update/Delete operations)
+	// Data   any    ` + "`json:\"data,omitempty\"`" + ` // Payload for Create/Update operations
 }
 
 // {{.Name}}Response is the response for {{.Name}}.
 type {{.Name}}Response struct {
-	// TODO: Replace Example with real response fields.
-	Example string ` + "`json:\"example\"`" + `
+	Success bool   ` + "`json:\"success\"`" + `           // Operation success flag
+	Message string ` + "`json:\"message,omitempty\"`" + ` // Human-readable message
+	Data    any    ` + "`json:\"data,omitempty\"`" + `    // Response payload
 }
 {{end}}
 `

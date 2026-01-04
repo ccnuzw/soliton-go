@@ -33,18 +33,24 @@ fx.New(
     fx.Provide(http.NewProductHandler),
     fx.Provide(http.NewOrderHandler),
     
-    fx.Invoke(func(db *gorm.DB, h1 *http.UserHandler, h2 *http.ProductHandler, h3 *http.OrderHandler) {
+    fx.Invoke(func(db *gorm.DB, h1 *http.UserHandler, h2 *http.ProductHandler, h3 *http.OrderHandler) error {
         // 自动建表
-        userapp.RegisterMigration(db)
-        productapp.RegisterMigration(db)
-        orderapp.RegisterMigration(db)
+        if err := userapp.RegisterMigration(db); err != nil {
+            return err
+        }
+        if err := productapp.RegisterMigration(db); err != nil {
+            return err
+        }
+        if err := orderapp.RegisterMigration(db); err != nil {
+            return err
+        }
         
         // 注册路由
         r := gin.Default()
         h1.RegisterRoutes(r)
         h2.RegisterRoutes(r)
         h3.RegisterRoutes(r)
-        r.Run(":8080")
+        return r.Run(":8080")
     }),
 ).Run()
 ```
@@ -52,7 +58,7 @@ fx.New(
 ### 步骤 4: 启动
 
 ```bash
-go run ./cmd/main.go
+GOWORK=off go run ./cmd/main.go
 ```
 
 ---

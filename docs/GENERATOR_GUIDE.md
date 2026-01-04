@@ -28,6 +28,8 @@ go build -o soliton-gen .
 
 **生成内容：** `cmd/main.go`, `configs/`, `internal/`, `go.mod`, `Makefile`, `README.md`
 
+> **提示**: 生成的 `configs/config.example.yaml` 默认支持 sqlite/postgres，如需 MySQL 请扩展 `framework/orm/db.go`。
+
 ---
 
 ## domain - 生成领域模块
@@ -62,6 +64,7 @@ go build -o soliton-gen .
 | `--force` | 强制覆盖文件 | `--force` |
 | `--table` | 自定义表名 | `--table "custom_users"` |
 | `--route` | 自定义路由 | `--route "members"` |
+| `--soft-delete` | 🆕 启用软删除 | `--soft-delete` |
 
 ### 字段类型
 | 类型 | 格式 | 示例 | 说明 |
@@ -72,6 +75,56 @@ go build -o soliton-gen .
 | uuid | `field:uuid` | `user_id:uuid` | 带索引的 UUID |
 | time? | `field:time?` | `login_at:time?` | 可选时间字段，无 binding:required |
 | enum | `field:enum(a\|b)` | `status:enum(active\|banned)` | 生成枚举类型 |
+
+### 🆕 新功能
+
+#### 分页查询
+所有生成的 List API 自动支持分页：
+```bash
+GET /api/users?page=1&page_size=20
+```
+
+响应格式：
+```json
+{
+  "items": [...],
+  "total": 100,
+  "page": 1,
+  "page_size": 20,
+  "total_pages": 5
+}
+```
+
+#### 软删除
+使用 `--soft-delete` 标志启用软删除：
+```bash
+soliton-gen domain User --fields "username,email" --soft-delete
+```
+
+生成的实体会包含 `DeletedAt` 字段：
+```go
+type User struct {
+    ...
+    DeletedAt gorm.DeletedAt `gorm:"index"`
+}
+```
+
+删除操作会自动变为软删除，GORM 查询默认排除已删除记录。
+
+#### 错误码常量
+生成的 `response.go` 包含预定义错误码：
+```go
+const (
+    CodeSuccess      = 0     // 成功
+    CodeBadRequest   = 400   // 请求错误
+    CodeUnauthorized = 401   // 未授权
+    CodeNotFound     = 404   // 未找到
+    CodeInternal     = 500   // 内部错误
+    CodeValidation   = 1001  // 验证失败
+    CodeDuplicate    = 1002  // 重复条目
+    CodeConflict     = 1003  // 业务冲突
+)
+```
 
 ### 生成文件 (9个)
 - `domain/{name}/` - 实体 + Repository + Events
@@ -130,3 +183,4 @@ GOWORK=off go mod tidy && GOWORK=off go run ./cmd/main.go
 ```
 
 > **Monorepo 提示**: 如果在包含 `go.work` 的 monorepo 中运行，请使用 `GOWORK=off` 前缀。
+> **Makefile 默认**: 生成的 `Makefile` 默认 `GOWORK=off`，需要时可 `GOWORK=on make run`。

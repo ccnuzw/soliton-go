@@ -9,6 +9,7 @@
 - **分布式能力**: 分布式锁、事件驱动、Saga 分布式事务
 - **CQRS 模式**: 内置 Command/Query 处理器
 - **依赖注入**: 全项目集成 Uber Fx
+- **默认可用配置**: 未提供 `config.yaml` 也可启动（默认 sqlite + log.level=info）
 
 ## ⚡ 30 秒快速体验
 
@@ -25,6 +26,8 @@ soliton-gen domain User --fields "username,email,status:enum(active|inactive)" -
 # 4. 运行
 GOWORK=off go mod tidy && GOWORK=off go run ./cmd/main.go
 ```
+
+> **数据库驱动**: 默认支持 sqlite/postgres，如需 MySQL 请扩展 `framework/orm/db.go`。
 
 **生成结果：**
 | 层 | 文件 |
@@ -61,12 +64,53 @@ soliton-gen domain Product --fields "..." --wire
 ```
 `--wire` 使用标记行追加模块，支持多模块无需手动接线。
 
-### 其他参数
+### Domain 命令参数
 | 参数 | 说明 |
 |------|------|
+| `--fields "..."` | 指定字段列表 |
 | `--table "xxx"` | 自定义数据库表名 |
 | `--route "xxx"` | 自定义 API 路由基路径 |
+| `--soft-delete` | 🆕 启用软删除 (`DeletedAt` 字段) |
 | `--force` | 强制覆盖已存在文件 |
+| `--wire` | 自动接入 main.go |
+
+## 🆕 新增功能
+
+### 分页查询
+生成的 List API 自动支持分页：
+```bash
+curl "http://localhost:8080/api/users?page=1&page_size=20"
+```
+返回结果：
+```json
+{
+  "code": 0,
+  "data": {
+    "items": [...],
+    "total": 100,
+    "page": 1,
+    "page_size": 20,
+    "total_pages": 5
+  }
+}
+```
+
+### 软删除
+```bash
+soliton-gen domain User --fields "username,email" --soft-delete
+```
+自动添加 `DeletedAt gorm.DeletedAt` 字段，删除操作变为软删除。
+
+### 错误码常量
+生成的 `response.go` 包含预定义错误码：
+```go
+const (
+    CodeSuccess      = 0     // 成功
+    CodeBadRequest   = 400   // 请求错误
+    CodeValidation   = 1001  // 验证失败
+    CodeDuplicate    = 1002  // 重复条目
+)
+```
 
 ---
 
