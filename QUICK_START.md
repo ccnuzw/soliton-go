@@ -97,18 +97,24 @@ fx.New(
     fx.Provide(http.NewProductHandler),
     fx.Provide(http.NewOrderHandler),
     
-    fx.Invoke(func(db *gorm.DB, h1 *http.UserHandler, h2 *http.ProductHandler, h3 *http.OrderHandler) {
+    fx.Invoke(func(db *gorm.DB, h1 *http.UserHandler, h2 *http.ProductHandler, h3 *http.OrderHandler) error {
         // 自动建表
-        userapp.RegisterMigration(db)
-        productapp.RegisterMigration(db)
-        orderapp.RegisterMigration(db)
+        if err := userapp.RegisterMigration(db); err != nil {
+            return err
+        }
+        if err := productapp.RegisterMigration(db); err != nil {
+            return err
+        }
+        if err := orderapp.RegisterMigration(db); err != nil {
+            return err
+        }
         
         // 注册路由
         r := gin.Default()
         h1.RegisterRoutes(r)
         h2.RegisterRoutes(r)
         h3.RegisterRoutes(r)
-        r.Run(":8080")
+        return r.Run(":8080")
     }),
 ).Run()
 ```
@@ -118,8 +124,10 @@ fx.New(
 ## 7. 🏃 运行
 
 ```bash
-go run ./cmd/main.go
+GOWORK=off go run ./cmd/main.go
 ```
+
+> **提示**: 生成的 `Makefile` 默认 `GOWORK=off`，需要时可 `GOWORK=on make run`。
 
 **自动可用的 API：**
 
@@ -136,7 +144,7 @@ go run ./cmd/main.go
 ```
 1. soliton-gen domain Xxx --fields "..."  # 生成
 2. main.go 导入 xxxapp.Module            # 注入
-3. go run ./cmd/main.go                   # 启动
+3. GOWORK=off go run ./cmd/main.go         # 启动
 
 # 修改字段后
 4. soliton-gen domain Xxx --fields "..." --force  # 重新生成

@@ -28,6 +28,8 @@ go build -o soliton-gen .
 
 **生成内容：** `cmd/main.go`, `configs/`, `internal/`, `go.mod`, `Makefile`, `README.md`
 
+> **提示**: 生成的 `configs/config.example.yaml` 默认支持 sqlite/postgres，如需 MySQL 请扩展 `framework/orm/db.go`。
+
 ---
 
 ## domain - 生成领域模块
@@ -130,3 +132,4 @@ GOWORK=off go mod tidy && GOWORK=off go run ./cmd/main.go
 ```
 
 > **Monorepo 提示**: 如果在包含 `go.work` 的 monorepo 中运行，请使用 `GOWORK=off` 前缀。
+> **Makefile 默认**: 生成的 `Makefile` 默认 `GOWORK=off`，需要时可 `GOWORK=on make run`。

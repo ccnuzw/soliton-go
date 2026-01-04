@@ -269,7 +269,7 @@ server:
 
 # Database Configuration
 database:
-  # Options: sqlite, postgres, mysql
+  # Options: sqlite, postgres
   driver: sqlite
   dsn: data.db
 
@@ -277,9 +277,7 @@ database:
   # driver: postgres
   # dsn: host=localhost user=postgres password=secret dbname=myapp port=5432 sslmode=disable
 
-  # MySQL example:
-  # driver: mysql
-  # dsn: user:password@tcp(127.0.0.1:3306)/myapp?charset=utf8mb4&parseTime=True&loc=Local
+  # MySQL is not enabled by default. Extend framework/orm/db.go if needed.
 
 # Logging
 log:
@@ -425,19 +423,22 @@ After generating domains, the following endpoints are available:
 > **Note**: If running in a monorepo with go.work, use ` + "`GOWORK=off`" + ` prefix for go commands.
 `
 
-const makefileTemplate = `.PHONY: run build test clean gen
+const makefileTemplate = `.PHONY: run build test clean gen tidy
+
+# Disable go.work by default for monorepo compatibility (override with GOWORK=on).
+GOWORK ?= off
 
 # Run the application
 run:
-	go run ./cmd/main.go
+	GOWORK=$(GOWORK) go run ./cmd/main.go
 
 # Build the application
 build:
-	go build -o bin/app ./cmd/main.go
+	GOWORK=$(GOWORK) go build -o bin/app ./cmd/main.go
 
 # Run tests
 test:
-	go test -v ./...
+	GOWORK=$(GOWORK) go test -v ./...
 
 # Clean build artifacts
 clean:
@@ -450,5 +451,5 @@ gen:
 
 # Tidy dependencies
 tidy:
-	go mod tidy
+	GOWORK=$(GOWORK) go mod tidy
 `

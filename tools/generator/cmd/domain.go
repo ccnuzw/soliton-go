@@ -89,6 +89,7 @@ func parseFields(fieldsStr string, entityName string, packageName string) []Fiel
 
 	var fields []Field
 	parts := strings.Split(fieldsStr, ",")
+	seen := make(map[string]struct{})
 
 	for _, part := range parts {
 		part = strings.TrimSpace(part)
@@ -97,6 +98,15 @@ func parseFields(fieldsStr string, entityName string, packageName string) []Fiel
 		}
 
 		field := parseFieldDefinition(part, entityName, packageName)
+		if isReservedField(field) {
+			fmt.Printf("   [WARN] field %q conflicts with built-in fields, skipping\n", field.SnakeName)
+			continue
+		}
+		if _, exists := seen[field.SnakeName]; exists {
+			fmt.Printf("   [WARN] field %q is duplicated, skipping\n", field.SnakeName)
+			continue
+		}
+		seen[field.SnakeName] = struct{}{}
 		fields = append(fields, field)
 	}
 
@@ -133,7 +143,11 @@ func parseFieldDefinition(def string, entityName string, packageName string) Fie
 		// Enum type: enum(value1,value2,...)
 		enumContent := fieldType[5 : len(fieldType)-1]
 		field.IsEnum = true
-		field.EnumValues = strings.Split(enumContent, "|")
+		field.EnumValues = parseEnumValues(enumContent)
+		if len(field.EnumValues) == 0 {
+			fmt.Printf("   [WARN] enum field %q has no values, defaulting to \"default\"\n", fieldName)
+			field.EnumValues = []string{"default"}
+		}
 		field.EnumType = entityName + pascalName
 		field.GoType = field.EnumType
 		field.AppGoType = packageName + "." + field.EnumType // e.g., "user.UserRole"
@@ -148,6 +162,62 @@ func parseFieldDefinition(def string, entityName string, packageName string) Fie
 	}
 
 	return field
+}
+
+func parseEnumValues(raw string) []string {
+	parts := strings.Split(raw, "|")
+	values := make([]string, 0, len(parts))
+	for _, part := range parts {
+		value := strings.TrimSpace(part)
+		if value == "" {
+			continue
+		}
+		values = append(values, value)
+	}
+	return values
+}
+
+func isReservedField(field Field) bool {
+	switch field.SnakeName {
+	case "id", "created_at", "updated_at":
+		return true
+	default:
+		return false
+	}
+}
+
+func createBindingTag(field Field) string {
+	if field.IsPointer {
+		return ""
+	}
+	if field.IsEnum {
+		return oneOfTag("required", field.EnumValues)
+	}
+	if isStringType(field.GoType) {
+		return " binding:\"required\""
+	}
+	return ""
+}
+
+func updateBindingTag(field Field) string {
+	if !field.IsEnum {
+		return ""
+	}
+	return oneOfTag("omitempty", field.EnumValues)
+}
+
+func oneOfTag(prefix string, values []string) string {
+	if len(values) == 0 {
+		if prefix == "required" {
+			return " binding:\"required\""
+		}
+		return ""
+	}
+	return fmt.Sprintf(" binding:\"%s,oneof=%s\"", prefix, strings.Join(values, " "))
+}
+
+func isStringType(goType string) bool {
+	return strings.TrimPrefix(goType, "*") == "string"
 }
 
 // mapFieldType maps type shorthand to Go type and GORM tag
@@ -406,10 +476,12 @@ func generateFileWithData(path string, tmpl string, data TemplateData) {
 
 	// Create template with helper functions
 	funcMap := template.FuncMap{
-		"title":     strings.Title,
-		"lower":     strings.ToLower,
-		"upper":     strings.ToUpper,
-		"enumConst": enumConst,
+		"title":            strings.Title,
+		"lower":            strings.ToLower,
+		"upper":            strings.ToUpper,
+		"enumConst":        enumConst,
+		"createBindingTag": createBindingTag,
+		"updateBindingTag": updateBindingTag,
 	}
 
 	t := template.Must(template.New("file").Funcs(funcMap).Parse(tmpl))
@@ -773,14 +845,14 @@ import (
 // Create{{.EntityName}}Request is the request body for creating a {{.EntityName}}.
 type Create{{.EntityName}}Request struct {
 {{- range .Fields}}
-	{{.Name}} {{if .IsEnum}}string{{else}}{{.AppGoType}}{{end}} ` + "`json:\"{{.SnakeName}}\"{{if .IsPointer}}{{else}} binding:\"required\"{{end}}`" + `
+	{{.Name}} {{if .IsEnum}}string{{else}}{{.AppGoType}}{{end}} ` + "`json:\"{{.SnakeName}}\"{{createBindingTag .}}`" + `
 {{- end}}
 }
 
 // Update{{.EntityName}}Request is the request body for updating a {{.EntityName}}.
 type Update{{.EntityName}}Request struct {
 {{- range .Fields}}
-	{{.Name}} {{if .IsEnum}}*string{{else if .IsPointer}}{{.AppGoType}}{{else}}*{{.AppGoType}}{{end}} ` + "`json:\"{{.SnakeName}},omitempty\"`" + `
+	{{.Name}} {{if .IsEnum}}*string{{else if .IsPointer}}{{.AppGoType}}{{else}}*{{.AppGoType}}{{end}} ` + "`json:\"{{.SnakeName}},omitempty\"{{updateBindingTag .}}`" + `
 {{- end}}
 }
 
@@ -818,7 +890,7 @@ func To{{.EntityName}}ResponseList(entities []*{{.PackageName}}.{{.EntityName}})
 
 const helpersTemplate = `package http
 
-// enumPtr is a helper function to convert *string to *T for enum types.
+// EnumPtr is a helper function to convert *string to *T for enum types.
 // This is useful for handling optional enum fields in update requests.
 func EnumPtr[T any](v *string, parse func(string) T) *T {
 	if v == nil {
@@ -1098,7 +1170,7 @@ func wireMainGoNew(mainGoPath, entityName, packageName, modulePath, original str
 	// 5. Add route registration after // soliton-gen:routes
 	routeCheck := fmt.Sprintf("h *interfaceshttp.%sHandler", entityName)
 	if !strings.Contains(result, routeCheck) {
-		routeCode := fmt.Sprintf("fx.Invoke(func(db *gorm.DB, r *gin.Engine, h *interfaceshttp.%sHandler) {\n\t\t\t%sapp.RegisterMigration(db)\n\t\t\th.RegisterRoutes(r)\n\t\t}),", entityName, packageName)
+		routeCode := fmt.Sprintf("fx.Invoke(func(db *gorm.DB, r *gin.Engine, h *interfaceshttp.%sHandler) error {\n\t\t\tif err := %sapp.RegisterMigration(db); err != nil {\n\t\t\t\treturn err\n\t\t\t}\n\t\t\th.RegisterRoutes(r)\n\t\t\treturn nil\n\t\t}),", entityName, packageName)
 		result = strings.Replace(result,
 			"\t\t// soliton-gen:routes",
 			"\t\t"+routeCode+"\n\t\t// soliton-gen:routes",
@@ -1137,11 +1209,15 @@ func wireMainGoLegacy(mainGoPath, entityName, packageName, modulePath, original 
 		}
 	}
 
-	// Uncomment invoke block
+	// Uncomment invoke block (support both legacy and updated commented blocks)
 	oldInvoke := fmt.Sprintf("\t\t// fx.Invoke(func(db *gorm.DB, r *gin.Engine, h *interfaceshttp.%sHandler) {\n\t\t// \t%sapp.RegisterMigration(db)\n\t\t// \th.RegisterRoutes(r)\n\t\t// }),", entityName, packageName)
-	newInvoke := fmt.Sprintf("\t\tfx.Invoke(func(db *gorm.DB, r *gin.Engine, h *interfaceshttp.%sHandler) {\n\t\t\t%sapp.RegisterMigration(db)\n\t\t\th.RegisterRoutes(r)\n\t\t}),", entityName, packageName)
+	legacyInvoke := fmt.Sprintf("\t\t// fx.Invoke(func(db *gorm.DB, r *gin.Engine, h *interfaceshttp.%sHandler) error {\n\t\t// \tif err := %sapp.RegisterMigration(db); err != nil {\n\t\t// \t\treturn err\n\t\t// \t}\n\t\t// \th.RegisterRoutes(r)\n\t\t// \treturn nil\n\t\t// }),", entityName, packageName)
+	newInvoke := fmt.Sprintf("\t\tfx.Invoke(func(db *gorm.DB, r *gin.Engine, h *interfaceshttp.%sHandler) error {\n\t\t\tif err := %sapp.RegisterMigration(db); err != nil {\n\t\t\t\treturn err\n\t\t\t}\n\t\t\th.RegisterRoutes(r)\n\t\t\treturn nil\n\t\t}),", entityName, packageName)
 	if strings.Contains(result, oldInvoke) {
 		result = strings.Replace(result, oldInvoke, newInvoke, 1)
+		modified = true
+	} else if strings.Contains(result, legacyInvoke) {
+		result = strings.Replace(result, legacyInvoke, newInvoke, 1)
 		modified = true
 	}
 

@@ -20,6 +20,13 @@ func NewConfig() (*Config, error) {
 	v.SetConfigType("yaml")
 	v.AddConfigPath("./configs")
 	v.AddConfigPath(".")
+
+	// Sensible defaults to keep generated projects runnable out-of-the-box.
+	v.SetDefault("server.host", "0.0.0.0")
+	v.SetDefault("server.port", 8080)
+	v.SetDefault("database.driver", "sqlite")
+	v.SetDefault("database.dsn", "data.db")
+	v.SetDefault("log.level", "info")
 	
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	v.AutomaticEnv()

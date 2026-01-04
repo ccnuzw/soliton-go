@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
 
 	"github.com/soliton-go/framework/ddd"
 	"gorm.io/gorm"
@@ -29,7 +30,19 @@ func NewGormRepository[T ddd.Entity, ID ddd.ID](db *gorm.DB) *GormRepository[T, 
 
 func (r *GormRepository[T, ID]) Find(ctx context.Context, id ID) (T, error) {
 	var entity T
-	result := r.db.WithContext(ctx).First(&entity, "id = ?", id.String())
+	dest := any(&entity)
+	entityType := reflect.TypeOf(entity)
+	if entityType != nil && entityType.Kind() == reflect.Ptr {
+		ptr := reflect.New(entityType.Elem()).Interface()
+		typed, ok := ptr.(T)
+		if !ok {
+			var zero T
+			return zero, fmt.Errorf("failed to allocate entity")
+		}
+		entity = typed
+		dest = entity
+	}
+	result := r.db.WithContext(ctx).First(dest, "id = ?", id.String())
 	if result.Error != nil {
 		var zero T
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
@@ -57,5 +70,10 @@ func (r *GormRepository[T, ID]) Save(ctx context.Context, entity T) error {
 
 func (r *GormRepository[T, ID]) Delete(ctx context.Context, id ID) error {
 	var entity T
-	return r.db.WithContext(ctx).Delete(&entity, "id = ?", id.String()).Error
+	model := any(&entity)
+	entityType := reflect.TypeOf(entity)
+	if entityType != nil && entityType.Kind() == reflect.Ptr {
+		model = reflect.New(entityType.Elem()).Interface()
+	}
+	return r.db.WithContext(ctx).Delete(model, "id = ?", id.String()).Error
 }

@@ -1,16 +1,19 @@
-.PHONY: run build test clean gen
+.PHONY: run build test clean gen tidy
+
+# Disable go.work by default for monorepo compatibility (override with GOWORK=on).
+GOWORK ?= off
 
 # Run the application
 run:
-	go run ./cmd/main.go
+	GOWORK=$(GOWORK) go run ./cmd/main.go
 
 # Build the application
 build:
-	go build -o bin/app ./cmd/main.go
+	GOWORK=$(GOWORK) go build -o bin/app ./cmd/main.go
 
 # Run tests
 test:
-	go test -v ./...
+	GOWORK=$(GOWORK) go test -v ./...
 
 # Clean build artifacts
 clean:
@@ -23,4 +26,4 @@ gen:
 
 # Tidy dependencies
 tidy:
-	go mod tidy
+	GOWORK=$(GOWORK) go mod tidy
