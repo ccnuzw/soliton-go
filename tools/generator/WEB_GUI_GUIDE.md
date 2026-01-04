@@ -2,14 +2,39 @@
 
 ## 快速开始
 
-### 启动服务器
+### 场景 1：创建新项目
 
 ```bash
-cd tools/generator
+# 1. 在空目录或任意工作目录启动 Web GUI
+mkdir my-workspace
+cd my-workspace
 ./soliton-gen serve
+
+# 2. 访问 http://127.0.0.1:3000
+
+# 3. 点击"初始化项目 Init Project"
+#    - 填写项目名称（如 my-project）
+#    - 填写模块名称（如 github.com/yourname/my-project）
+#    - 点击"预览"查看将生成的文件
+#    - 点击"创建项目"
+
+# 4. 项目创建完成后，进入项目目录
+cd my-project
+
+# 5. 再次启动 GUI 进行后续开发
+soliton-gen serve
 ```
 
-默认访问地址：http://127.0.0.1:3000
+### 场景 2：在现有项目中使用
+
+```bash
+# 在现有项目根目录（包含 go.mod 和 internal/）启动
+cd /path/to/existing/project
+./soliton-gen serve
+
+# 访问 http://127.0.0.1:3000
+# 直接使用"生成领域"和"生成服务"功能
+```
 
 ### 自定义端口和主机
 

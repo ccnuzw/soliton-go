@@ -31,8 +31,8 @@ onMounted(async () => {
         <div class="guide-section">
           <h4>🚀 快速开始</h4>
           <ol>
-            <li>如果是新项目，点击 <strong>初始化项目</strong> 创建项目骨架</li>
-            <li>在项目目录中运行 <code>soliton-gen serve</code> 启动 Web GUI</li>
+            <li><strong>新项目：</strong>在空目录运行 <code>soliton-gen serve</code>，点击 <strong>初始化项目</strong> 创建项目骨架</li>
+            <li><strong>现有项目：</strong>在项目根目录（包含 go.mod）运行 <code>soliton-gen serve</code></li>
             <li>使用 <strong>生成领域</strong> 创建业务实体和相关代码</li>
             <li>使用 <strong>生成服务</strong> 创建应用服务层</li>
           </ol>

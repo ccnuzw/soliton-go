@@ -13,15 +13,30 @@ go build -o soliton-gen .
 
 ### 使用 Web GUI（推荐）
 
+**新项目：**
 ```bash
-# 启动 Web 界面
+# 1. 在空目录启动 GUI
+mkdir my-workspace && cd my-workspace
 ./soliton-gen serve
 
-# 自定义端口
-./soliton-gen serve --port 8080 --host 0.0.0.0
+# 2. 访问 http://127.0.0.1:3000
+# 3. 点击"初始化项目"，在 GUI 中创建项目
+# 4. 项目创建后，cd 到新项目目录继续开发
 ```
 
-访问 http://127.0.0.1:3000 即可使用可视化界面。
+**现有项目：**
+```bash
+# 在项目根目录（包含 go.mod）启动
+cd /path/to/your/project
+./soliton-gen serve
+
+# 访问 http://127.0.0.1:3000 使用可视化界面
+```
+
+**自定义端口：**
+```bash
+./soliton-gen serve --port 8080 --host 0.0.0.0
+```
 
 ### 使用命令行
 
