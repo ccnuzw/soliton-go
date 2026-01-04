@@ -88,7 +88,7 @@ function reset() {
       <div class="form-group">
         <label>
           项目名称 Project Name *
-          <span class="tooltip" title="项目目录名称，将创建此名称的文件夹">ⓘ</span>
+          <span class="tooltip" data-tooltip="项目目录名称，将创建此名称的文件夹">ⓘ</span>
         </label>
         <input
           v-model="config.name"
@@ -101,7 +101,7 @@ function reset() {
       <div class="form-group">
         <label>
           模块名称 Module Name
-          <span class="tooltip" title="Go 模块路径，用于 import 语句">ⓘ</span>
+          <span class="tooltip" data-tooltip="Go 模块路径，用于 import 语句">ⓘ</span>
         </label>
         <input
           v-model="config.module_name"
@@ -113,7 +113,7 @@ function reset() {
       <div class="form-group">
         <label>
           框架替换路径 Framework Replace（可选）
-          <span class="tooltip" title="本地开发时使用，指向 soliton-go/framework 的路径">ⓘ</span>
+          <span class="tooltip" data-tooltip="本地开发时使用，指向 soliton-go/framework 的路径">ⓘ</span>
         </label>
         <input
           v-model="config.framework_replace"

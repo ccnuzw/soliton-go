@@ -95,7 +95,7 @@ function getStatusText(status: string): string {
         <div class="form-group">
           <label>
             服务名称 Service Name *
-            <span class="tooltip" title="应用服务名称，用于跨领域业务逻辑">ⓘ</span>
+            <span class="tooltip" data-tooltip="应用服务名称，用于跨领域业务逻辑">ⓘ</span>
           </label>
           <input v-model="config.name" placeholder="OrderService / PaymentService" />
           <span class="hint">如果未包含 "Service" 后缀会自动添加</span>
@@ -121,7 +121,7 @@ function getStatusText(status: string): string {
 
         <div class="options">
           <div class="form-group inline">
-            <label title="覆盖已存在的文件">
+            <label data-tooltip="覆盖已存在的文件">
               <input type="checkbox" v-model="config.force" />
               强制覆盖 Force
             </label>

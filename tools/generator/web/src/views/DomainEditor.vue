@@ -127,7 +127,7 @@ function getStatusText(status: string): string {
         <div class="form-group">
           <label>
             领域名称 Domain Name *
-            <span class="tooltip" title="实体名称，将生成对应的 Go 结构体">ⓘ</span>
+            <span class="tooltip" data-tooltip="实体名称，将生成对应的 Go 结构体">ⓘ</span>
           </label>
           <input v-model="config.name" placeholder="User / Order / Product" />
         </div>
@@ -155,7 +155,7 @@ function getStatusText(status: string): string {
               @input="updateEnumValues(field, ($event.target as HTMLInputElement).value)"
               placeholder="active|inactive|banned"
               class="field-enum"
-              title="枚举值用 | 分隔，如：active|inactive"
+              data-tooltip="枚举值用 | 分隔，如：active|inactive"
             />
             <button class="btn-remove" @click="removeField(index)" :disabled="config.fields.length === 1">×</button>
           </div>
@@ -163,19 +163,19 @@ function getStatusText(status: string): string {
 
         <div class="options">
           <div class="form-group inline">
-            <label title="启用后将添加 DeletedAt 字段，删除时标记而非真删除">
+            <label data-tooltip="启用后将添加 DeletedAt 字段，删除时标记而非真删除">
               <input type="checkbox" v-model="config.soft_delete" />
               启用软删除 Soft Delete
             </label>
           </div>
           <div class="form-group inline">
-            <label title="自动在 main.go 中注册此模块">
+            <label data-tooltip="自动在 main.go 中注册此模块">
               <input type="checkbox" v-model="config.wire" />
               自动注入到 main.go
             </label>
           </div>
           <div class="form-group inline">
-            <label title="覆盖已存在的文件">
+            <label data-tooltip="覆盖已存在的文件">
               <input type="checkbox" v-model="config.force" />
               强制覆盖 Force
             </label>
