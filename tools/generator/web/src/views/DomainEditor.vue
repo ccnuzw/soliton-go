@@ -1,12 +1,16 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { api, type FieldConfig, type DomainConfig, type GenerationResult, type FieldType } from '../api'
+import { api, type FieldConfig, type DomainConfig, type GenerationResult, type FieldType, type DomainListItem, type FieldDetail } from '../api'
 
 const loading = ref(false)
 const result = ref<GenerationResult | null>(null)
 const error = ref('')
 const showPreview = ref(false)
 const fieldTypes = ref<FieldType[]>([])
+const domains = ref<DomainListItem[]>([])
+const activeTab = ref<'new' | 'existing'>('new')
+const loadingDomains = ref(false)
+const editingDomain = ref<string | null>(null)
 
 const config = ref<DomainConfig>({
   name: '',
@@ -18,14 +22,80 @@ const config = ref<DomainConfig>({
   force: false,
 })
 
-onMounted(async () => {
+onMounted(async () =>{
   try {
     const res = await api.getFieldTypes()
     fieldTypes.value = res.types
+    await loadDomains()
   } catch (e) {
     console.error(e)
   }
 })
+
+async function loadDomains() {
+  loadingDomains.value = true
+  try {
+    const res = await api.listDomains()
+    domains.value = res.domains
+  } catch (e) {
+    console.error('Failed to load domains:', e)
+  } finally {
+    loadingDomains.value = false
+  }
+}
+
+async function loadDomain(domainName: string) {
+  loading.value = true
+  error.value = ''
+  try {
+    const detail = await api.getDomainDetail(domainName)
+    
+    // Map fields from detail to config
+    const fields: FieldConfig[] = detail.fields.map((f: FieldDetail) => {
+      // Map Go type to field type
+      let fieldType = mapGoTypeToFieldType(f.type)
+      
+      return {
+        name: f.snake_name,
+        type: fieldType,
+        enum_values: f.is_enum ? [] : undefined, // TODO: Extract enum values
+      }
+    })
+
+    config.value = {
+      name: detail.name,
+      fields: fields.length > 0 ? fields : [{ name: '', type: 'string', enum_values: [] }],
+      table_name: '',
+      route_base: '',
+      soft_delete: false,
+      wire: false,
+      force: true, // Auto-enable force when editing
+    }
+
+    editingDomain.value = domainName
+    activeTab.value = 'new' // Switch to editor tab
+  } catch (e: any) {
+    error.value = `加载失败: ${e.message}`
+  } finally {
+    loading.value = false
+  }
+}
+
+function mapGoTypeToFieldType(goType: string): string {
+  // Remove pointer
+  goType = goType.replace('*', '')
+  
+  if (goType === 'string') return 'string'
+  if (goType === 'int') return 'int'
+  if (goType === 'int64') return 'int64'
+  if (goType === 'float64') return 'float64'
+  if (goType === 'bool') return 'bool'
+  if (goType === 'time.Time') return 'time'
+  if (goType.includes('Time')) return 'time?'
+  
+  // Default to enum for custom types
+  return 'enum'
+}
 
 function addField() {
   config.value.fields.push({ name: '', type: 'string', enum_values: [] })
@@ -68,6 +138,8 @@ async function generate() {
       fields: validFields,
     })
     showPreview.value = true
+    // Reload domains list
+    await loadDomains()
   } catch (e: any) {
     error.value = e.message
   } finally {
@@ -87,6 +159,7 @@ function reset() {
   }
   result.value = null
   showPreview.value = false
+  editingDomain.value = null
 }
 
 function getStatusText(status: string): string {
@@ -104,7 +177,64 @@ function getStatusText(status: string): string {
   <div class="editor">
     <h1>📦 生成领域模块 Domain</h1>
 
-    <div class="layout">
+    <!-- Tabs -->
+    <div class="tabs">
+      <button 
+        class="tab" 
+        :class="{ active: activeTab === 'new' }"
+        @click="activeTab = 'new'"
+      >
+        ✨ 新建模块
+      </button>
+      <button 
+        class="tab" 
+        :class="{ active: activeTab === 'existing' }"
+        @click="activeTab = 'existing'"
+      >
+        📋 已生成模块 ({{ domains.length }})
+      </button>
+    </div>
+
+    <!-- Existing Domains List -->
+    <div v-if="activeTab === 'existing'" class="domains-list">
+      <div v-if="loadingDomains" class="loading">加载中...</div>
+      <div v-else-if="domains.length === 0" class="empty">
+        <p>暂无已生成的领域模块</p>
+        <p class="hint">点击"新建模块"开始创建</p>
+      </div>
+      <div v-else class="domain-grid">
+        <div 
+          v-for="domain in domains" 
+          :key="domain.name"
+          class="domain-card"
+          @click="loadDomain(domain.name)"
+        >
+          <div class="domain-header">
+            <h3>{{ domain.name }}</h3>
+            <span class="badge">{{ domain.fields.length }} 字段</span>
+          </div>
+          <div class="domain-fields">
+            <span v-for="(field, idx) in domain.fields.slice(0, 5)" :key="idx" class="field-tag">
+              {{ field }}
+            </span>
+            <span v-if="domain.fields.length > 5" class="more">+{{ domain.fields.length - 5 }}</span>
+          </div>
+          <div class="domain-action">
+            点击编辑 →
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Editor (New/Edit) -->
+    <div v-if="activeTab === 'new'">
+      <!-- Editing indicator -->
+      <div v-if="editingDomain" class="editing-banner">
+        ✏️ 正在编辑: <strong>{{ editingDomain }}</strong>
+        <button class="btn-small" @click="reset">取消编辑</button>
+      </div>
+
+      <div class="layout">
       <!-- Left: Form -->
       <div class="form-panel">
         <!-- Usage Guide -->
@@ -226,18 +356,153 @@ function getStatusText(status: string): string {
           生成另一个
         </button>
       </div>
-    </div>
-  </div>
+      </div> <!-- end layout -->
+    </div> <!-- end activeTab === 'new' -->
+  </div> <!-- end editor -->
 </template>
 
 <style scoped>
 .editor {
-  max-width: 1100px;
+  max-width: 1600px;
   margin: 0 auto;
+  padding: 0 20px;
 }
 
 h1 {
   margin-bottom: 24px;
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  border-bottom: 2px solid var(--border);
+}
+
+.tab {
+  padding: 12px 24px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.2s;
+  margin-bottom: -2px;
+}
+
+.tab:hover {
+  color: var(--text);
+}
+
+.tab.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+
+.domains-list {
+  min-height: 400px;
+}
+
+.loading, .empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-muted);
+}
+
+.empty .hint {
+  margin-top: 8px;
+  font-size: 0.9rem;
+}
+
+.domain-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.domain-card {
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.domain-card:hover {
+  border-color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+}
+
+.domain-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.domain-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.badge {
+  padding: 4px 8px;
+  background: rgba(99, 102, 241, 0.2);
+  color: var(--primary);
+  border-radius: 4px;
+  font-size: 0.75rem;
+}
+
+.domain-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+  min-height: 28px;
+}
+
+.field-tag {
+  padding: 2px 8px;
+  background: var(--bg-input);
+  border-radius: 4px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.more {
+  padding: 2px 8px;
+  color: var(--primary);
+  font-size: 0.8rem;
+}
+
+.domain-action {
+  color: var(--primary);
+  font-size: 0.9rem;
+  text-align: right;
+}
+
+.editing-banner {
+  background: rgba(245, 158, 11, 0.2);
+  border: 1px solid var(--warning);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.btn-small {
+  padding: 6px 12px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.9rem;
 }
 
 .layout {

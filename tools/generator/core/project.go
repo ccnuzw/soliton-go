@@ -56,9 +56,21 @@ func initProjectInternal(cfg ProjectConfig, previewOnly bool) (*GenerationResult
 		FrameworkReplace: frameworkReplace,
 	}
 
+	// Determine project root path
+	// Create project at ../../<project-name> (parallel to tools directory)
+	// This allows running soliton-gen from tools/generator while creating projects at workspace root
+	projectRoot := projectName
+	if cwd, err := os.Getwd(); err == nil {
+		// Check if we're in tools/generator directory
+		if strings.Contains(cwd, filepath.Join("tools", "generator")) {
+			// Create project two levels up (parallel to tools/)
+			projectRoot = filepath.Join("..", "..", projectName)
+		}
+	}
+
 	// Create project root directory
 	if !previewOnly {
-		if err := os.MkdirAll(projectName, 0755); err != nil {
+		if err := os.MkdirAll(projectRoot, 0755); err != nil {
 			return nil, fmt.Errorf("failed to create project directory: %w", err)
 		}
 	}
@@ -75,7 +87,7 @@ func initProjectInternal(cfg ProjectConfig, previewOnly bool) (*GenerationResult
 
 	if !previewOnly {
 		for _, dir := range dirs {
-			path := filepath.Join(projectName, dir)
+			path := filepath.Join(projectRoot, dir)
 			if err := os.MkdirAll(path, 0755); err != nil {
 				result.Errors = append(result.Errors, fmt.Sprintf("failed to create directory %s: %v", dir, err))
 			}
@@ -98,7 +110,7 @@ func initProjectInternal(cfg ProjectConfig, previewOnly bool) (*GenerationResult
 	}
 
 	for _, f := range files {
-		fullPath := filepath.Join(projectName, f.path)
+		fullPath := filepath.Join(projectRoot, f.path)
 		genFile := generateProjectFile(fullPath, f.template, data, previewOnly)
 		result.Files = append(result.Files, genFile)
 		if genFile.Status == FileStatusError {
@@ -110,7 +122,9 @@ func initProjectInternal(cfg ProjectConfig, previewOnly bool) (*GenerationResult
 		result.Success = false
 	}
 
-	result.Message = fmt.Sprintf("Project %s initialized successfully", projectName)
+	// Include project path in message
+	absPath, _ := filepath.Abs(projectRoot)
+	result.Message = fmt.Sprintf("Project %s initialized successfully at %s", projectName, absPath)
 	return result, nil
 }
 

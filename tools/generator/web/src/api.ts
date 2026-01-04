@@ -59,6 +59,32 @@ export interface ProjectLayout {
   interfaces_dir?: string
 }
 
+export interface DomainListItem {
+  name: string
+  module_path: string
+  fields: string[]
+  has_files: boolean
+}
+
+export interface FieldDetail {
+  name: string
+  type: string
+  is_enum: boolean
+  gorm_tag: string
+  json_tag: string
+  snake_name: string
+}
+
+export interface DomainDetail {
+  name: string
+  fields: FieldDetail[]
+  files: {
+    entity: boolean
+    repository: boolean
+    events: boolean
+  }
+}
+
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE}${url}`, {
     headers: {
@@ -101,6 +127,12 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(config),
     }),
+
+  listDomains: () =>
+    request<{ domains: DomainListItem[] }>('/domains/list'),
+
+  getDomainDetail: (name: string) =>
+    request<DomainDetail>(`/domains/${name}`),
 
   getFieldTypes: () =>
     request<{ types: FieldType[] }>('/field-types'),

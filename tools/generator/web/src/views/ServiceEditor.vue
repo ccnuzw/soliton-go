@@ -175,8 +175,9 @@ function getStatusText(status: string): string {
 
 <style scoped>
 .editor {
-  max-width: 1000px;
+  max-width: 1600px;
   margin: 0 auto;
+  padding: 0 20px;
 }
 
 h1 {

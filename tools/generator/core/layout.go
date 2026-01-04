@@ -35,7 +35,20 @@ func ResolveProjectLayoutFrom(startDir string) (ProjectLayout, error) {
 		}
 	}
 
-	for dir := startDir; ; dir = filepath.Dir(dir) {
+	// PRIORITY 1: Check current directory first (standalone layout)
+	// This prevents finding parent project when running in a subdirectory
+	if IsDir(filepath.Join(startDir, "internal")) && IsFile(filepath.Join(startDir, "go.mod")) {
+		return buildLayout(startDir)
+	}
+
+	// PRIORITY 2: Check for monorepo layout in current directory
+	appDir := filepath.Join(startDir, "application")
+	if IsDir(filepath.Join(appDir, "internal")) && IsFile(filepath.Join(appDir, "go.mod")) {
+		return buildLayout(appDir)
+	}
+
+	// PRIORITY 3: Walk up the directory tree (only if current dir doesn't have a project)
+	for dir := filepath.Dir(startDir); ; dir = filepath.Dir(dir) {
 		// Standalone layout: <root>/internal with <root>/go.mod.
 		if IsDir(filepath.Join(dir, "internal")) && IsFile(filepath.Join(dir, "go.mod")) {
 			return buildLayout(dir)

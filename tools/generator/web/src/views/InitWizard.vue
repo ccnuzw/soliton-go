@@ -55,6 +55,32 @@ async function generate() {
   }
 }
 
+async function switchToNewProject() {
+  loading.value = true
+  try {
+    // Determine the project path (../../<project-name>)
+    const projectPath = `../../${config.value.name}`
+
+    // Call switch API
+    const response = await fetch('/api/projects/switch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: projectPath }),
+    })
+
+    if (!response.ok) {
+      throw new Error('Failed to switch project')
+    }
+
+    // Reload the page to reflect the new project
+    window.location.reload()
+  } catch (e: any) {
+    error.value = e.message
+  } finally {
+    loading.value = false
+  }
+}
+
 function reset() {
   step.value = 1
   result.value = null
@@ -90,11 +116,7 @@ function reset() {
           项目名称 Project Name *
           <span class="tooltip" data-tooltip="项目目录名称，将创建此名称的文件夹">ⓘ</span>
         </label>
-        <input
-          v-model="config.name"
-          placeholder="my-awesome-project"
-          @keyup.enter="preview"
-        />
+        <input v-model="config.name" placeholder="my-awesome-project" @keyup.enter="preview" />
         <span class="hint">新项目的目录名称</span>
       </div>
 
@@ -103,10 +125,7 @@ function reset() {
           模块名称 Module Name
           <span class="tooltip" data-tooltip="Go 模块路径，用于 import 语句">ⓘ</span>
         </label>
-        <input
-          v-model="config.module_name"
-          :placeholder="defaultModuleName || 'github.com/yourname/my-project'"
-        />
+        <input v-model="config.module_name" :placeholder="defaultModuleName || 'github.com/yourname/my-project'" />
         <span class="hint">Go 模块路径（默认：github.com/soliton-go/{{ config.name || 'project' }}）</span>
       </div>
 
@@ -115,21 +134,14 @@ function reset() {
           框架替换路径 Framework Replace（可选）
           <span class="tooltip" data-tooltip="本地开发时使用，指向 soliton-go/framework 的路径">ⓘ</span>
         </label>
-        <input
-          v-model="config.framework_replace"
-          placeholder="../framework 或 /path/to/framework"
-        />
+        <input v-model="config.framework_replace" placeholder="../framework 或 /path/to/framework" />
         <span class="hint">用于开发的 soliton-go/framework 本地路径</span>
       </div>
 
       <div class="error" v-if="error">{{ error }}</div>
 
       <div class="actions">
-        <button
-          class="btn primary"
-          :disabled="!config.name || loading"
-          @click="preview"
-        >
+        <button class="btn primary" :disabled="!config.name || loading" @click="preview">
           {{ loading ? '加载中...' : '预览 Preview →' }}
         </button>
       </div>
@@ -145,7 +157,8 @@ function reset() {
       <div class="file-list">
         <h3>将要创建的文件 Files to Create:</h3>
         <div class="file" v-for="file in result?.files" :key="file.path">
-          <span class="file-status" :class="file.status">{{ file.status === 'new' ? 'NEW' : file.status === 'skip' ? 'SKIP' : file.status }}</span>
+          <span class="file-status" :class="file.status">{{ file.status === 'new' ? 'NEW' : file.status === 'skip' ?
+            'SKIP' : file.status }}</span>
           <span class="file-path">{{ file.path }}</span>
         </div>
       </div>
@@ -174,8 +187,9 @@ soliton-gen domain User --fields "username,email" --wire
 GOWORK=off go run ./cmd/main.go</pre>
       </div>
 
-      <div class="actions">
-        <button class="btn primary" @click="reset">创建另一个项目</button>
+      <div class="actions" style="margin-top: 24px;">
+        <button class="btn" @click="reset">创建另一个项目</button>
+        <button class="btn primary" @click="switchToNewProject">切换到新项目 →</button>
       </div>
     </div>
   </div>
@@ -183,8 +197,9 @@ GOWORK=off go run ./cmd/main.go</pre>
 
 <style scoped>
 .wizard {
-  max-width: 700px;
+  max-width: 1200px;
   margin: 0 auto;
+  padding: 0 20px;
 }
 
 h1 {
