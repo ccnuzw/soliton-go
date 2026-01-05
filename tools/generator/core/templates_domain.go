@@ -1,7 +1,7 @@
 package core
 
 // ============================================================================
-// DOMAIN TEMPLATES
+// DOMAIN TEMPLATES / 领域模板
 // ============================================================================
 
 const EntityTemplate = `package {{.PackageName}}
@@ -15,7 +15,7 @@ import (
 {{- end}}
 )
 
-// {{.EntityName}}ID is a strong typed ID.
+// {{.EntityName}}ID 是强类型的实体标识符。
 type {{.EntityName}}ID string
 
 func (id {{.EntityName}}ID) String() string {
@@ -25,7 +25,7 @@ func (id {{.EntityName}}ID) String() string {
 {{- range .Fields}}
 {{- if .IsEnum}}
 
-// {{.EnumType}} represents the {{.Name}} enum.
+// {{.EnumType}} 表示 {{.Name}} 字段的枚举类型。
 type {{.EnumType}} string
 
 const (
@@ -37,7 +37,7 @@ const (
 {{- end}}
 {{- end}}
 
-// {{.EntityName}} is the aggregate root.
+// {{.EntityName}} 是聚合根实体。
 type {{.EntityName}} struct {
 	ddd.BaseAggregateRoot
 	ID {{.EntityName}}ID ` + "`gorm:\"primaryKey\"`" + `
@@ -51,12 +51,12 @@ type {{.EntityName}} struct {
 {{- end}}
 }
 
-// TableName returns the table name for GORM.
+// TableName 返回 GORM 映射的数据库表名。
 func ({{.EntityName}}) TableName() string {
 	return "{{.TableName}}"
 }
 
-// New{{.EntityName}} creates a new {{.EntityName}}.
+// New{{.EntityName}} 创建一个新的 {{.EntityName}} 实体。
 func New{{.EntityName}}(id string{{range .Fields}}, {{.CamelName}} {{.GoType}}{{end}}) *{{.EntityName}} {
 	e := &{{.EntityName}}{
 		ID: {{.EntityName}}ID(id),
@@ -68,7 +68,7 @@ func New{{.EntityName}}(id string{{range .Fields}}, {{.CamelName}} {{.GoType}}{{
 	return e
 }
 
-// Update updates the entity fields.
+// Update 更新实体字段。
 func (e *{{.EntityName}}) Update({{range $i, $f := .Fields}}{{if $i}}, {{end}}{{$f.CamelName}} {{if $f.IsEnum}}*{{$f.GoType}}{{else if $f.IsPointer}}{{$f.GoType}}{{else}}*{{$f.GoType}}{{end}}{{end}}) {
 {{- range .Fields}}
 {{- if .IsPointer}}
@@ -84,7 +84,7 @@ func (e *{{.EntityName}}) Update({{range $i, $f := .Fields}}{{if $i}}, {{end}}{{
 	e.AddDomainEvent(New{{.EntityName}}UpdatedEvent(string(e.ID)))
 }
 
-// GetID returns the entity ID.
+// GetID 返回实体 ID。
 func (e *{{.EntityName}}) GetID() ddd.ID {
 	return e.ID
 }
@@ -98,10 +98,10 @@ import (
 	"github.com/soliton-go/framework/orm"
 )
 
-// {{.EntityName}}Repository is the interface for {{.EntityName}} persistence.
+// {{.EntityName}}Repository 定义 {{.EntityName}} 的持久化接口。
 type {{.EntityName}}Repository interface {
 	orm.Repository[*{{.EntityName}}, {{.EntityName}}ID]
-	// FindPaginated returns a page of entities with total count.
+	// FindPaginated 返回分页数据和总数。
 	FindPaginated(ctx context.Context, page, pageSize int) ([]*{{.EntityName}}, int64, error)
 }
 `
@@ -115,7 +115,7 @@ import (
 	"github.com/soliton-go/framework/event"
 )
 
-// {{.EntityName}}CreatedEvent is published when a new {{.EntityName}} is created.
+// {{.EntityName}}CreatedEvent 在创建 {{.EntityName}} 时发布。
 type {{.EntityName}}CreatedEvent struct {
 	ddd.BaseDomainEvent
 	{{.EntityName}}ID string ` + "`json:\"{{.PackageName}}_id\"`" + `
@@ -132,7 +132,7 @@ func New{{.EntityName}}CreatedEvent(id string) {{.EntityName}}CreatedEvent {
 	}
 }
 
-// {{.EntityName}}UpdatedEvent is published when a {{.EntityName}} is updated.
+// {{.EntityName}}UpdatedEvent 在更新 {{.EntityName}} 时发布。
 type {{.EntityName}}UpdatedEvent struct {
 	ddd.BaseDomainEvent
 	{{.EntityName}}ID string ` + "`json:\"{{.PackageName}}_id\"`" + `
@@ -149,7 +149,7 @@ func New{{.EntityName}}UpdatedEvent(id string) {{.EntityName}}UpdatedEvent {
 	}
 }
 
-// {{.EntityName}}DeletedEvent is published when a {{.EntityName}} is deleted.
+// {{.EntityName}}DeletedEvent 在删除 {{.EntityName}} 时发布。
 type {{.EntityName}}DeletedEvent struct {
 	ddd.BaseDomainEvent
 	{{.EntityName}}ID string    ` + "`json:\"{{.PackageName}}_id\"`" + `
@@ -168,7 +168,7 @@ func New{{.EntityName}}DeletedEvent(id string) {{.EntityName}}DeletedEvent {
 	}
 }
 
-// init registers events with the global registry.
+// init 将事件注册到全局注册表。
 func init() {
 	event.RegisterEvent("{{.PackageName}}.created", func() ddd.DomainEvent {
 		return &{{.EntityName}}CreatedEvent{}
@@ -204,17 +204,17 @@ func New{{.EntityName}}Repository(db *gorm.DB) {{.PackageName}}.{{.EntityName}}R
 	}
 }
 
-// FindPaginated returns a page of entities with total count.
+// FindPaginated 返回分页数据和总数。
 func (r *{{.EntityName}}RepoImpl) FindPaginated(ctx context.Context, page, pageSize int) ([]*{{.PackageName}}.{{.EntityName}}, int64, error) {
 	var entities []*{{.PackageName}}.{{.EntityName}}
 	var total int64
 
-	// Count total
+	// 查询总数
 	if err := r.db.WithContext(ctx).Model(&{{.PackageName}}.{{.EntityName}}{}).Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
-	// Get page
+	// 获取分页数据
 	offset := (page - 1) * pageSize
 	if err := r.db.WithContext(ctx).Offset(offset).Limit(pageSize).Find(&entities).Error; err != nil {
 		return nil, 0, err
@@ -223,7 +223,7 @@ func (r *{{.EntityName}}RepoImpl) FindPaginated(ctx context.Context, page, pageS
 	return entities, total, nil
 }
 
-// Migrate{{.EntityName}} creates the table if it doesn't exist.
+// Migrate{{.EntityName}} 创建数据库表（如不存在）。
 func Migrate{{.EntityName}}(db *gorm.DB) error {
 	return db.AutoMigrate(&{{.PackageName}}.{{.EntityName}}{})
 }
@@ -240,7 +240,7 @@ import (
 	"{{.ModulePath}}/internal/domain/{{.PackageName}}"
 )
 
-// Create{{.EntityName}}Command is the command for creating a {{.EntityName}}.
+// Create{{.EntityName}}Command 是创建 {{.EntityName}} 的命令。
 type Create{{.EntityName}}Command struct {
 	ID string
 {{- range .Fields}}
@@ -248,10 +248,10 @@ type Create{{.EntityName}}Command struct {
 {{- end}}
 }
 
-// Create{{.EntityName}}Handler handles Create{{.EntityName}}Command.
+// Create{{.EntityName}}Handler 处理 Create{{.EntityName}}Command。
 type Create{{.EntityName}}Handler struct {
 	repo {{.PackageName}}.{{.EntityName}}Repository
-	// Optional: Add event bus for domain event publishing
+	// 可选：添加事件总线用于发布领域事件
 	// eventBus event.EventBus
 }
 
@@ -265,8 +265,8 @@ func (h *Create{{.EntityName}}Handler) Handle(ctx context.Context, cmd Create{{.
 		return nil, err
 	}
 
-	// Optional: Publish domain events
-	// Uncomment to enable event publishing:
+	// 可选：发布领域事件
+	// 取消注释以启用事件发布：
 	// events := entity.PullDomainEvents()
 	// if len(events) > 0 {
 	//     if err := h.eventBus.Publish(ctx, events...); err != nil {
@@ -277,7 +277,7 @@ func (h *Create{{.EntityName}}Handler) Handle(ctx context.Context, cmd Create{{.
 	return entity, nil
 }
 
-// Update{{.EntityName}}Command is the command for updating a {{.EntityName}}.
+// Update{{.EntityName}}Command 是更新 {{.EntityName}} 的命令。
 type Update{{.EntityName}}Command struct {
 	ID string
 {{- range .Fields}}
@@ -285,7 +285,7 @@ type Update{{.EntityName}}Command struct {
 {{- end}}
 }
 
-// Update{{.EntityName}}Handler handles Update{{.EntityName}}Command.
+// Update{{.EntityName}}Handler 处理 Update{{.EntityName}}Command。
 type Update{{.EntityName}}Handler struct {
 	repo {{.PackageName}}.{{.EntityName}}Repository
 }
@@ -306,12 +306,12 @@ func (h *Update{{.EntityName}}Handler) Handle(ctx context.Context, cmd Update{{.
 	return entity, nil
 }
 
-// Delete{{.EntityName}}Command is the command for deleting a {{.EntityName}}.
+// Delete{{.EntityName}}Command 是删除 {{.EntityName}} 的命令。
 type Delete{{.EntityName}}Command struct {
 	ID string
 }
 
-// Delete{{.EntityName}}Handler handles Delete{{.EntityName}}Command.
+// Delete{{.EntityName}}Handler 处理 Delete{{.EntityName}}Command。
 type Delete{{.EntityName}}Handler struct {
 	repo {{.PackageName}}.{{.EntityName}}Repository
 }
@@ -333,12 +333,12 @@ import (
 	"{{.ModulePath}}/internal/domain/{{.PackageName}}"
 )
 
-// Get{{.EntityName}}Query is the query for getting a single {{.EntityName}}.
+// Get{{.EntityName}}Query 是获取单个 {{.EntityName}} 的查询。
 type Get{{.EntityName}}Query struct {
 	ID string
 }
 
-// Get{{.EntityName}}Handler handles Get{{.EntityName}}Query.
+// Get{{.EntityName}}Handler 处理 Get{{.EntityName}}Query。
 type Get{{.EntityName}}Handler struct {
 	repo {{.PackageName}}.{{.EntityName}}Repository
 }
@@ -351,13 +351,13 @@ func (h *Get{{.EntityName}}Handler) Handle(ctx context.Context, query Get{{.Enti
 	return h.repo.Find(ctx, {{.PackageName}}.{{.EntityName}}ID(query.ID))
 }
 
-// List{{.EntityName}}sQuery is the query for listing {{.EntityName}}s with pagination.
+// List{{.EntityName}}sQuery 是分页列表查询。
 type List{{.EntityName}}sQuery struct {
-	Page     int // Page number (1-based)
-	PageSize int // Items per page (default: 20, max: 100)
+	Page     int // 页码（从 1 开始）
+	PageSize int // 每页数量（默认: 20, 最大: 100）
 }
 
-// List{{.EntityName}}sResult is the paginated result for List{{.EntityName}}sQuery.
+// List{{.EntityName}}sResult 是分页查询结果。
 type List{{.EntityName}}sResult struct {
 	Items      []*{{.PackageName}}.{{.EntityName}}
 	Total      int64
@@ -366,7 +366,7 @@ type List{{.EntityName}}sResult struct {
 	TotalPages int
 }
 
-// List{{.EntityName}}sHandler handles List{{.EntityName}}sQuery.
+// List{{.EntityName}}sHandler 处理 List{{.EntityName}}sQuery。
 type List{{.EntityName}}sHandler struct {
 	repo {{.PackageName}}.{{.EntityName}}Repository
 }
@@ -376,7 +376,7 @@ func NewList{{.EntityName}}sHandler(repo {{.PackageName}}.{{.EntityName}}Reposit
 }
 
 func (h *List{{.EntityName}}sHandler) Handle(ctx context.Context, query List{{.EntityName}}sQuery) (*List{{.EntityName}}sResult, error) {
-	// Normalize pagination parameters
+	// 规范化分页参数
 	page := query.Page
 	if page < 1 {
 		page = 1
@@ -389,7 +389,7 @@ func (h *List{{.EntityName}}sHandler) Handle(ctx context.Context, query List{{.E
 		pageSize = 100
 	}
 
-	// Get total count and items
+	// 获取总数和分页数据
 	items, total, err := h.repo.FindPaginated(ctx, page, pageSize)
 	if err != nil {
 		return nil, err
@@ -418,21 +418,21 @@ import (
 	"{{.ModulePath}}/internal/domain/{{.PackageName}}"
 )
 
-// Create{{.EntityName}}Request is the request body for creating a {{.EntityName}}.
+// Create{{.EntityName}}Request 是创建 {{.EntityName}} 的请求体。
 type Create{{.EntityName}}Request struct {
 {{- range .Fields}}
 	{{.Name}} {{if .IsEnum}}string{{else}}{{.AppGoType}}{{end}} ` + "`json:\"{{.SnakeName}}\"{{createBindingTag .}}`" + `
 {{- end}}
 }
 
-// Update{{.EntityName}}Request is the request body for updating a {{.EntityName}}.
+// Update{{.EntityName}}Request 是更新 {{.EntityName}} 的请求体。
 type Update{{.EntityName}}Request struct {
 {{- range .Fields}}
 	{{.Name}} {{if .IsEnum}}*string{{else if .IsPointer}}{{.AppGoType}}{{else}}*{{.AppGoType}}{{end}} ` + "`json:\"{{.SnakeName}},omitempty\"{{updateBindingTag .}}`" + `
 {{- end}}
 }
 
-// {{.EntityName}}Response is the response body for {{.EntityName}} data.
+// {{.EntityName}}Response 是 {{.EntityName}} 的响应体。
 type {{.EntityName}}Response struct {
 	ID        string    ` + "`json:\"id\"`" + `
 {{- range .Fields}}
@@ -442,7 +442,7 @@ type {{.EntityName}}Response struct {
 	UpdatedAt time.Time ` + "`json:\"updated_at\"`" + `
 }
 
-// To{{.EntityName}}Response converts entity to response.
+// To{{.EntityName}}Response 将实体转换为响应体。
 func To{{.EntityName}}Response(e *{{.PackageName}}.{{.EntityName}}) {{.EntityName}}Response {
 	return {{.EntityName}}Response{
 		ID:        string(e.ID),
@@ -454,7 +454,7 @@ func To{{.EntityName}}Response(e *{{.PackageName}}.{{.EntityName}}) {{.EntityNam
 	}
 }
 
-// To{{.EntityName}}ResponseList converts entities to response list.
+// To{{.EntityName}}ResponseList 将实体列表转换为响应体列表。
 func To{{.EntityName}}ResponseList(entities []*{{.PackageName}}.{{.EntityName}}) []{{.EntityName}}Response {
 	result := make([]{{.EntityName}}Response, len(entities))
 	for i, e := range entities {
@@ -466,8 +466,8 @@ func To{{.EntityName}}ResponseList(entities []*{{.PackageName}}.{{.EntityName}})
 
 const HelpersHTTPTemplate = `package http
 
-// EnumPtr is a helper function to convert *string to *T for enum types.
-// This is useful for handling optional enum fields in update requests.
+// EnumPtr 是一个辅助函数，用于将 *string 转换为枚举类型的 *T。
+// 适用于处理更新请求中的可选枚举字段。
 func EnumPtr[T any](v *string, parse func(string) T) *T {
 	if v == nil {
 		return nil
@@ -491,7 +491,7 @@ import (
 {{- end}}
 )
 
-// {{.EntityName}}Handler handles HTTP requests for {{.EntityName}} operations.
+// {{.EntityName}}Handler 处理 {{.EntityName}} 相关的 HTTP 请求。
 type {{.EntityName}}Handler struct {
 	createHandler *{{.PackageName}}app.Create{{.EntityName}}Handler
 	updateHandler *{{.PackageName}}app.Update{{.EntityName}}Handler
@@ -500,7 +500,7 @@ type {{.EntityName}}Handler struct {
 	listHandler   *{{.PackageName}}app.List{{.EntityName}}sHandler
 }
 
-// New{{.EntityName}}Handler creates a new {{.EntityName}}Handler.
+// New{{.EntityName}}Handler 创建 {{.EntityName}}Handler 实例。
 func New{{.EntityName}}Handler(
 	createHandler *{{.PackageName}}app.Create{{.EntityName}}Handler,
 	updateHandler *{{.PackageName}}app.Update{{.EntityName}}Handler,
@@ -517,7 +517,7 @@ func New{{.EntityName}}Handler(
 	}
 }
 
-// RegisterRoutes registers {{.EntityName}} routes.
+// RegisterRoutes 注册 {{.EntityName}} 相关路由。
 func (h *{{.EntityName}}Handler) RegisterRoutes(r *gin.Engine) {
 	api := r.Group("/api/{{.RouteBase}}")
 	{
@@ -530,7 +530,7 @@ func (h *{{.EntityName}}Handler) RegisterRoutes(r *gin.Engine) {
 	}
 }
 
-// Create handles POST /api/{{.PackageName}}s
+// Create 处理 POST /api/{{.PackageName}}s
 func (h *{{.EntityName}}Handler) Create(c *gin.Context) {
 	var req {{.PackageName}}app.Create{{.EntityName}}Request
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -554,7 +554,7 @@ func (h *{{.EntityName}}Handler) Create(c *gin.Context) {
 	Success(c, {{.PackageName}}app.To{{.EntityName}}Response(entity))
 }
 
-// Get handles GET /api/{{.PackageName}}s/:id
+// Get 处理 GET /api/{{.PackageName}}s/:id
 func (h *{{.EntityName}}Handler) Get(c *gin.Context) {
 	id := c.Param("id")
 
@@ -567,7 +567,7 @@ func (h *{{.EntityName}}Handler) Get(c *gin.Context) {
 	Success(c, {{.PackageName}}app.To{{.EntityName}}Response(entity))
 }
 
-// List handles GET /api/{{.PackageName}}s?page=1&page_size=20
+// List 处理 GET /api/{{.PackageName}}s?page=1&page_size=20
 func (h *{{.EntityName}}Handler) List(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
@@ -590,7 +590,7 @@ func (h *{{.EntityName}}Handler) List(c *gin.Context) {
 	})
 }
 
-// Update handles PUT /api/{{.PackageName}}s/:id
+// Update 处理 PUT /api/{{.PackageName}}s/:id
 func (h *{{.EntityName}}Handler) Update(c *gin.Context) {
 	id := c.Param("id")
 
@@ -620,7 +620,7 @@ func (h *{{.EntityName}}Handler) Update(c *gin.Context) {
 	Success(c, {{.PackageName}}app.To{{.EntityName}}Response(entity))
 }
 
-// Delete handles DELETE /api/{{.PackageName}}s/:id
+// Delete 处理 DELETE /api/{{.PackageName}}s/:id
 func (h *{{.EntityName}}Handler) Delete(c *gin.Context) {
 	id := c.Param("id")
 
@@ -644,7 +644,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// Module provides all {{.EntityName}} dependencies for Fx.
+// Module 提供 {{.EntityName}} 的所有 Fx 依赖。
 var Module = fx.Options(
 	// Repository
 	fx.Provide(func(db *gorm.DB) {{.PackageName}}.{{.EntityName}}Repository {
@@ -660,8 +660,8 @@ var Module = fx.Options(
 	fx.Provide(NewGet{{.EntityName}}Handler),
 	fx.Provide(NewList{{.EntityName}}sHandler),
 
-	// Optional: Register with CQRS bus
-	// Uncomment to enable CQRS pattern:
+	// 可选：注册到 CQRS 总线
+	// 取消注释以启用 CQRS 模式：
 	// fx.Invoke(func(cmdBus *cqrs.InMemoryCommandBus, queryBus *cqrs.InMemoryQueryBus,
 	//     createHandler *Create{{.EntityName}}Handler,
 	//     updateHandler *Update{{.EntityName}}Handler,
@@ -676,7 +676,7 @@ var Module = fx.Options(
 	// }),
 )
 
-// RegisterMigration registers the {{.EntityName}} table migration.
+// RegisterMigration 注册 {{.EntityName}} 表的数据库迁移。
 func RegisterMigration(db *gorm.DB) error {
 	return persistence.Migrate{{.EntityName}}(db)
 }

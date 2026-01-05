@@ -54,16 +54,16 @@ func main() {
 
 		// soliton-gen:routes
 
-		// Start server
+		// 启动服务器
 		fx.Invoke(StartServer),
 	).Run()
 }
 
-// NewRouter creates the Gin engine and registers base routes.
+// NewRouter 创建 Gin 引擎并注册基础路由。
 func NewRouter() *gin.Engine {
 	r := gin.Default()
 
-	// Health check
+	// 健康检查
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "ok"})
 	})
@@ -71,7 +71,7 @@ func NewRouter() *gin.Engine {
 	return r
 }
 
-// StartServer starts the HTTP server with Fx lifecycle.
+// StartServer 启动 HTTP 服务器（带 Fx 生命周期管理）。
 func StartServer(lc fx.Lifecycle, cfg *config.Config, logger *zap.Logger, r *gin.Engine) {
 	addr := fmt.Sprintf("%s:%d", cfg.GetString("server.host"), cfg.GetInt("server.port"))
 	lc.Append(fx.Hook{
@@ -133,29 +133,29 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Error codes
+// 错误码定义
 const (
-	CodeSuccess      = 0     // Success
-	CodeBadRequest   = 400   // Bad request (validation error)
-	CodeUnauthorized = 401   // Unauthorized
-	CodeForbidden    = 403   // Forbidden
-	CodeNotFound     = 404   // Resource not found
-	CodeInternal     = 500   // Internal server error
+	CodeSuccess      = 0     // 成功
+	CodeBadRequest   = 400   // 请求错误
+	CodeUnauthorized = 401   // 未授权
+	CodeForbidden    = 403   // 禁止访问
+	CodeNotFound     = 404   // 资源不存在
+	CodeInternal     = 500   // 服务器内部错误
 
-	// Business error codes (1000+)
-	CodeValidation   = 1001  // Validation failed
-	CodeDuplicate    = 1002  // Duplicate entry
-	CodeConflict     = 1003  // Business conflict
+	// 业务错误码 (1000+)
+	CodeValidation   = 1001  // 校验失败
+	CodeDuplicate    = 1002  // 重复数据
+	CodeConflict     = 1003  // 业务冲突
 )
 
-// Response is the standard API response.
+// Response 是标准的 API 响应结构体。
 type Response struct {
 	Code    int         ` + "`json:\"code\"`" + `
 	Message string      ` + "`json:\"message\"`" + `
 	Data    interface{} ` + "`json:\"data,omitempty\"`" + `
 }
 
-// Success returns a successful response.
+// Success 返回成功响应。
 func Success(c *gin.Context, data interface{}) {
 	c.JSON(http.StatusOK, Response{
 		Code:    CodeSuccess,
@@ -164,7 +164,7 @@ func Success(c *gin.Context, data interface{}) {
 	})
 }
 
-// BadRequest returns a 400 error response.
+// BadRequest 返回 400 错误响应。
 func BadRequest(c *gin.Context, message string) {
 	c.JSON(http.StatusBadRequest, Response{
 		Code:    CodeBadRequest,
@@ -172,7 +172,7 @@ func BadRequest(c *gin.Context, message string) {
 	})
 }
 
-// NotFound returns a 404 error response.
+// NotFound 返回 404 错误响应。
 func NotFound(c *gin.Context, message string) {
 	c.JSON(http.StatusNotFound, Response{
 		Code:    CodeNotFound,
@@ -180,7 +180,7 @@ func NotFound(c *gin.Context, message string) {
 	})
 }
 
-// InternalError returns a 500 error response.
+// InternalError 返回 500 错误响应。
 func InternalError(c *gin.Context, message string) {
 	c.JSON(http.StatusInternalServerError, Response{
 		Code:    CodeInternal,
@@ -188,7 +188,7 @@ func InternalError(c *gin.Context, message string) {
 	})
 }
 
-// ValidationError returns a validation error response.
+// ValidationError 返回校验错误响应。
 func ValidationError(c *gin.Context, message string) {
 	c.JSON(http.StatusBadRequest, Response{
 		Code:    CodeValidation,

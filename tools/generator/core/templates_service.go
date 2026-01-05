@@ -1,7 +1,7 @@
 package core
 
 // ============================================================================
-// SERVICE TEMPLATES
+// SERVICE TEMPLATES / 服务模板
 // ============================================================================
 
 // ServiceTemplate is the template for generating a service file.
@@ -11,21 +11,21 @@ import (
 	"context"
 	"errors"
 
-	// Import your domain repositories here:
+	// 在此导入领域层的 Repository：
 	// "{{.ModulePath}}/internal/domain/user"
 	// "{{.ModulePath}}/internal/domain/order"
 )
 
-// {{.ServiceName}} handles cross-domain business logic.
+// {{.ServiceName}} 处理跨领域的业务逻辑编排。
 type {{.ServiceName}} struct {
-	// Add your repositories here:
+	// 在此添加依赖的 Repository：
 	// userRepo  user.UserRepository
 	// orderRepo order.OrderRepository
 }
 
-// New{{.ServiceName}} creates a new {{.ServiceName}}.
+// New{{.ServiceName}} 创建 {{.ServiceName}} 实例。
 func New{{.ServiceName}}(
-	// Add your repository parameters here:
+	// 在此添加 Repository 参数：
 	// userRepo user.UserRepository,
 	// orderRepo order.OrderRepository,
 ) *{{.ServiceName}} {
@@ -36,16 +36,16 @@ func New{{.ServiceName}}(
 }
 
 {{range .Methods}}
-// {{.Name}} implements the {{.Name}} use case.
+// {{.Name}} 实现 {{.Name}} 用例。
 func (s *{{$.ServiceName}}) {{.Name}}(ctx context.Context, req {{.Name}}Request) (*{{.Name}}Response, error) {
-	// TODO: Implement business logic
-	// Example:
-	// 1. Validate request
-	// 2. Load entities from repositories
-	// 3. Execute domain logic
-	// 4. Save changes
-	// 5. Publish domain events
-	// 6. Return response
+	// TODO: 实现业务逻辑
+	// 示例步骤：
+	// 1. 校验请求参数
+	// 2. 从 Repository 加载实体
+	// 3. 执行领域逻辑
+	// 4. 保存变更
+	// 5. 发布领域事件
+	// 6. 返回响应
 
 	return nil, errors.New("not implemented")
 }
@@ -55,19 +55,18 @@ func (s *{{$.ServiceName}}) {{.Name}}(ctx context.Context, req {{.Name}}Request)
 const ServiceDTOTemplate = `package {{.PackageName}}
 
 {{range .Methods}}
-// {{.Name}}Request is the request for {{.Name}}.
+// {{.Name}}Request 是 {{.Name}} 方法的请求参数。
 type {{.Name}}Request struct {
-	// Add your request fields here.
-	// Common patterns:
-	ID string ` + "`json:\"id,omitempty\"`" + ` // Entity ID (for Get/Update/Delete operations)
-	// Data   any    ` + "`json:\"data,omitempty\"`" + ` // Payload for Create/Update operations
+	// 在此添加请求字段：
+	ID string ` + "`json:\"id,omitempty\"`" + ` // 实体 ID（用于 Get/Update/Delete 操作）
+	// Data   any    ` + "`json:\"data,omitempty\"`" + ` // 请求数据（用于 Create/Update 操作）
 }
 
-// {{.Name}}Response is the response for {{.Name}}.
+// {{.Name}}Response 是 {{.Name}} 方法的响应结果。
 type {{.Name}}Response struct {
-	Success bool   ` + "`json:\"success\"`" + `           // Operation success flag
-	Message string ` + "`json:\"message,omitempty\"`" + ` // Human-readable message
-	Data    any    ` + "`json:\"data,omitempty\"`" + `    // Response payload
+	Success bool   ` + "`json:\"success\"`" + `           // 操作是否成功
+	Message string ` + "`json:\"message,omitempty\"`" + ` // 提示消息
+	Data    any    ` + "`json:\"data,omitempty\"`" + `    // 响应数据
 }
 {{end}}
 `
@@ -76,7 +75,7 @@ const ServiceModuleTemplate = `package services
 
 import "go.uber.org/fx"
 
-// Module provides application service dependencies for Fx.
+// Module 提供应用服务的依赖注入配置。
 var Module = fx.Options(
 	// fx.Provide(New{{.ServiceName}}),
 )
