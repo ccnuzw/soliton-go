@@ -94,10 +94,20 @@ go build -o soliton-gen .
 | 类型 | 格式 | 示例 | 说明 |
 |------|------|------|------|
 | string | `field` | `username` | 默认类型 |
-| int64 | `field:int64` | `price:int64` | 64位整数 |
 | text | `field:text` | `description:text` | GORM text 类型 |
+| int | `field:int` | `count:int` | 32位整数 |
+| int64 | `field:int64` | `price:int64` | 64位整数 |
+| float64 | `field:float64` | `score:float64` | 浮点数 |
+| decimal | `field:decimal` | `amount:decimal` | 精确小数 (10,2 精度) |
+| bool | `field:bool` | `active:bool` | 布尔值 |
+| time | `field:time` | `created_at:time` | 时间戳 |
+| time? | `field:time?` | `login_at:time?` | 可选时间字段 |
+| date | `field:date` | `birth:date` | 日期 (无时间部分) |
+| date? | `field:date?` | `expire:date?` | 可选日期 |
 | uuid | `field:uuid` | `user_id:uuid` | 带索引的 UUID |
-| time? | `field:time?` | `login_at:time?` | 可选时间字段，无 binding:required |
+| json | `field:json` | `meta:json` | JSON 对象 (需 gorm.io/datatypes) |
+| jsonb | `field:jsonb` | `data:jsonb` | PostgreSQL JSONB |
+| bytes | `field:bytes` | `avatar:bytes` | 二进制数据 |
 | enum | `field:enum(a\|b)` | `status:enum(active\|banned)` | 生成枚举类型 |
 
 ### 字段备注效果

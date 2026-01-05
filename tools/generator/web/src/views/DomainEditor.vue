@@ -136,6 +136,8 @@ function mapGoTypeToFieldType(goType: string, isEnum?: boolean): string {
   if (goType === 'bool') return 'bool'
   if (goType === 'time.Time') return 'time'
   if (goType.includes('Time')) return 'time?'
+  if (goType === 'datatypes.JSON') return 'json'
+  if (goType === '[]byte') return 'bytes'
 
   // Default to enum for custom types
   return 'enum'
@@ -363,10 +365,16 @@ function getStatusText(status: string): string {
                 <li><code>int</code> - 32位整数</li>
                 <li><code>int64</code> - 64位整数 (适合金额、大数值)</li>
                 <li><code>float64</code> - 浮点数 (适合评分、重量等)</li>
+                <li><code>decimal</code> - 精确小数 (适合金额，精度 10,2)</li>
                 <li><code>bool</code> - 布尔值 (true/false)</li>
                 <li><code>time</code> - 必填时间戳</li>
                 <li><code>time?</code> - 可选时间戳 (可为空)</li>
+                <li><code>date</code> - 日期 (无时间部分)</li>
+                <li><code>date?</code> - 可选日期</li>
                 <li><code>uuid</code> - UUID 字符串 (带索引，适合外键)</li>
+                <li><code>json</code> - JSON 对象 (需 gorm.io/datatypes)</li>
+                <li><code>jsonb</code> - JSONB (PostgreSQL 专用)</li>
+                <li><code>bytes</code> - 二进制数据</li>
                 <li><code>enum</code> - 枚举类型，需填写枚举值（用 <code>|</code> 分隔，如 <code>active|inactive|banned</code>）</li>
               </ul>
               <p><strong>字段备注：</strong>可选，填写后会作为代码注释生成在字段定义行末</p>

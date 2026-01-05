@@ -253,14 +253,26 @@ func mapFieldType(typeName string, snakeName string) (goType, gormTag string) {
 		return "int64", "`gorm:\"not null;default:0\"`"
 	case "float", "float64", "double":
 		return "float64", "`gorm:\"default:0\"`"
+	case "decimal":
+		return "float64", "`gorm:\"type:decimal(10,2);default:0\"`"
 	case "bool", "boolean":
 		return "bool", "`gorm:\"default:false\"`"
 	case "time", "datetime", "timestamp":
 		return "time.Time", "`gorm:\"type:timestamp\"`"
 	case "time?", "datetime?":
 		return "*time.Time", ""
+	case "date":
+		return "time.Time", "`gorm:\"type:date\"`"
+	case "date?":
+		return "*time.Time", "`gorm:\"type:date\"`"
 	case "uuid", "id":
 		return "string", "`gorm:\"size:36;index\"`"
+	case "json":
+		return "datatypes.JSON", ""
+	case "jsonb":
+		return "datatypes.JSON", "`gorm:\"type:jsonb\"`"
+	case "bytes", "binary", "blob":
+		return "[]byte", "`gorm:\"type:bytes\"`"
 	default:
 		return "string", "`gorm:\"size:255\"`"
 	}

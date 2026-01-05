@@ -157,10 +157,16 @@ cd /path/to/existing/project
    - `int` - 整数 (32-bit)
    - `int64` - 整数 (64-bit)
    - `float64` - 浮点数 (64-bit)
+   - `decimal` - 精确小数 (10,2 精度，适合金额)
    - `bool` - 布尔值
    - `time` - 时间戳
    - `time?` - 可选时间戳
+   - `date` - 日期 (无时间部分)
+   - `date?` - 可选日期
    - `uuid` - UUID (带索引)
+   - `json` - JSON 对象 (需 gorm.io/datatypes)
+   - `jsonb` - PostgreSQL JSONB
+   - `bytes` - 二进制数据
    - `enum` - 枚举（需要提供枚举值）
 
 3. **枚举值**（仅当类型为 enum 时）

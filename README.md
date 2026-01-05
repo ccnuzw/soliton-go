@@ -42,11 +42,25 @@ GOWORK=off go mod tidy && GOWORK=off go run ./cmd/main.go
 | 类型 | 示例 | 生成结果 |
 |------|------|----------|
 | string | `username` | `Username string` |
-| int64 | `price:int64` | `Price int64` |
 | text | `desc:text` | `Desc string` (GORM: text) |
-| uuid | `user_id:uuid` | `UserId string` (带索引) |
+| int | `count:int` | `Count int` |
+| int64 | `price:int64` | `Price int64` |
+| float64 | `score:float64` | `Score float64` |
+| decimal | `amount:decimal` | `Amount float64` (GORM: decimal(10,2)) |
+| bool | `active:bool` | `Active bool` |
+| time | `created_at:time` | `CreatedAt time.Time` |
 | time? | `login_at:time?` | `LoginAt *time.Time` (可选字段) |
+| date | `birth:date` | `Birth time.Time` (GORM: date) |
+| date? | `expire:date?` | `Expire *time.Time` (可选日期) |
+| uuid | `user_id:uuid` | `UserId string` (带索引) |
+| json | `meta:json` | `Meta datatypes.JSON` |
+| jsonb | `data:jsonb` | `Data datatypes.JSON` (PostgreSQL) |
+| bytes | `avatar:bytes` | `Avatar []byte` |
 | enum | `status:enum(a\|b\|c)` | 生成枚举类型和常量 |
+
+> [!WARNING]
+> **已知限制 / Known Limitations**
+> - **Domain 命令参数不全**: 缺少 `--api-only`（仅生成 API）、`--no-crud`（不生成 CRUD）、`--no-events`（不生成事件）等选项
 
 ## 🔌 命令列表
 
@@ -95,6 +109,15 @@ soliton-gen domain Product --fields "..." --wire
 | `--soft-delete` | 🆕 启用软删除 (`DeletedAt` 字段) |
 | `--force` | 强制覆盖已存在文件 |
 | `--wire` | 自动接入 main.go |
+
+### Domain 子命令
+| 子命令 | 说明 |
+|--------|------|
+| `domain list` | 列出项目中所有已生成的领域模块 |
+| `domain delete <name>` | 删除领域模块及其所有相关文件 |
+
+> [!NOTE]
+> 子命令支持不全：目前缺少 `domain show <name>`（查看领域详情）、`domain add-field`（添加字段）等子命令
 
 ## 🆕 新增功能
 

@@ -388,10 +388,16 @@ func GetAvailableFieldTypes() []map[string]string {
 		{"type": "int", "description": "Integer (32-bit)"},
 		{"type": "int64", "description": "Integer (64-bit)"},
 		{"type": "float64", "description": "Float (64-bit)"},
+		{"type": "decimal", "description": "Decimal (10,2 precision)"},
 		{"type": "bool", "description": "Boolean"},
 		{"type": "time", "description": "Timestamp"},
 		{"type": "time?", "description": "Optional Timestamp"},
+		{"type": "date", "description": "Date (no time)"},
+		{"type": "date?", "description": "Optional Date"},
 		{"type": "uuid", "description": "UUID (indexed)"},
+		{"type": "json", "description": "JSON object"},
+		{"type": "jsonb", "description": "JSONB (PostgreSQL)"},
+		{"type": "bytes", "description": "Binary data"},
 		{"type": "enum", "description": "Enum (requires enum_values)"},
 	}
 }
