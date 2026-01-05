@@ -41,12 +41,67 @@
 
 ---
 
+## 🔍 智能服务类型检测
+
+生成器会自动检测并区分两种类型的服务：
+
+### 服务类型对照表
+
+| 类型 | 判断条件 | 生成目录 | GUI 卡片颜色 |
+|------|----------|----------|--------------|
+| **领域服务** (Domain Service) | 存在同名 Domain（如 `domain/order/`） | `application/order/service.go` | 🟢 绿色边框 |
+| **跨域服务** (Cross-domain Service) | 不存在同名 Domain | `application/payment/service.go` | 🟣 紫色边框 |
+
+### CLI 智能提示
+
+运行 `soliton-gen service` 时会输出检测结果：
+
+```bash
+$ ./soliton-gen service OrderService
+📋 服务类型检测
+━━━━━━━━━━━━━━━
+✅ 类型：领域服务 (Domain Service)
+📁 目标路径：application/order
+📝 DTO：service_dto.go
+
+正在生成 Service OrderService...
+```
+
+```bash
+$ ./soliton-gen service PaymentService
+📋 服务类型检测
+━━━━━━━━━━━━━━━
+ℹ️  类型：跨领域服务 (Cross-domain Service)
+📁 目标路径：application/payment
+📝 DTO：service_dto.go
+
+正在生成 Service PaymentService...
+```
+
+### GUI 颜色标识
+
+在 Web GUI 的"已生成服务"列表中，卡片会通过颜色区分：
+
+- 🟢 **绿色左边框 + "领域" 徽章**：表示此服务有对应的 Domain
+- 🟣 **紫色左边框 + "跨域" 徽章**：表示此服务是独立的跨域编排服务
+
+### Service DTO 生成逻辑
+
+| 场景 | 行为 |
+|------|------|
+| 领域服务/跨域服务 | 生成 `service_dto.go` |
+| `service_dto.go` 已存在且未 `--force` | 跳过生成 |
+| 使用 `--force` | 覆盖生成 |
+
+---
+
 ## 📁 生成文件
 
 ```
-application/services/
-├── order_service.go    # 服务结构和方法
-└── order_dto.go        # 请求/响应 DTO
+application/{servicename}/
+├── service.go    # 服务结构和方法
+├── service_dto.go # 请求/响应 DTO
+└── module.go     # Fx 模块注册
 ```
 
 ---
@@ -95,10 +150,10 @@ func NewOrderService(
 
 ### 3. 定义 DTO
 
-编辑 `order_dto.go`：
+编辑 `service_dto.go`：
 
 ```go
-type CreateOrderRequest struct {
+type CreateOrderServiceRequest struct {
     UserID     string           `json:"user_id"`
     Items      []OrderItemInput `json:"items"`
     Address    string           `json:"address"`
@@ -109,7 +164,7 @@ type OrderItemInput struct {
     Quantity  int    `json:"quantity"`
 }
 
-type CreateOrderResponse struct {
+type CreateOrderServiceResponse struct {
     OrderID     string `json:"order_id"`
     OrderNo     string `json:"order_no"`
     TotalAmount int64  `json:"total_amount"`
@@ -119,7 +174,7 @@ type CreateOrderResponse struct {
 ### 4. 实现业务逻辑
 
 ```go
-func (s *OrderService) CreateOrder(ctx context.Context, req CreateOrderRequest) (*CreateOrderResponse, error) {
+func (s *OrderService) CreateOrder(ctx context.Context, req CreateOrderServiceRequest) (*CreateOrderServiceResponse, error) {
     // 1. 验证用户
     user, err := s.userRepo.Find(ctx, user.UserID(req.UserID))
     if err != nil {
@@ -156,7 +211,7 @@ func (s *OrderService) CreateOrder(ctx context.Context, req CreateOrderRequest) 
         s.productRepo.DeductStock(ctx, product.ProductID(item.ProductID), item.Quantity)
     }
 
-    return &CreateOrderResponse{
+    return &CreateOrderServiceResponse{
         OrderID:     orderID,
         OrderNo:     orderNo,
         TotalAmount: totalAmount,
@@ -189,7 +244,7 @@ type OrderServiceHandler struct {
 }
 
 func (h *OrderServiceHandler) CreateOrder(c *gin.Context) {
-    var req services.CreateOrderRequest
+    var req services.CreateOrderServiceRequest
     if err := c.ShouldBindJSON(&req); err != nil {
         BadRequest(c, err.Error())
         return

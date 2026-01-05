@@ -1,11 +1,14 @@
 package user
 
 import (
+	"context"
+
 	"github.com/soliton-go/framework/orm"
 )
 
-// UserRepository is the interface for User persistence.
+// UserRepository 定义 User 的持久化接口。
 type UserRepository interface {
 	orm.Repository[*User, UserID]
-	// TODO: Add custom query methods here
+	// FindPaginated 返回分页数据和总数。
+	FindPaginated(ctx context.Context, page, pageSize int, sortBy, sortOrder string) ([]*User, int64, error)
 }

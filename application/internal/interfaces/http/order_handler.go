@@ -1,6 +1,8 @@
 package http
 
 import (
+	"strconv"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
@@ -8,7 +10,7 @@ import (
 	"github.com/soliton-go/application/internal/domain/order"
 )
 
-// OrderHandler handles HTTP requests for Order operations.
+// OrderHandler 处理 Order 相关的 HTTP 请求。
 type OrderHandler struct {
 	createHandler *orderapp.CreateOrderHandler
 	updateHandler *orderapp.UpdateOrderHandler
@@ -17,7 +19,7 @@ type OrderHandler struct {
 	listHandler   *orderapp.ListOrdersHandler
 }
 
-// NewOrderHandler creates a new OrderHandler.
+// NewOrderHandler 创建 OrderHandler 实例。
 func NewOrderHandler(
 	createHandler *orderapp.CreateOrderHandler,
 	updateHandler *orderapp.UpdateOrderHandler,
@@ -34,7 +36,7 @@ func NewOrderHandler(
 	}
 }
 
-// RegisterRoutes registers Order routes.
+// RegisterRoutes 注册 Order 相关路由。
 func (h *OrderHandler) RegisterRoutes(r *gin.Engine) {
 	api := r.Group("/api/orders")
 	{
@@ -42,11 +44,12 @@ func (h *OrderHandler) RegisterRoutes(r *gin.Engine) {
 		api.GET("", h.List)
 		api.GET("/:id", h.Get)
 		api.PUT("/:id", h.Update)
+		api.PATCH("/:id", h.Update)
 		api.DELETE("/:id", h.Delete)
 	}
 }
 
-// Create handles POST /api/orders
+// Create 处理 POST /api/orders
 func (h *OrderHandler) Create(c *gin.Context) {
 	var req orderapp.CreateOrderRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -59,10 +62,35 @@ func (h *OrderHandler) Create(c *gin.Context) {
 		UserId: req.UserId,
 		OrderNo: req.OrderNo,
 		TotalAmount: req.TotalAmount,
-		Status: order.OrderStatus(req.Status),
+		DiscountAmount: req.DiscountAmount,
+		TaxAmount: req.TaxAmount,
+		ShippingFee: req.ShippingFee,
+		FinalAmount: req.FinalAmount,
+		Currency: req.Currency,
+		PaymentMethod: order.OrderPaymentMethod(req.PaymentMethod),
+		PaymentStatus: order.OrderPaymentStatus(req.PaymentStatus),
+		OrderStatus: order.OrderOrderStatus(req.OrderStatus),
+		ShippingMethod: order.OrderShippingMethod(req.ShippingMethod),
+		TrackingNumber: req.TrackingNumber,
 		ReceiverName: req.ReceiverName,
 		ReceiverPhone: req.ReceiverPhone,
+		ReceiverEmail: req.ReceiverEmail,
 		ReceiverAddress: req.ReceiverAddress,
+		ReceiverCity: req.ReceiverCity,
+		ReceiverState: req.ReceiverState,
+		ReceiverCountry: req.ReceiverCountry,
+		ReceiverPostalCode: req.ReceiverPostalCode,
+		Notes: req.Notes,
+		PaidAt: req.PaidAt,
+		ShippedAt: req.ShippedAt,
+		DeliveredAt: req.DeliveredAt,
+		CancelledAt: req.CancelledAt,
+		RefundAmount: req.RefundAmount,
+		RefundReason: req.RefundReason,
+		ItemCount: req.ItemCount,
+		Weight: req.Weight,
+		IsGift: req.IsGift,
+		GiftMessage: req.GiftMessage,
 	}
 
 	entity, err := h.createHandler.Handle(c.Request.Context(), cmd)
@@ -74,7 +102,7 @@ func (h *OrderHandler) Create(c *gin.Context) {
 	Success(c, orderapp.ToOrderResponse(entity))
 }
 
-// Get handles GET /api/orders/:id
+// Get 处理 GET /api/orders/:id
 func (h *OrderHandler) Get(c *gin.Context) {
 	id := c.Param("id")
 
@@ -87,18 +115,34 @@ func (h *OrderHandler) Get(c *gin.Context) {
 	Success(c, orderapp.ToOrderResponse(entity))
 }
 
-// List handles GET /api/orders
+// List 处理 GET /api/orders?page=1&page_size=20&sort_by=id&sort_order=desc
 func (h *OrderHandler) List(c *gin.Context) {
-	entities, err := h.listHandler.Handle(c.Request.Context(), orderapp.ListOrdersQuery{})
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+	sortBy := c.DefaultQuery("sort_by", "id")
+	sortOrder := c.DefaultQuery("sort_order", "desc")
+
+	result, err := h.listHandler.Handle(c.Request.Context(), orderapp.ListOrdersQuery{
+		Page:     page,
+		PageSize: pageSize,
+		SortBy:   sortBy,
+		SortOrder: sortOrder,
+	})
 	if err != nil {
 		InternalError(c, err.Error())
 		return
 	}
 
-	Success(c, orderapp.ToOrderResponseList(entities))
+	Success(c, gin.H{
+		"items":       orderapp.ToOrderResponseList(result.Items),
+		"total":       result.Total,
+		"page":        result.Page,
+		"page_size":   result.PageSize,
+		"total_pages": result.TotalPages,
+	})
 }
 
-// Update handles PUT /api/orders/:id
+// Update 处理 PUT /api/orders/:id
 func (h *OrderHandler) Update(c *gin.Context) {
 	id := c.Param("id")
 
@@ -113,10 +157,35 @@ func (h *OrderHandler) Update(c *gin.Context) {
 		UserId: req.UserId,
 		OrderNo: req.OrderNo,
 		TotalAmount: req.TotalAmount,
-		Status: order.OrderStatus(req.Status),
+		DiscountAmount: req.DiscountAmount,
+		TaxAmount: req.TaxAmount,
+		ShippingFee: req.ShippingFee,
+		FinalAmount: req.FinalAmount,
+		Currency: req.Currency,
+		PaymentMethod: EnumPtr(req.PaymentMethod, func(v string) order.OrderPaymentMethod { return order.OrderPaymentMethod(v) }),
+		PaymentStatus: EnumPtr(req.PaymentStatus, func(v string) order.OrderPaymentStatus { return order.OrderPaymentStatus(v) }),
+		OrderStatus: EnumPtr(req.OrderStatus, func(v string) order.OrderOrderStatus { return order.OrderOrderStatus(v) }),
+		ShippingMethod: EnumPtr(req.ShippingMethod, func(v string) order.OrderShippingMethod { return order.OrderShippingMethod(v) }),
+		TrackingNumber: req.TrackingNumber,
 		ReceiverName: req.ReceiverName,
 		ReceiverPhone: req.ReceiverPhone,
+		ReceiverEmail: req.ReceiverEmail,
 		ReceiverAddress: req.ReceiverAddress,
+		ReceiverCity: req.ReceiverCity,
+		ReceiverState: req.ReceiverState,
+		ReceiverCountry: req.ReceiverCountry,
+		ReceiverPostalCode: req.ReceiverPostalCode,
+		Notes: req.Notes,
+		PaidAt: req.PaidAt,
+		ShippedAt: req.ShippedAt,
+		DeliveredAt: req.DeliveredAt,
+		CancelledAt: req.CancelledAt,
+		RefundAmount: req.RefundAmount,
+		RefundReason: req.RefundReason,
+		ItemCount: req.ItemCount,
+		Weight: req.Weight,
+		IsGift: req.IsGift,
+		GiftMessage: req.GiftMessage,
 	}
 
 	entity, err := h.updateHandler.Handle(c.Request.Context(), cmd)
@@ -128,7 +197,7 @@ func (h *OrderHandler) Update(c *gin.Context) {
 	Success(c, orderapp.ToOrderResponse(entity))
 }
 
-// Delete handles DELETE /api/orders/:id
+// Delete 处理 DELETE /api/orders/:id
 func (h *OrderHandler) Delete(c *gin.Context) {
 	id := c.Param("id")
 

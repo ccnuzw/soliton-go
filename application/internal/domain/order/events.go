@@ -7,7 +7,7 @@ import (
 	"github.com/soliton-go/framework/event"
 )
 
-// OrderCreatedEvent is published when a new Order is created.
+// OrderCreatedEvent 在创建 Order 时发布。
 type OrderCreatedEvent struct {
 	ddd.BaseDomainEvent
 	OrderID string `json:"order_id"`
@@ -24,7 +24,7 @@ func NewOrderCreatedEvent(id string) OrderCreatedEvent {
 	}
 }
 
-// OrderUpdatedEvent is published when a Order is updated.
+// OrderUpdatedEvent 在更新 Order 时发布。
 type OrderUpdatedEvent struct {
 	ddd.BaseDomainEvent
 	OrderID string `json:"order_id"`
@@ -41,7 +41,7 @@ func NewOrderUpdatedEvent(id string) OrderUpdatedEvent {
 	}
 }
 
-// OrderDeletedEvent is published when a Order is deleted.
+// OrderDeletedEvent 在删除 Order 时发布。
 type OrderDeletedEvent struct {
 	ddd.BaseDomainEvent
 	OrderID string    `json:"order_id"`
@@ -60,7 +60,7 @@ func NewOrderDeletedEvent(id string) OrderDeletedEvent {
 	}
 }
 
-// init registers events with the global registry.
+// init 将事件注册到全局注册表。
 func init() {
 	event.RegisterEvent("order.created", func() ddd.DomainEvent {
 		return &OrderCreatedEvent{}

@@ -5,10 +5,11 @@
 ## 🚀 核心特性
 
 - **一键生成可用代码**: `--fields` 参数直接生成带完整字段的领域模型
-- **领域驱动设计**: AggregateRoot、Entity、ValueObject、Repository
+- **领域驱动设计**: AggregateRoot、Entity、ValueObject、Specification、Policy、Repository
 - **分布式能力**: 分布式锁、事件驱动、Saga 分布式事务
 - **CQRS 模式**: 内置 Command/Query 处理器
 - **依赖注入**: 全项目集成 Uber Fx
+- **迁移入口**: 自动生成 `cmd/migrate/main.go`，支持一键建表
 - **默认可用配置**: 未提供 `config.yaml` 也可启动（默认 sqlite + log.level=info）
 
 ## ⚡ 30 秒快速体验
@@ -32,7 +33,7 @@ GOWORK=off go mod tidy && GOWORK=off go run ./cmd/main.go
 **生成结果：**
 | 层 | 文件 |
 |---|------|
-| Domain | `user.go` (含 UserRole、UserStatus 枚举), `repository.go`, `events.go` |
+| Domain | `user.go` (含 UserRole、UserStatus 枚举), `repository.go`, `events.go`, `service.go` |
 | Application | `commands.go`, `queries.go`, `dto.go`, `module.go` |
 | Infrastructure | `user_repo.go` |
 | Interfaces | `user_handler.go` |
@@ -42,11 +43,25 @@ GOWORK=off go mod tidy && GOWORK=off go run ./cmd/main.go
 | 类型 | 示例 | 生成结果 |
 |------|------|----------|
 | string | `username` | `Username string` |
-| int64 | `price:int64` | `Price int64` |
 | text | `desc:text` | `Desc string` (GORM: text) |
-| uuid | `user_id:uuid` | `UserId string` (带索引) |
+| int | `count:int` | `Count int` |
+| int64 | `price:int64` | `Price int64` |
+| float64 | `score:float64` | `Score float64` |
+| decimal | `amount:decimal` | `Amount float64` (GORM: decimal(10,2)) |
+| bool | `active:bool` | `Active bool` |
+| time | `created_at:time` | `CreatedAt time.Time` |
 | time? | `login_at:time?` | `LoginAt *time.Time` (可选字段) |
+| date | `birth:date` | `Birth time.Time` (GORM: date) |
+| date? | `expire:date?` | `Expire *time.Time` (可选日期) |
+| uuid | `user_id:uuid` | `UserId string` (带索引) |
+| json | `meta:json` | `Meta datatypes.JSON` |
+| jsonb | `data:jsonb` | `Data datatypes.JSON` (PostgreSQL) |
+| bytes | `avatar:bytes` | `Avatar []byte` |
 | enum | `status:enum(a\|b\|c)` | 生成枚举类型和常量 |
+
+> [!WARNING]
+> **已知限制 / Known Limitations**
+> - **Domain 命令参数不全**: 缺少 `--api-only`（仅生成 API）、`--no-crud`（不生成 CRUD）、`--no-events`（不生成事件）等选项
 
 ## 🔌 命令列表
 
@@ -55,6 +70,33 @@ GOWORK=off go mod tidy && GOWORK=off go run ./cmd/main.go
 | `init <name>` | 初始化新项目（含 DDD 目录结构） |
 | `domain <name>` | 生成领域模块（Entity/Repo/Handler 等） |
 | `service <name>` | 生成应用服务（跨领域业务逻辑） |
+| `valueobject <domain> <name>` | 生成领域值对象 |
+| `spec <domain> <name>` | 生成领域规格（Specification） |
+| `policy <domain> <name>` | 生成领域策略（Policy） |
+| `event <domain> <name>` | 生成领域事件（含注册） |
+| `event-handler <domain> <event>` | 生成事件处理器并注入 |
+| `serve` | 🆕 启动 Web GUI（可视化代码生成器） |
+
+### 🎨 Web GUI - 可视化代码生成
+
+```bash
+# 启动 Web 界面
+soliton-gen serve
+
+# 自定义端口
+soliton-gen serve --port 8080
+```
+
+**功能特性：**
+- ✨ 可视化字段编辑器，支持拖拽
+- 👁️ 生成前预览代码
+- 🔌 自动注入模块到 main.go
+- 📖 详细的操作提示和使用指南
+- 🌐 中英双语界面
+
+访问 http://127.0.0.1:3000 即可使用图形界面进行项目初始化、领域生成和服务生成。
+
+详细使用说明请查看：[Web GUI 使用指南](./tools/generator/WEB_GUI_GUIDE.md)
 
 ### --wire 自动接线
 ```bash
@@ -73,6 +115,15 @@ soliton-gen domain Product --fields "..." --wire
 | `--soft-delete` | 🆕 启用软删除 (`DeletedAt` 字段) |
 | `--force` | 强制覆盖已存在文件 |
 | `--wire` | 自动接入 main.go |
+
+### Domain 子命令
+| 子命令 | 说明 |
+|--------|------|
+| `domain list` | 列出项目中所有已生成的领域模块 |
+| `domain delete <name>` | 删除领域模块及其所有相关文件 |
+
+> [!NOTE]
+> 子命令支持不全：目前缺少 `domain show <name>`（查看领域详情）、`domain add-field`（添加字段）等子命令
 
 ## 🆕 新增功能
 
@@ -93,6 +144,18 @@ curl "http://localhost:8080/api/users?page=1&page_size=20"
     "total_pages": 5
   }
 }
+```
+
+### 排序参数
+List API 支持排序参数：
+```bash
+curl "http://localhost:8080/api/users?page=1&page_size=20&sort_by=created_at&sort_order=desc"
+```
+
+### 数据库迁移入口
+生成项目包含 `cmd/migrate/main.go`，可单独执行迁移：
+```bash
+GOWORK=off go run ./cmd/migrate
 ```
 
 ### 软删除
@@ -139,6 +202,7 @@ soliton-go/
 | 文档 | 说明 |
 |------|------|
 | [QUICK_START.md](./QUICK_START.md) | 快速上手 |
+| [tools/generator/WEB_GUI_GUIDE.md](./tools/generator/WEB_GUI_GUIDE.md) | 🆕 Web GUI 使用指南 |
 | [docs/DEVELOPMENT_GUIDE.md](./docs/DEVELOPMENT_GUIDE.md) | 开发指南 |
 | [docs/GENERATOR_GUIDE.md](./docs/GENERATOR_GUIDE.md) | 生成器使用 |
 | [docs/SERVICE_GUIDE.md](./docs/SERVICE_GUIDE.md) | Service 详解 |

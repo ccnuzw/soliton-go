@@ -4,88 +4,174 @@ import (
 	"time"
 
 	"github.com/soliton-go/framework/ddd"
+	"gorm.io/gorm"
 )
 
-// UserID is a strong typed ID.
+// UserID 是强类型的实体标识符。
 type UserID string
 
 func (id UserID) String() string {
 	return string(id)
 }
 
-// UserRole represents the Role enum.
+// UserGender 表示 Gender 字段的枚举类型。
+type UserGender string
+
+const (
+	UserGenderMale UserGender = "male"
+	UserGenderFemale UserGender = "female"
+	UserGenderOther UserGender = "other"
+)
+
+// UserRole 表示 Role 字段的枚举类型。
 type UserRole string
 
 const (
 	UserRoleAdmin UserRole = "admin"
-	UserRoleSeller UserRole = "seller"
-	UserRoleCustomer UserRole = "customer"
+	UserRoleManager UserRole = "manager"
+	UserRoleUser UserRole = "user"
+	UserRoleGuest UserRole = "guest"
 )
 
-// UserStatus represents the Status enum.
+// UserStatus 表示 Status 字段的枚举类型。
 type UserStatus string
 
 const (
 	UserStatusActive UserStatus = "active"
 	UserStatusInactive UserStatus = "inactive"
+	UserStatusSuspended UserStatus = "suspended"
 	UserStatusBanned UserStatus = "banned"
 )
 
-// User is the aggregate root.
+// User 是聚合根实体。
 type User struct {
 	ddd.BaseAggregateRoot
 	ID UserID `gorm:"primaryKey"`
 	Username string `gorm:"size:255"`
 	Email string `gorm:"size:255"`
-	PasswordHash string `gorm:"size:255"`
+	Password string `gorm:"size:255"`
+	FullName string `gorm:"size:255"`
 	Phone string `gorm:"size:255"`
 	Avatar string `gorm:"size:255"`
-	Nickname string `gorm:"size:255"`
+	Bio string `gorm:"size:255"`
+	BirthDate time.Time `gorm:"type:timestamp"`
+	Gender UserGender `gorm:"size:50;default:'male'"`
 	Role UserRole `gorm:"size:50;default:'admin'"`
 	Status UserStatus `gorm:"size:50;default:'active'"`
-	LastLoginAt *time.Time 
+	EmailVerified bool `gorm:"default:false"`
+	PhoneVerified bool `gorm:"default:false"`
+	LastLoginAt time.Time `gorm:"type:timestamp"`
+	LoginCount int `gorm:"not null;default:0"`
+	FailedLoginCount int `gorm:"not null;default:0"`
+	Balance int64 `gorm:"not null;default:0"`
+	Points int `gorm:"not null;default:0"`
+	VipLevel int `gorm:"not null;default:0"`
+	Preferences string `gorm:"size:255"`
 	CreatedAt time.Time `gorm:"autoCreateTime"`
 	UpdatedAt time.Time `gorm:"autoUpdateTime"`
+	DeletedAt gorm.DeletedAt `gorm:"index"`
 }
 
-// TableName returns the table name for GORM.
+// TableName 返回 GORM 映射的数据库表名。
 func (User) TableName() string {
 	return "users"
 }
 
-// NewUser creates a new User.
-func NewUser(id string, username string, email string, passwordHash string, phone string, avatar string, nickname string, role UserRole, status UserStatus, lastLoginAt *time.Time) *User {
+// NewUser 创建一个新的 User 实体。
+func NewUser(id string, username string, email string, password string, fullName string, phone string, avatar string, bio string, birthDate time.Time, gender UserGender, role UserRole, status UserStatus, emailVerified bool, phoneVerified bool, lastLoginAt time.Time, loginCount int, failedLoginCount int, balance int64, points int, vipLevel int, preferences string) *User {
 	e := &User{
 		ID: UserID(id),
 		Username: username,
 		Email: email,
-		PasswordHash: passwordHash,
+		Password: password,
+		FullName: fullName,
 		Phone: phone,
 		Avatar: avatar,
-		Nickname: nickname,
+		Bio: bio,
+		BirthDate: birthDate,
+		Gender: gender,
 		Role: role,
 		Status: status,
+		EmailVerified: emailVerified,
+		PhoneVerified: phoneVerified,
 		LastLoginAt: lastLoginAt,
+		LoginCount: loginCount,
+		FailedLoginCount: failedLoginCount,
+		Balance: balance,
+		Points: points,
+		VipLevel: vipLevel,
+		Preferences: preferences,
 	}
 	e.AddDomainEvent(NewUserCreatedEvent(id))
 	return e
 }
 
-// Update updates the entity fields.
-func (e *User) Update(username string, email string, passwordHash string, phone string, avatar string, nickname string, role UserRole, status UserStatus, lastLoginAt *time.Time) {
-	e.Username = username
-	e.Email = email
-	e.PasswordHash = passwordHash
-	e.Phone = phone
-	e.Avatar = avatar
-	e.Nickname = nickname
-	e.Role = role
-	e.Status = status
-	e.LastLoginAt = lastLoginAt
+// Update 更新实体字段。
+func (e *User) Update(username *string, email *string, password *string, fullName *string, phone *string, avatar *string, bio *string, birthDate *time.Time, gender *UserGender, role *UserRole, status *UserStatus, emailVerified *bool, phoneVerified *bool, lastLoginAt *time.Time, loginCount *int, failedLoginCount *int, balance *int64, points *int, vipLevel *int, preferences *string) {
+	if username != nil {
+		e.Username = *username
+	}
+	if email != nil {
+		e.Email = *email
+	}
+	if password != nil {
+		e.Password = *password
+	}
+	if fullName != nil {
+		e.FullName = *fullName
+	}
+	if phone != nil {
+		e.Phone = *phone
+	}
+	if avatar != nil {
+		e.Avatar = *avatar
+	}
+	if bio != nil {
+		e.Bio = *bio
+	}
+	if birthDate != nil {
+		e.BirthDate = *birthDate
+	}
+	if gender != nil {
+		e.Gender = *gender
+	}
+	if role != nil {
+		e.Role = *role
+	}
+	if status != nil {
+		e.Status = *status
+	}
+	if emailVerified != nil {
+		e.EmailVerified = *emailVerified
+	}
+	if phoneVerified != nil {
+		e.PhoneVerified = *phoneVerified
+	}
+	if lastLoginAt != nil {
+		e.LastLoginAt = *lastLoginAt
+	}
+	if loginCount != nil {
+		e.LoginCount = *loginCount
+	}
+	if failedLoginCount != nil {
+		e.FailedLoginCount = *failedLoginCount
+	}
+	if balance != nil {
+		e.Balance = *balance
+	}
+	if points != nil {
+		e.Points = *points
+	}
+	if vipLevel != nil {
+		e.VipLevel = *vipLevel
+	}
+	if preferences != nil {
+		e.Preferences = *preferences
+	}
 	e.AddDomainEvent(NewUserUpdatedEvent(string(e.ID)))
 }
 
-// GetID returns the entity ID.
+// GetID 返回实体 ID。
 func (e *User) GetID() ddd.ID {
 	return e.ID
 }

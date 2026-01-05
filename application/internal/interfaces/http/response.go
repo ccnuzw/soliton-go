@@ -1,70 +1,70 @@
 package http
 
-import "github.com/gin-gonic/gin"
+import (
+	"net/http"
 
-// Response is the standard API response structure.
+	"github.com/gin-gonic/gin"
+)
+
+// 错误码定义
+const (
+	CodeSuccess      = 0     // 成功
+	CodeBadRequest   = 400   // 请求错误
+	CodeUnauthorized = 401   // 未授权
+	CodeForbidden    = 403   // 禁止访问
+	CodeNotFound     = 404   // 资源不存在
+	CodeInternal     = 500   // 服务器内部错误
+
+	// 业务错误码 (1000+)
+	CodeValidation   = 1001  // 校验失败
+	CodeDuplicate    = 1002  // 重复数据
+	CodeConflict     = 1003  // 业务冲突
+)
+
+// Response 是标准的 API 响应结构体。
 type Response struct {
 	Code    int         `json:"code"`
 	Message string      `json:"message"`
 	Data    interface{} `json:"data,omitempty"`
 }
 
-// Success returns a successful response.
+// Success 返回成功响应。
 func Success(c *gin.Context, data interface{}) {
-	c.JSON(200, Response{
-		Code:    0,
+	c.JSON(http.StatusOK, Response{
+		Code:    CodeSuccess,
 		Message: "success",
 		Data:    data,
 	})
 }
 
-// SuccessWithMessage returns a successful response with custom message.
-func SuccessWithMessage(c *gin.Context, message string, data interface{}) {
-	c.JSON(200, Response{
-		Code:    0,
-		Message: message,
-		Data:    data,
-	})
-}
-
-// Error returns an error response.
-func Error(c *gin.Context, httpCode int, code int, message string) {
-	c.JSON(httpCode, Response{
-		Code:    code,
-		Message: message,
-	})
-}
-
-// ErrorWithData returns an error response with additional data.
-func ErrorWithData(c *gin.Context, httpCode int, code int, message string, data interface{}) {
-	c.JSON(httpCode, Response{
-		Code:    code,
-		Message: message,
-		Data:    data,
-	})
-}
-
-// BadRequest returns a 400 error response.
+// BadRequest 返回 400 错误响应。
 func BadRequest(c *gin.Context, message string) {
-	Error(c, 400, 400, message)
+	c.JSON(http.StatusBadRequest, Response{
+		Code:    CodeBadRequest,
+		Message: message,
+	})
 }
 
-// NotFound returns a 404 error response.
+// NotFound 返回 404 错误响应。
 func NotFound(c *gin.Context, message string) {
-	Error(c, 404, 404, message)
+	c.JSON(http.StatusNotFound, Response{
+		Code:    CodeNotFound,
+		Message: message,
+	})
 }
 
-// InternalError returns a 500 error response.
+// InternalError 返回 500 错误响应。
 func InternalError(c *gin.Context, message string) {
-	Error(c, 500, 500, message)
+	c.JSON(http.StatusInternalServerError, Response{
+		Code:    CodeInternal,
+		Message: message,
+	})
 }
 
-// Unauthorized returns a 401 error response.
-func Unauthorized(c *gin.Context, message string) {
-	Error(c, 401, 401, message)
-}
-
-// Forbidden returns a 403 error response.
-func Forbidden(c *gin.Context, message string) {
-	Error(c, 403, 403, message)
+// ValidationError 返回校验错误响应。
+func ValidationError(c *gin.Context, message string) {
+	c.JSON(http.StatusBadRequest, Response{
+		Code:    CodeValidation,
+		Message: message,
+	})
 }

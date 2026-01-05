@@ -7,7 +7,7 @@ import (
 	"github.com/soliton-go/framework/event"
 )
 
-// ProductCreatedEvent is published when a new Product is created.
+// ProductCreatedEvent 在创建 Product 时发布。
 type ProductCreatedEvent struct {
 	ddd.BaseDomainEvent
 	ProductID string `json:"product_id"`
@@ -24,7 +24,7 @@ func NewProductCreatedEvent(id string) ProductCreatedEvent {
 	}
 }
 
-// ProductUpdatedEvent is published when a Product is updated.
+// ProductUpdatedEvent 在更新 Product 时发布。
 type ProductUpdatedEvent struct {
 	ddd.BaseDomainEvent
 	ProductID string `json:"product_id"`
@@ -41,7 +41,7 @@ func NewProductUpdatedEvent(id string) ProductUpdatedEvent {
 	}
 }
 
-// ProductDeletedEvent is published when a Product is deleted.
+// ProductDeletedEvent 在删除 Product 时发布。
 type ProductDeletedEvent struct {
 	ddd.BaseDomainEvent
 	ProductID string    `json:"product_id"`
@@ -60,7 +60,7 @@ func NewProductDeletedEvent(id string) ProductDeletedEvent {
 	}
 }
 
-// init registers events with the global registry.
+// init 将事件注册到全局注册表。
 func init() {
 	event.RegisterEvent("product.created", func() ddd.DomainEvent {
 		return &ProductCreatedEvent{}

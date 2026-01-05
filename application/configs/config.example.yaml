@@ -1,10 +1,9 @@
-# Soliton-Go Configuration Example
-# Copy this file to config.yaml and modify as needed
-
+# Server Configuration
 server:
   host: 0.0.0.0
   port: 8080
 
+# Database Configuration
 database:
   # Options: sqlite, postgres
   driver: sqlite
@@ -16,5 +15,6 @@ database:
 
   # MySQL is not enabled by default. Extend framework/orm/db.go if needed.
 
+# Logging
 log:
-  level: debug  # debug, info, warn, error
+  level: info  # debug, info, warn, error

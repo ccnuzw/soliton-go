@@ -1,6 +1,8 @@
 package http
 
 import (
+	"strconv"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
@@ -8,7 +10,7 @@ import (
 	"github.com/soliton-go/application/internal/domain/user"
 )
 
-// UserHandler handles HTTP requests for User operations.
+// UserHandler 处理 User 相关的 HTTP 请求。
 type UserHandler struct {
 	createHandler *userapp.CreateUserHandler
 	updateHandler *userapp.UpdateUserHandler
@@ -17,7 +19,7 @@ type UserHandler struct {
 	listHandler   *userapp.ListUsersHandler
 }
 
-// NewUserHandler creates a new UserHandler.
+// NewUserHandler 创建 UserHandler 实例。
 func NewUserHandler(
 	createHandler *userapp.CreateUserHandler,
 	updateHandler *userapp.UpdateUserHandler,
@@ -34,7 +36,7 @@ func NewUserHandler(
 	}
 }
 
-// RegisterRoutes registers User routes.
+// RegisterRoutes 注册 User 相关路由。
 func (h *UserHandler) RegisterRoutes(r *gin.Engine) {
 	api := r.Group("/api/users")
 	{
@@ -42,11 +44,12 @@ func (h *UserHandler) RegisterRoutes(r *gin.Engine) {
 		api.GET("", h.List)
 		api.GET("/:id", h.Get)
 		api.PUT("/:id", h.Update)
+		api.PATCH("/:id", h.Update)
 		api.DELETE("/:id", h.Delete)
 	}
 }
 
-// Create handles POST /api/users
+// Create 处理 POST /api/users
 func (h *UserHandler) Create(c *gin.Context) {
 	var req userapp.CreateUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -58,13 +61,24 @@ func (h *UserHandler) Create(c *gin.Context) {
 		ID: uuid.New().String(),
 		Username: req.Username,
 		Email: req.Email,
-		PasswordHash: req.PasswordHash,
+		Password: req.Password,
+		FullName: req.FullName,
 		Phone: req.Phone,
 		Avatar: req.Avatar,
-		Nickname: req.Nickname,
+		Bio: req.Bio,
+		BirthDate: req.BirthDate,
+		Gender: user.UserGender(req.Gender),
 		Role: user.UserRole(req.Role),
 		Status: user.UserStatus(req.Status),
+		EmailVerified: req.EmailVerified,
+		PhoneVerified: req.PhoneVerified,
 		LastLoginAt: req.LastLoginAt,
+		LoginCount: req.LoginCount,
+		FailedLoginCount: req.FailedLoginCount,
+		Balance: req.Balance,
+		Points: req.Points,
+		VipLevel: req.VipLevel,
+		Preferences: req.Preferences,
 	}
 
 	entity, err := h.createHandler.Handle(c.Request.Context(), cmd)
@@ -76,7 +90,7 @@ func (h *UserHandler) Create(c *gin.Context) {
 	Success(c, userapp.ToUserResponse(entity))
 }
 
-// Get handles GET /api/users/:id
+// Get 处理 GET /api/users/:id
 func (h *UserHandler) Get(c *gin.Context) {
 	id := c.Param("id")
 
@@ -89,18 +103,34 @@ func (h *UserHandler) Get(c *gin.Context) {
 	Success(c, userapp.ToUserResponse(entity))
 }
 
-// List handles GET /api/users
+// List 处理 GET /api/users?page=1&page_size=20&sort_by=id&sort_order=desc
 func (h *UserHandler) List(c *gin.Context) {
-	entities, err := h.listHandler.Handle(c.Request.Context(), userapp.ListUsersQuery{})
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+	sortBy := c.DefaultQuery("sort_by", "id")
+	sortOrder := c.DefaultQuery("sort_order", "desc")
+
+	result, err := h.listHandler.Handle(c.Request.Context(), userapp.ListUsersQuery{
+		Page:     page,
+		PageSize: pageSize,
+		SortBy:   sortBy,
+		SortOrder: sortOrder,
+	})
 	if err != nil {
 		InternalError(c, err.Error())
 		return
 	}
 
-	Success(c, userapp.ToUserResponseList(entities))
+	Success(c, gin.H{
+		"items":       userapp.ToUserResponseList(result.Items),
+		"total":       result.Total,
+		"page":        result.Page,
+		"page_size":   result.PageSize,
+		"total_pages": result.TotalPages,
+	})
 }
 
-// Update handles PUT /api/users/:id
+// Update 处理 PUT /api/users/:id
 func (h *UserHandler) Update(c *gin.Context) {
 	id := c.Param("id")
 
@@ -114,13 +144,24 @@ func (h *UserHandler) Update(c *gin.Context) {
 		ID: id,
 		Username: req.Username,
 		Email: req.Email,
-		PasswordHash: req.PasswordHash,
+		Password: req.Password,
+		FullName: req.FullName,
 		Phone: req.Phone,
 		Avatar: req.Avatar,
-		Nickname: req.Nickname,
-		Role: user.UserRole(req.Role),
-		Status: user.UserStatus(req.Status),
+		Bio: req.Bio,
+		BirthDate: req.BirthDate,
+		Gender: EnumPtr(req.Gender, func(v string) user.UserGender { return user.UserGender(v) }),
+		Role: EnumPtr(req.Role, func(v string) user.UserRole { return user.UserRole(v) }),
+		Status: EnumPtr(req.Status, func(v string) user.UserStatus { return user.UserStatus(v) }),
+		EmailVerified: req.EmailVerified,
+		PhoneVerified: req.PhoneVerified,
 		LastLoginAt: req.LastLoginAt,
+		LoginCount: req.LoginCount,
+		FailedLoginCount: req.FailedLoginCount,
+		Balance: req.Balance,
+		Points: req.Points,
+		VipLevel: req.VipLevel,
+		Preferences: req.Preferences,
 	}
 
 	entity, err := h.updateHandler.Handle(c.Request.Context(), cmd)
@@ -132,7 +173,7 @@ func (h *UserHandler) Update(c *gin.Context) {
 	Success(c, userapp.ToUserResponse(entity))
 }
 
-// Delete handles DELETE /api/users/:id
+// Delete 处理 DELETE /api/users/:id
 func (h *UserHandler) Delete(c *gin.Context) {
 	id := c.Param("id")
 
