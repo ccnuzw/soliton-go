@@ -42,5 +42,6 @@ var Module = fx.Options(
 
 // RegisterMigration registers the User table migration.
 func RegisterMigration(db *gorm.DB) error {
-	return persistence.MigrateUser(db)
+	return persistence.MigrateUser(db	fx.Provide(NewUserService),
+)
 }

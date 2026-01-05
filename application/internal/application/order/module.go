@@ -42,5 +42,6 @@ var Module = fx.Options(
 
 // RegisterMigration registers the Order table migration.
 func RegisterMigration(db *gorm.DB) error {
-	return persistence.MigrateOrder(db)
+	return persistence.MigrateOrder(db	fx.Provide(NewOrderService),
+)
 }

@@ -42,5 +42,6 @@ var Module = fx.Options(
 
 // RegisterMigration registers the Product table migration.
 func RegisterMigration(db *gorm.DB) error {
-	return persistence.MigrateProduct(db)
+	return persistence.MigrateProduct(db	fx.Provide(NewProductService),
+)
 }
