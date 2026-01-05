@@ -382,7 +382,7 @@ gen:
 
 # Run database migrations
 migrate:
-	GOWORK=$(GOWORK) go run ./cmd/migrate.go
+	GOWORK=$(GOWORK) go run ./cmd/migrate
 
 # Tidy dependencies
 tidy:

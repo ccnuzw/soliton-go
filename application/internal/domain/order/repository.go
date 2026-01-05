@@ -10,5 +10,5 @@ import (
 type OrderRepository interface {
 	orm.Repository[*Order, OrderID]
 	// FindPaginated 返回分页数据和总数。
-	FindPaginated(ctx context.Context, page, pageSize int) ([]*Order, int64, error)
+	FindPaginated(ctx context.Context, page, pageSize int, sortBy, sortOrder string) ([]*Order, int64, error)
 }

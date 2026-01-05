@@ -16,11 +16,18 @@ soliton-gen init application
 - ✅ 项目结构（cmd, configs, internal/...）
 - ✅ go.mod
 - ✅ main.go
-- ✅ migrate.go
+- ✅ cmd/migrate/main.go
 - ✅ config.yaml
 - ✅ Makefile
 - ✅ README.md
 - ✅ .gitignore
+
+### 2.1 安装依赖
+
+```bash
+cd /Users/mac/Progame/soliton-go/application
+GOWORK=off go mod tidy
+```
 
 ### 3. 生成三个领域模型
 
@@ -207,7 +214,7 @@ soliton-gen policy user PasswordPolicy --target User
 soliton-gen event user UserActivated --fields "user_id:uuid"
 
 # 事件处理器（自动注入 module.go / main.go）
-soliton-gen event-handler user UserActivatedEvent
+soliton-gen event-handler user UserActivated
 ```
 
 ### 生成结果
@@ -243,7 +250,7 @@ soliton-gen event-handler user UserActivatedEvent
 ### 迁移
 ```bash
 cd /Users/mac/Progame/soliton-go/application
-GOWORK=off go run ./cmd/migrate.go
+GOWORK=off go run ./cmd/migrate
 ```
 
 ### 启动服务
@@ -276,7 +283,8 @@ go build ./...
 application/
 ├── cmd/
 │   ├── main.go (已自动注入所有模块)
-│   └── migrate.go
+│   └── migrate/
+│       └── main.go
 ├── configs/
 │   ├── config.yaml
 │   └── config.example.yaml
@@ -364,7 +372,7 @@ application/
    - Domain Service（领域服务）
    - Fx Module 注入
    - main.go 自动注入
-   - migrate.go 迁移入口
+   - cmd/migrate/main.go 迁移入口
    - List API 排序参数 (sort_by / sort_order)
    - 领域增强组件（ValueObject/Spec/Policy/Event/Handler）
 

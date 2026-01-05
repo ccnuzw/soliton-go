@@ -21,9 +21,19 @@ func ToSnakeCase(s string) string {
 	return strings.ToLower(result.String())
 }
 
-// ToPascalCase converts snake_case to PascalCase.
+// ToPascalCase converts snake_case or camelCase to PascalCase.
 func ToPascalCase(s string) string {
-	parts := strings.Split(s, "_")
+	if s == "" {
+		return s
+	}
+
+	if !strings.ContainsAny(s, "_- ") {
+		return strings.ToUpper(string(s[0])) + s[1:]
+	}
+
+	parts := strings.FieldsFunc(s, func(r rune) bool {
+		return r == '_' || r == '-' || r == ' '
+	})
 	for i, p := range parts {
 		if len(p) > 0 {
 			parts[i] = strings.ToUpper(string(p[0])) + strings.ToLower(p[1:])

@@ -13,38 +13,39 @@ type CreateUserCommand struct {
 	Username string
 	Email string
 	Password string
-	Fullname string
+	FullName string
 	Phone string
 	Avatar string
 	Bio string
-	Birthdate time.Time
+	BirthDate *time.Time
 	Gender user.UserGender
 	Role user.UserRole
 	Status user.UserStatus
-	Emailverified bool
-	Phoneverified bool
-	Lastloginat time.Time
-	Logincount int
-	Failedlogincount int
+	EmailVerified bool
+	PhoneVerified bool
+	LastLoginAt *time.Time
+	LoginCount int
+	FailedLoginCount int
 	Balance int64
 	Points int
-	Viplevel int
+	VipLevel int
 	Preferences string
 }
 
 // CreateUserHandler 处理 CreateUserCommand。
 type CreateUserHandler struct {
 	repo user.UserRepository
+	service *user.UserDomainService
 	// 可选：添加事件总线用于发布领域事件
 	// eventBus event.EventBus
 }
 
-func NewCreateUserHandler(repo user.UserRepository) *CreateUserHandler {
-	return &CreateUserHandler{repo: repo}
+func NewCreateUserHandler(repo user.UserRepository, service *user.UserDomainService) *CreateUserHandler {
+	return &CreateUserHandler{repo: repo, service: service}
 }
 
 func (h *CreateUserHandler) Handle(ctx context.Context, cmd CreateUserCommand) (*user.User, error) {
-	entity := user.NewUser(cmd.ID, cmd.Username, cmd.Email, cmd.Password, cmd.Fullname, cmd.Phone, cmd.Avatar, cmd.Bio, cmd.Birthdate, cmd.Gender, cmd.Role, cmd.Status, cmd.Emailverified, cmd.Phoneverified, cmd.Lastloginat, cmd.Logincount, cmd.Failedlogincount, cmd.Balance, cmd.Points, cmd.Viplevel, cmd.Preferences)
+	entity := user.NewUser(cmd.ID, cmd.Username, cmd.Email, cmd.Password, cmd.FullName, cmd.Phone, cmd.Avatar, cmd.Bio, cmd.BirthDate, cmd.Gender, cmd.Role, cmd.Status, cmd.EmailVerified, cmd.PhoneVerified, cmd.LastLoginAt, cmd.LoginCount, cmd.FailedLoginCount, cmd.Balance, cmd.Points, cmd.VipLevel, cmd.Preferences)
 	if err := h.repo.Save(ctx, entity); err != nil {
 		return nil, err
 	}
@@ -67,32 +68,33 @@ type UpdateUserCommand struct {
 	Username *string
 	Email *string
 	Password *string
-	Fullname *string
+	FullName *string
 	Phone *string
 	Avatar *string
 	Bio *string
-	Birthdate *time.Time
+	BirthDate *time.Time
 	Gender *user.UserGender
 	Role *user.UserRole
 	Status *user.UserStatus
-	Emailverified *bool
-	Phoneverified *bool
-	Lastloginat *time.Time
-	Logincount *int
-	Failedlogincount *int
+	EmailVerified *bool
+	PhoneVerified *bool
+	LastLoginAt *time.Time
+	LoginCount *int
+	FailedLoginCount *int
 	Balance *int64
 	Points *int
-	Viplevel *int
+	VipLevel *int
 	Preferences *string
 }
 
 // UpdateUserHandler 处理 UpdateUserCommand。
 type UpdateUserHandler struct {
 	repo user.UserRepository
+	service *user.UserDomainService
 }
 
-func NewUpdateUserHandler(repo user.UserRepository) *UpdateUserHandler {
-	return &UpdateUserHandler{repo: repo}
+func NewUpdateUserHandler(repo user.UserRepository, service *user.UserDomainService) *UpdateUserHandler {
+	return &UpdateUserHandler{repo: repo, service: service}
 }
 
 func (h *UpdateUserHandler) Handle(ctx context.Context, cmd UpdateUserCommand) (*user.User, error) {
@@ -100,7 +102,7 @@ func (h *UpdateUserHandler) Handle(ctx context.Context, cmd UpdateUserCommand) (
 	if err != nil {
 		return nil, err
 	}
-	entity.Update(cmd.Username, cmd.Email, cmd.Password, cmd.Fullname, cmd.Phone, cmd.Avatar, cmd.Bio, cmd.Birthdate, cmd.Gender, cmd.Role, cmd.Status, cmd.Emailverified, cmd.Phoneverified, cmd.Lastloginat, cmd.Logincount, cmd.Failedlogincount, cmd.Balance, cmd.Points, cmd.Viplevel, cmd.Preferences)
+	entity.Update(cmd.Username, cmd.Email, cmd.Password, cmd.FullName, cmd.Phone, cmd.Avatar, cmd.Bio, cmd.BirthDate, cmd.Gender, cmd.Role, cmd.Status, cmd.EmailVerified, cmd.PhoneVerified, cmd.LastLoginAt, cmd.LoginCount, cmd.FailedLoginCount, cmd.Balance, cmd.Points, cmd.VipLevel, cmd.Preferences)
 	if err := h.repo.Save(ctx, entity); err != nil {
 		return nil, err
 	}
@@ -115,10 +117,11 @@ type DeleteUserCommand struct {
 // DeleteUserHandler 处理 DeleteUserCommand。
 type DeleteUserHandler struct {
 	repo user.UserRepository
+	service *user.UserDomainService
 }
 
-func NewDeleteUserHandler(repo user.UserRepository) *DeleteUserHandler {
-	return &DeleteUserHandler{repo: repo}
+func NewDeleteUserHandler(repo user.UserRepository, service *user.UserDomainService) *DeleteUserHandler {
+	return &DeleteUserHandler{repo: repo, service: service}
 }
 
 func (h *DeleteUserHandler) Handle(ctx context.Context, cmd DeleteUserCommand) error {

@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/soliton-go/framework/ddd"
-	"gorm.io/gorm"
 )
 
 // OrderID 是强类型的实体标识符。
@@ -14,89 +13,88 @@ func (id OrderID) String() string {
 	return string(id)
 }
 
-// OrderPaymentmethod 表示 Paymentmethod 字段的枚举类型。
-type OrderPaymentmethod string
+// OrderPaymentMethod 表示 PaymentMethod 字段的枚举类型。
+type OrderPaymentMethod string
 
 const (
-	OrderPaymentmethodCreditCard OrderPaymentmethod = "credit_card"
-	OrderPaymentmethodDebitCard OrderPaymentmethod = "debit_card"
-	OrderPaymentmethodPaypal OrderPaymentmethod = "paypal"
-	OrderPaymentmethodAlipay OrderPaymentmethod = "alipay"
-	OrderPaymentmethodWechat OrderPaymentmethod = "wechat"
-	OrderPaymentmethodCash OrderPaymentmethod = "cash"
+	OrderPaymentMethodCreditCard OrderPaymentMethod = "credit_card"
+	OrderPaymentMethodDebitCard OrderPaymentMethod = "debit_card"
+	OrderPaymentMethodPaypal OrderPaymentMethod = "paypal"
+	OrderPaymentMethodAlipay OrderPaymentMethod = "alipay"
+	OrderPaymentMethodWechat OrderPaymentMethod = "wechat"
+	OrderPaymentMethodCash OrderPaymentMethod = "cash"
 )
 
-// OrderPaymentstatus 表示 Paymentstatus 字段的枚举类型。
-type OrderPaymentstatus string
+// OrderPaymentStatus 表示 PaymentStatus 字段的枚举类型。
+type OrderPaymentStatus string
 
 const (
-	OrderPaymentstatusPending OrderPaymentstatus = "pending"
-	OrderPaymentstatusPaid OrderPaymentstatus = "paid"
-	OrderPaymentstatusFailed OrderPaymentstatus = "failed"
-	OrderPaymentstatusRefunded OrderPaymentstatus = "refunded"
+	OrderPaymentStatusPending OrderPaymentStatus = "pending"
+	OrderPaymentStatusPaid OrderPaymentStatus = "paid"
+	OrderPaymentStatusFailed OrderPaymentStatus = "failed"
+	OrderPaymentStatusRefunded OrderPaymentStatus = "refunded"
 )
 
-// OrderOrderstatus 表示 Orderstatus 字段的枚举类型。
-type OrderOrderstatus string
+// OrderOrderStatus 表示 OrderStatus 字段的枚举类型。
+type OrderOrderStatus string
 
 const (
-	OrderOrderstatusPending OrderOrderstatus = "pending"
-	OrderOrderstatusConfirmed OrderOrderstatus = "confirmed"
-	OrderOrderstatusProcessing OrderOrderstatus = "processing"
-	OrderOrderstatusShipped OrderOrderstatus = "shipped"
-	OrderOrderstatusDelivered OrderOrderstatus = "delivered"
-	OrderOrderstatusCancelled OrderOrderstatus = "cancelled"
-	OrderOrderstatusReturned OrderOrderstatus = "returned"
+	OrderOrderStatusPending OrderOrderStatus = "pending"
+	OrderOrderStatusConfirmed OrderOrderStatus = "confirmed"
+	OrderOrderStatusProcessing OrderOrderStatus = "processing"
+	OrderOrderStatusShipped OrderOrderStatus = "shipped"
+	OrderOrderStatusDelivered OrderOrderStatus = "delivered"
+	OrderOrderStatusCancelled OrderOrderStatus = "cancelled"
+	OrderOrderStatusReturned OrderOrderStatus = "returned"
 )
 
-// OrderShippingmethod 表示 Shippingmethod 字段的枚举类型。
-type OrderShippingmethod string
+// OrderShippingMethod 表示 ShippingMethod 字段的枚举类型。
+type OrderShippingMethod string
 
 const (
-	OrderShippingmethodStandard OrderShippingmethod = "standard"
-	OrderShippingmethodExpress OrderShippingmethod = "express"
-	OrderShippingmethodOvernight OrderShippingmethod = "overnight"
+	OrderShippingMethodStandard OrderShippingMethod = "standard"
+	OrderShippingMethodExpress OrderShippingMethod = "express"
+	OrderShippingMethodOvernight OrderShippingMethod = "overnight"
 )
 
 // Order 是聚合根实体。
 type Order struct {
 	ddd.BaseAggregateRoot
 	ID OrderID `gorm:"primaryKey"`
-	Userid string `gorm:"size:255"`
-	Orderno string `gorm:"size:255"`
-	Totalamount int64 `gorm:"not null;default:0"`
-	Discountamount int64 `gorm:"not null;default:0"`
-	Taxamount int64 `gorm:"not null;default:0"`
-	Shippingfee int64 `gorm:"not null;default:0"`
-	Finalamount int64 `gorm:"not null;default:0"`
+	UserId string `gorm:"size:36;index"`
+	OrderNo string `gorm:"size:255"`
+	TotalAmount int64 `gorm:"not null;default:0"`
+	DiscountAmount int64 `gorm:"not null;default:0"`
+	TaxAmount int64 `gorm:"not null;default:0"`
+	ShippingFee int64 `gorm:"not null;default:0"`
+	FinalAmount int64 `gorm:"not null;default:0"`
 	Currency string `gorm:"size:255"`
-	Paymentmethod OrderPaymentmethod `gorm:"size:50;default:'credit_card'"`
-	Paymentstatus OrderPaymentstatus `gorm:"size:50;default:'pending'"`
-	Orderstatus OrderOrderstatus `gorm:"size:50;default:'pending'"`
-	Shippingmethod OrderShippingmethod `gorm:"size:50;default:'standard'"`
-	Trackingnumber string `gorm:"size:255"`
-	Receivername string `gorm:"size:255"`
-	Receiverphone string `gorm:"size:255"`
-	Receiveremail string `gorm:"size:255"`
-	Receiveraddress string `gorm:"size:255"`
-	Receivercity string `gorm:"size:255"`
-	Receiverstate string `gorm:"size:255"`
-	Receivercountry string `gorm:"size:255"`
-	Receiverpostalcode string `gorm:"size:255"`
-	Notes string `gorm:"size:255"`
-	Paidat time.Time `gorm:"type:timestamp"`
-	Shippedat time.Time `gorm:"type:timestamp"`
-	Deliveredat time.Time `gorm:"type:timestamp"`
-	Cancelledat time.Time `gorm:"type:timestamp"`
-	Refundamount int64 `gorm:"not null;default:0"`
-	Refundreason string `gorm:"size:255"`
-	Itemcount int `gorm:"not null;default:0"`
+	PaymentMethod OrderPaymentMethod `gorm:"size:50;default:'credit_card'"`
+	PaymentStatus OrderPaymentStatus `gorm:"size:50;default:'pending'"`
+	OrderStatus OrderOrderStatus `gorm:"size:50;default:'pending'"`
+	ShippingMethod OrderShippingMethod `gorm:"size:50;default:'standard'"`
+	TrackingNumber string `gorm:"size:255"`
+	ReceiverName string `gorm:"size:255"`
+	ReceiverPhone string `gorm:"size:255"`
+	ReceiverEmail string `gorm:"size:255"`
+	ReceiverAddress string `gorm:"size:255"`
+	ReceiverCity string `gorm:"size:255"`
+	ReceiverState string `gorm:"size:255"`
+	ReceiverCountry string `gorm:"size:255"`
+	ReceiverPostalCode string `gorm:"size:255"`
+	Notes string `gorm:"type:text"`
+	PaidAt *time.Time 
+	ShippedAt *time.Time 
+	DeliveredAt *time.Time 
+	CancelledAt *time.Time 
+	RefundAmount int64 `gorm:"not null;default:0"`
+	RefundReason string `gorm:"type:text"`
+	ItemCount int `gorm:"not null;default:0"`
 	Weight float64 `gorm:"default:0"`
-	Isgift bool `gorm:"default:false"`
-	Giftmessage string `gorm:"size:255"`
+	IsGift bool `gorm:"default:false"`
+	GiftMessage string `gorm:"type:text"`
 	CreatedAt time.Time `gorm:"autoCreateTime"`
 	UpdatedAt time.Time `gorm:"autoUpdateTime"`
-	DeletedAt gorm.DeletedAt `gorm:"index"`
 }
 
 // TableName 返回 GORM 映射的数据库表名。
@@ -105,143 +103,143 @@ func (Order) TableName() string {
 }
 
 // NewOrder 创建一个新的 Order 实体。
-func NewOrder(id string, userid string, orderno string, totalamount int64, discountamount int64, taxamount int64, shippingfee int64, finalamount int64, currency string, paymentmethod OrderPaymentmethod, paymentstatus OrderPaymentstatus, orderstatus OrderOrderstatus, shippingmethod OrderShippingmethod, trackingnumber string, receivername string, receiverphone string, receiveremail string, receiveraddress string, receivercity string, receiverstate string, receivercountry string, receiverpostalcode string, notes string, paidat time.Time, shippedat time.Time, deliveredat time.Time, cancelledat time.Time, refundamount int64, refundreason string, itemcount int, weight float64, isgift bool, giftmessage string) *Order {
+func NewOrder(id string, userId string, orderNo string, totalAmount int64, discountAmount int64, taxAmount int64, shippingFee int64, finalAmount int64, currency string, paymentMethod OrderPaymentMethod, paymentStatus OrderPaymentStatus, orderStatus OrderOrderStatus, shippingMethod OrderShippingMethod, trackingNumber string, receiverName string, receiverPhone string, receiverEmail string, receiverAddress string, receiverCity string, receiverState string, receiverCountry string, receiverPostalCode string, notes string, paidAt *time.Time, shippedAt *time.Time, deliveredAt *time.Time, cancelledAt *time.Time, refundAmount int64, refundReason string, itemCount int, weight float64, isGift bool, giftMessage string) *Order {
 	e := &Order{
 		ID: OrderID(id),
-		Userid: userid,
-		Orderno: orderno,
-		Totalamount: totalamount,
-		Discountamount: discountamount,
-		Taxamount: taxamount,
-		Shippingfee: shippingfee,
-		Finalamount: finalamount,
+		UserId: userId,
+		OrderNo: orderNo,
+		TotalAmount: totalAmount,
+		DiscountAmount: discountAmount,
+		TaxAmount: taxAmount,
+		ShippingFee: shippingFee,
+		FinalAmount: finalAmount,
 		Currency: currency,
-		Paymentmethod: paymentmethod,
-		Paymentstatus: paymentstatus,
-		Orderstatus: orderstatus,
-		Shippingmethod: shippingmethod,
-		Trackingnumber: trackingnumber,
-		Receivername: receivername,
-		Receiverphone: receiverphone,
-		Receiveremail: receiveremail,
-		Receiveraddress: receiveraddress,
-		Receivercity: receivercity,
-		Receiverstate: receiverstate,
-		Receivercountry: receivercountry,
-		Receiverpostalcode: receiverpostalcode,
+		PaymentMethod: paymentMethod,
+		PaymentStatus: paymentStatus,
+		OrderStatus: orderStatus,
+		ShippingMethod: shippingMethod,
+		TrackingNumber: trackingNumber,
+		ReceiverName: receiverName,
+		ReceiverPhone: receiverPhone,
+		ReceiverEmail: receiverEmail,
+		ReceiverAddress: receiverAddress,
+		ReceiverCity: receiverCity,
+		ReceiverState: receiverState,
+		ReceiverCountry: receiverCountry,
+		ReceiverPostalCode: receiverPostalCode,
 		Notes: notes,
-		Paidat: paidat,
-		Shippedat: shippedat,
-		Deliveredat: deliveredat,
-		Cancelledat: cancelledat,
-		Refundamount: refundamount,
-		Refundreason: refundreason,
-		Itemcount: itemcount,
+		PaidAt: paidAt,
+		ShippedAt: shippedAt,
+		DeliveredAt: deliveredAt,
+		CancelledAt: cancelledAt,
+		RefundAmount: refundAmount,
+		RefundReason: refundReason,
+		ItemCount: itemCount,
 		Weight: weight,
-		Isgift: isgift,
-		Giftmessage: giftmessage,
+		IsGift: isGift,
+		GiftMessage: giftMessage,
 	}
 	e.AddDomainEvent(NewOrderCreatedEvent(id))
 	return e
 }
 
 // Update 更新实体字段。
-func (e *Order) Update(userid *string, orderno *string, totalamount *int64, discountamount *int64, taxamount *int64, shippingfee *int64, finalamount *int64, currency *string, paymentmethod *OrderPaymentmethod, paymentstatus *OrderPaymentstatus, orderstatus *OrderOrderstatus, shippingmethod *OrderShippingmethod, trackingnumber *string, receivername *string, receiverphone *string, receiveremail *string, receiveraddress *string, receivercity *string, receiverstate *string, receivercountry *string, receiverpostalcode *string, notes *string, paidat *time.Time, shippedat *time.Time, deliveredat *time.Time, cancelledat *time.Time, refundamount *int64, refundreason *string, itemcount *int, weight *float64, isgift *bool, giftmessage *string) {
-	if userid != nil {
-		e.Userid = *userid
+func (e *Order) Update(userId *string, orderNo *string, totalAmount *int64, discountAmount *int64, taxAmount *int64, shippingFee *int64, finalAmount *int64, currency *string, paymentMethod *OrderPaymentMethod, paymentStatus *OrderPaymentStatus, orderStatus *OrderOrderStatus, shippingMethod *OrderShippingMethod, trackingNumber *string, receiverName *string, receiverPhone *string, receiverEmail *string, receiverAddress *string, receiverCity *string, receiverState *string, receiverCountry *string, receiverPostalCode *string, notes *string, paidAt *time.Time, shippedAt *time.Time, deliveredAt *time.Time, cancelledAt *time.Time, refundAmount *int64, refundReason *string, itemCount *int, weight *float64, isGift *bool, giftMessage *string) {
+	if userId != nil {
+		e.UserId = *userId
 	}
-	if orderno != nil {
-		e.Orderno = *orderno
+	if orderNo != nil {
+		e.OrderNo = *orderNo
 	}
-	if totalamount != nil {
-		e.Totalamount = *totalamount
+	if totalAmount != nil {
+		e.TotalAmount = *totalAmount
 	}
-	if discountamount != nil {
-		e.Discountamount = *discountamount
+	if discountAmount != nil {
+		e.DiscountAmount = *discountAmount
 	}
-	if taxamount != nil {
-		e.Taxamount = *taxamount
+	if taxAmount != nil {
+		e.TaxAmount = *taxAmount
 	}
-	if shippingfee != nil {
-		e.Shippingfee = *shippingfee
+	if shippingFee != nil {
+		e.ShippingFee = *shippingFee
 	}
-	if finalamount != nil {
-		e.Finalamount = *finalamount
+	if finalAmount != nil {
+		e.FinalAmount = *finalAmount
 	}
 	if currency != nil {
 		e.Currency = *currency
 	}
-	if paymentmethod != nil {
-		e.Paymentmethod = *paymentmethod
+	if paymentMethod != nil {
+		e.PaymentMethod = *paymentMethod
 	}
-	if paymentstatus != nil {
-		e.Paymentstatus = *paymentstatus
+	if paymentStatus != nil {
+		e.PaymentStatus = *paymentStatus
 	}
-	if orderstatus != nil {
-		e.Orderstatus = *orderstatus
+	if orderStatus != nil {
+		e.OrderStatus = *orderStatus
 	}
-	if shippingmethod != nil {
-		e.Shippingmethod = *shippingmethod
+	if shippingMethod != nil {
+		e.ShippingMethod = *shippingMethod
 	}
-	if trackingnumber != nil {
-		e.Trackingnumber = *trackingnumber
+	if trackingNumber != nil {
+		e.TrackingNumber = *trackingNumber
 	}
-	if receivername != nil {
-		e.Receivername = *receivername
+	if receiverName != nil {
+		e.ReceiverName = *receiverName
 	}
-	if receiverphone != nil {
-		e.Receiverphone = *receiverphone
+	if receiverPhone != nil {
+		e.ReceiverPhone = *receiverPhone
 	}
-	if receiveremail != nil {
-		e.Receiveremail = *receiveremail
+	if receiverEmail != nil {
+		e.ReceiverEmail = *receiverEmail
 	}
-	if receiveraddress != nil {
-		e.Receiveraddress = *receiveraddress
+	if receiverAddress != nil {
+		e.ReceiverAddress = *receiverAddress
 	}
-	if receivercity != nil {
-		e.Receivercity = *receivercity
+	if receiverCity != nil {
+		e.ReceiverCity = *receiverCity
 	}
-	if receiverstate != nil {
-		e.Receiverstate = *receiverstate
+	if receiverState != nil {
+		e.ReceiverState = *receiverState
 	}
-	if receivercountry != nil {
-		e.Receivercountry = *receivercountry
+	if receiverCountry != nil {
+		e.ReceiverCountry = *receiverCountry
 	}
-	if receiverpostalcode != nil {
-		e.Receiverpostalcode = *receiverpostalcode
+	if receiverPostalCode != nil {
+		e.ReceiverPostalCode = *receiverPostalCode
 	}
 	if notes != nil {
 		e.Notes = *notes
 	}
-	if paidat != nil {
-		e.Paidat = *paidat
+	if paidAt != nil {
+		e.PaidAt = paidAt
 	}
-	if shippedat != nil {
-		e.Shippedat = *shippedat
+	if shippedAt != nil {
+		e.ShippedAt = shippedAt
 	}
-	if deliveredat != nil {
-		e.Deliveredat = *deliveredat
+	if deliveredAt != nil {
+		e.DeliveredAt = deliveredAt
 	}
-	if cancelledat != nil {
-		e.Cancelledat = *cancelledat
+	if cancelledAt != nil {
+		e.CancelledAt = cancelledAt
 	}
-	if refundamount != nil {
-		e.Refundamount = *refundamount
+	if refundAmount != nil {
+		e.RefundAmount = *refundAmount
 	}
-	if refundreason != nil {
-		e.Refundreason = *refundreason
+	if refundReason != nil {
+		e.RefundReason = *refundReason
 	}
-	if itemcount != nil {
-		e.Itemcount = *itemcount
+	if itemCount != nil {
+		e.ItemCount = *itemCount
 	}
 	if weight != nil {
 		e.Weight = *weight
 	}
-	if isgift != nil {
-		e.Isgift = *isgift
+	if isGift != nil {
+		e.IsGift = *isGift
 	}
-	if giftmessage != nil {
-		e.Giftmessage = *giftmessage
+	if giftMessage != nil {
+		e.GiftMessage = *giftMessage
 	}
 	e.AddDomainEvent(NewOrderUpdatedEvent(string(e.ID)))
 }

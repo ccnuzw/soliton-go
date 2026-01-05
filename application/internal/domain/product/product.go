@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/soliton-go/framework/ddd"
-	"gorm.io/gorm"
 )
 
 // ProductID 是强类型的实体标识符。
@@ -32,21 +31,21 @@ type Product struct {
 	Sku string `gorm:"size:255"`
 	Name string `gorm:"size:255"`
 	Slug string `gorm:"size:255"`
-	Description string `gorm:"size:255"`
-	Shortdescription string `gorm:"size:255"`
+	Description string `gorm:"type:text"`
+	ShortDescription string `gorm:"type:text"`
 	Brand string `gorm:"size:255"`
 	Category string `gorm:"size:255"`
 	Subcategory string `gorm:"size:255"`
 	Price int64 `gorm:"not null;default:0"`
-	Originalprice int64 `gorm:"not null;default:0"`
-	Costprice int64 `gorm:"not null;default:0"`
-	Discountpercentage int `gorm:"not null;default:0"`
+	OriginalPrice int64 `gorm:"not null;default:0"`
+	CostPrice int64 `gorm:"not null;default:0"`
+	DiscountPercentage int `gorm:"not null;default:0"`
 	Stock int `gorm:"not null;default:0"`
-	Reservedstock int `gorm:"not null;default:0"`
-	Soldcount int `gorm:"not null;default:0"`
-	Viewcount int `gorm:"not null;default:0"`
+	ReservedStock int `gorm:"not null;default:0"`
+	SoldCount int `gorm:"not null;default:0"`
+	ViewCount int `gorm:"not null;default:0"`
 	Rating float64 `gorm:"default:0"`
-	Reviewcount int `gorm:"not null;default:0"`
+	ReviewCount int `gorm:"not null;default:0"`
 	Weight float64 `gorm:"default:0"`
 	Length float64 `gorm:"default:0"`
 	Width float64 `gorm:"default:0"`
@@ -55,26 +54,25 @@ type Product struct {
 	Size string `gorm:"size:255"`
 	Material string `gorm:"size:255"`
 	Manufacturer string `gorm:"size:255"`
-	Countryoforigin string `gorm:"size:255"`
+	CountryOfOrigin string `gorm:"size:255"`
 	Barcode string `gorm:"size:255"`
 	Status ProductStatus `gorm:"size:50;default:'draft'"`
-	Isfeatured bool `gorm:"default:false"`
-	Isnew bool `gorm:"default:false"`
-	Isonsale bool `gorm:"default:false"`
-	Isdigital bool `gorm:"default:false"`
-	Requiresshipping bool `gorm:"default:false"`
-	Istaxable bool `gorm:"default:false"`
-	Taxrate float64 `gorm:"default:0"`
-	Minorderquantity int `gorm:"not null;default:0"`
-	Maxorderquantity int `gorm:"not null;default:0"`
-	Tags string `gorm:"size:255"`
-	Images string `gorm:"size:255"`
-	Videourl string `gorm:"size:255"`
-	Publishedat time.Time `gorm:"type:timestamp"`
-	Discontinuedat time.Time `gorm:"type:timestamp"`
+	IsFeatured bool `gorm:"default:false"`
+	IsNew bool `gorm:"default:false"`
+	IsOnSale bool `gorm:"default:false"`
+	IsDigital bool `gorm:"default:false"`
+	RequiresShipping bool `gorm:"default:false"`
+	IsTaxable bool `gorm:"default:false"`
+	TaxRate float64 `gorm:"default:0"`
+	MinOrderQuantity int `gorm:"not null;default:0"`
+	MaxOrderQuantity int `gorm:"not null;default:0"`
+	Tags string `gorm:"type:text"`
+	Images string `gorm:"type:text"`
+	VideoUrl string `gorm:"size:255"`
+	PublishedAt *time.Time 
+	DiscontinuedAt *time.Time 
 	CreatedAt time.Time `gorm:"autoCreateTime"`
 	UpdatedAt time.Time `gorm:"autoUpdateTime"`
-	DeletedAt gorm.DeletedAt `gorm:"index"`
 }
 
 // TableName 返回 GORM 映射的数据库表名。
@@ -83,27 +81,27 @@ func (Product) TableName() string {
 }
 
 // NewProduct 创建一个新的 Product 实体。
-func NewProduct(id string, sku string, name string, slug string, description string, shortdescription string, brand string, category string, subcategory string, price int64, originalprice int64, costprice int64, discountpercentage int, stock int, reservedstock int, soldcount int, viewcount int, rating float64, reviewcount int, weight float64, length float64, width float64, height float64, color string, size string, material string, manufacturer string, countryoforigin string, barcode string, status ProductStatus, isfeatured bool, isnew bool, isonsale bool, isdigital bool, requiresshipping bool, istaxable bool, taxrate float64, minorderquantity int, maxorderquantity int, tags string, images string, videourl string, publishedat time.Time, discontinuedat time.Time) *Product {
+func NewProduct(id string, sku string, name string, slug string, description string, shortDescription string, brand string, category string, subcategory string, price int64, originalPrice int64, costPrice int64, discountPercentage int, stock int, reservedStock int, soldCount int, viewCount int, rating float64, reviewCount int, weight float64, length float64, width float64, height float64, color string, size string, material string, manufacturer string, countryOfOrigin string, barcode string, status ProductStatus, isFeatured bool, isNew bool, isOnSale bool, isDigital bool, requiresShipping bool, isTaxable bool, taxRate float64, minOrderQuantity int, maxOrderQuantity int, tags string, images string, videoUrl string, publishedAt *time.Time, discontinuedAt *time.Time) *Product {
 	e := &Product{
 		ID: ProductID(id),
 		Sku: sku,
 		Name: name,
 		Slug: slug,
 		Description: description,
-		Shortdescription: shortdescription,
+		ShortDescription: shortDescription,
 		Brand: brand,
 		Category: category,
 		Subcategory: subcategory,
 		Price: price,
-		Originalprice: originalprice,
-		Costprice: costprice,
-		Discountpercentage: discountpercentage,
+		OriginalPrice: originalPrice,
+		CostPrice: costPrice,
+		DiscountPercentage: discountPercentage,
 		Stock: stock,
-		Reservedstock: reservedstock,
-		Soldcount: soldcount,
-		Viewcount: viewcount,
+		ReservedStock: reservedStock,
+		SoldCount: soldCount,
+		ViewCount: viewCount,
 		Rating: rating,
-		Reviewcount: reviewcount,
+		ReviewCount: reviewCount,
 		Weight: weight,
 		Length: length,
 		Width: width,
@@ -112,30 +110,30 @@ func NewProduct(id string, sku string, name string, slug string, description str
 		Size: size,
 		Material: material,
 		Manufacturer: manufacturer,
-		Countryoforigin: countryoforigin,
+		CountryOfOrigin: countryOfOrigin,
 		Barcode: barcode,
 		Status: status,
-		Isfeatured: isfeatured,
-		Isnew: isnew,
-		Isonsale: isonsale,
-		Isdigital: isdigital,
-		Requiresshipping: requiresshipping,
-		Istaxable: istaxable,
-		Taxrate: taxrate,
-		Minorderquantity: minorderquantity,
-		Maxorderquantity: maxorderquantity,
+		IsFeatured: isFeatured,
+		IsNew: isNew,
+		IsOnSale: isOnSale,
+		IsDigital: isDigital,
+		RequiresShipping: requiresShipping,
+		IsTaxable: isTaxable,
+		TaxRate: taxRate,
+		MinOrderQuantity: minOrderQuantity,
+		MaxOrderQuantity: maxOrderQuantity,
 		Tags: tags,
 		Images: images,
-		Videourl: videourl,
-		Publishedat: publishedat,
-		Discontinuedat: discontinuedat,
+		VideoUrl: videoUrl,
+		PublishedAt: publishedAt,
+		DiscontinuedAt: discontinuedAt,
 	}
 	e.AddDomainEvent(NewProductCreatedEvent(id))
 	return e
 }
 
 // Update 更新实体字段。
-func (e *Product) Update(sku *string, name *string, slug *string, description *string, shortdescription *string, brand *string, category *string, subcategory *string, price *int64, originalprice *int64, costprice *int64, discountpercentage *int, stock *int, reservedstock *int, soldcount *int, viewcount *int, rating *float64, reviewcount *int, weight *float64, length *float64, width *float64, height *float64, color *string, size *string, material *string, manufacturer *string, countryoforigin *string, barcode *string, status *ProductStatus, isfeatured *bool, isnew *bool, isonsale *bool, isdigital *bool, requiresshipping *bool, istaxable *bool, taxrate *float64, minorderquantity *int, maxorderquantity *int, tags *string, images *string, videourl *string, publishedat *time.Time, discontinuedat *time.Time) {
+func (e *Product) Update(sku *string, name *string, slug *string, description *string, shortDescription *string, brand *string, category *string, subcategory *string, price *int64, originalPrice *int64, costPrice *int64, discountPercentage *int, stock *int, reservedStock *int, soldCount *int, viewCount *int, rating *float64, reviewCount *int, weight *float64, length *float64, width *float64, height *float64, color *string, size *string, material *string, manufacturer *string, countryOfOrigin *string, barcode *string, status *ProductStatus, isFeatured *bool, isNew *bool, isOnSale *bool, isDigital *bool, requiresShipping *bool, isTaxable *bool, taxRate *float64, minOrderQuantity *int, maxOrderQuantity *int, tags *string, images *string, videoUrl *string, publishedAt *time.Time, discontinuedAt *time.Time) {
 	if sku != nil {
 		e.Sku = *sku
 	}
@@ -148,8 +146,8 @@ func (e *Product) Update(sku *string, name *string, slug *string, description *s
 	if description != nil {
 		e.Description = *description
 	}
-	if shortdescription != nil {
-		e.Shortdescription = *shortdescription
+	if shortDescription != nil {
+		e.ShortDescription = *shortDescription
 	}
 	if brand != nil {
 		e.Brand = *brand
@@ -163,32 +161,32 @@ func (e *Product) Update(sku *string, name *string, slug *string, description *s
 	if price != nil {
 		e.Price = *price
 	}
-	if originalprice != nil {
-		e.Originalprice = *originalprice
+	if originalPrice != nil {
+		e.OriginalPrice = *originalPrice
 	}
-	if costprice != nil {
-		e.Costprice = *costprice
+	if costPrice != nil {
+		e.CostPrice = *costPrice
 	}
-	if discountpercentage != nil {
-		e.Discountpercentage = *discountpercentage
+	if discountPercentage != nil {
+		e.DiscountPercentage = *discountPercentage
 	}
 	if stock != nil {
 		e.Stock = *stock
 	}
-	if reservedstock != nil {
-		e.Reservedstock = *reservedstock
+	if reservedStock != nil {
+		e.ReservedStock = *reservedStock
 	}
-	if soldcount != nil {
-		e.Soldcount = *soldcount
+	if soldCount != nil {
+		e.SoldCount = *soldCount
 	}
-	if viewcount != nil {
-		e.Viewcount = *viewcount
+	if viewCount != nil {
+		e.ViewCount = *viewCount
 	}
 	if rating != nil {
 		e.Rating = *rating
 	}
-	if reviewcount != nil {
-		e.Reviewcount = *reviewcount
+	if reviewCount != nil {
+		e.ReviewCount = *reviewCount
 	}
 	if weight != nil {
 		e.Weight = *weight
@@ -214,8 +212,8 @@ func (e *Product) Update(sku *string, name *string, slug *string, description *s
 	if manufacturer != nil {
 		e.Manufacturer = *manufacturer
 	}
-	if countryoforigin != nil {
-		e.Countryoforigin = *countryoforigin
+	if countryOfOrigin != nil {
+		e.CountryOfOrigin = *countryOfOrigin
 	}
 	if barcode != nil {
 		e.Barcode = *barcode
@@ -223,32 +221,32 @@ func (e *Product) Update(sku *string, name *string, slug *string, description *s
 	if status != nil {
 		e.Status = *status
 	}
-	if isfeatured != nil {
-		e.Isfeatured = *isfeatured
+	if isFeatured != nil {
+		e.IsFeatured = *isFeatured
 	}
-	if isnew != nil {
-		e.Isnew = *isnew
+	if isNew != nil {
+		e.IsNew = *isNew
 	}
-	if isonsale != nil {
-		e.Isonsale = *isonsale
+	if isOnSale != nil {
+		e.IsOnSale = *isOnSale
 	}
-	if isdigital != nil {
-		e.Isdigital = *isdigital
+	if isDigital != nil {
+		e.IsDigital = *isDigital
 	}
-	if requiresshipping != nil {
-		e.Requiresshipping = *requiresshipping
+	if requiresShipping != nil {
+		e.RequiresShipping = *requiresShipping
 	}
-	if istaxable != nil {
-		e.Istaxable = *istaxable
+	if isTaxable != nil {
+		e.IsTaxable = *isTaxable
 	}
-	if taxrate != nil {
-		e.Taxrate = *taxrate
+	if taxRate != nil {
+		e.TaxRate = *taxRate
 	}
-	if minorderquantity != nil {
-		e.Minorderquantity = *minorderquantity
+	if minOrderQuantity != nil {
+		e.MinOrderQuantity = *minOrderQuantity
 	}
-	if maxorderquantity != nil {
-		e.Maxorderquantity = *maxorderquantity
+	if maxOrderQuantity != nil {
+		e.MaxOrderQuantity = *maxOrderQuantity
 	}
 	if tags != nil {
 		e.Tags = *tags
@@ -256,14 +254,14 @@ func (e *Product) Update(sku *string, name *string, slug *string, description *s
 	if images != nil {
 		e.Images = *images
 	}
-	if videourl != nil {
-		e.Videourl = *videourl
+	if videoUrl != nil {
+		e.VideoUrl = *videoUrl
 	}
-	if publishedat != nil {
-		e.Publishedat = *publishedat
+	if publishedAt != nil {
+		e.PublishedAt = publishedAt
 	}
-	if discontinuedat != nil {
-		e.Discontinuedat = *discontinuedat
+	if discontinuedAt != nil {
+		e.DiscontinuedAt = discontinuedAt
 	}
 	e.AddDomainEvent(NewProductUpdatedEvent(string(e.ID)))
 }

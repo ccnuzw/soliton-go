@@ -15,6 +15,9 @@ var Module = fx.Options(
 		return persistence.NewUserRepository(db)
 	}),
 
+	// Domain Services
+	fx.Provide(user.NewUserDomainService),
+
 	// Command Handlers
 	fx.Provide(NewCreateUserHandler),
 	fx.Provide(NewUpdateUserHandler),
@@ -24,8 +27,10 @@ var Module = fx.Options(
 	fx.Provide(NewGetUserHandler),
 	fx.Provide(NewListUsersHandler),
 	
-	fx.Provide(NewUserService),
 	// soliton-gen:services
+	fx.Provide(NewUserActivatedHandler),
+	fx.Invoke(RegisterUserActivatedHandler),
+	// soliton-gen:event-handlers
 
 	// 可选：注册到 CQRS 总线
 	// 取消注释以启用 CQRS 模式：

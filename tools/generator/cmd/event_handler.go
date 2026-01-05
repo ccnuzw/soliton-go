@@ -16,7 +16,7 @@ var eventHandlerCmd = &cobra.Command{
 	Long: `Generate an event handler and register it into the module.
 
 Examples:
-  soliton-gen event-handler user UserCreatedEvent
+  soliton-gen event-handler user UserCreated
   soliton-gen event-handler order OrderPaid --topic "order.paid"`,
 	Args: cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {

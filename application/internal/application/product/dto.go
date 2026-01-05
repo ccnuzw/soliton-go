@@ -12,20 +12,20 @@ type CreateProductRequest struct {
 	Name string `json:"name" binding:"required"`
 	Slug string `json:"slug" binding:"required"`
 	Description string `json:"description" binding:"required"`
-	Shortdescription string `json:"shortdescription" binding:"required"`
+	ShortDescription string `json:"short_description" binding:"required"`
 	Brand string `json:"brand" binding:"required"`
 	Category string `json:"category" binding:"required"`
 	Subcategory string `json:"subcategory" binding:"required"`
 	Price int64 `json:"price"`
-	Originalprice int64 `json:"originalprice"`
-	Costprice int64 `json:"costprice"`
-	Discountpercentage int `json:"discountpercentage"`
+	OriginalPrice int64 `json:"original_price"`
+	CostPrice int64 `json:"cost_price"`
+	DiscountPercentage int `json:"discount_percentage"`
 	Stock int `json:"stock"`
-	Reservedstock int `json:"reservedstock"`
-	Soldcount int `json:"soldcount"`
-	Viewcount int `json:"viewcount"`
+	ReservedStock int `json:"reserved_stock"`
+	SoldCount int `json:"sold_count"`
+	ViewCount int `json:"view_count"`
 	Rating float64 `json:"rating"`
-	Reviewcount int `json:"reviewcount"`
+	ReviewCount int `json:"review_count"`
 	Weight float64 `json:"weight"`
 	Length float64 `json:"length"`
 	Width float64 `json:"width"`
@@ -34,23 +34,23 @@ type CreateProductRequest struct {
 	Size string `json:"size" binding:"required"`
 	Material string `json:"material" binding:"required"`
 	Manufacturer string `json:"manufacturer" binding:"required"`
-	Countryoforigin string `json:"countryoforigin" binding:"required"`
+	CountryOfOrigin string `json:"country_of_origin" binding:"required"`
 	Barcode string `json:"barcode" binding:"required"`
 	Status string `json:"status" binding:"required,oneof=draft active inactive out_of_stock discontinued"`
-	Isfeatured bool `json:"isfeatured"`
-	Isnew bool `json:"isnew"`
-	Isonsale bool `json:"isonsale"`
-	Isdigital bool `json:"isdigital"`
-	Requiresshipping bool `json:"requiresshipping"`
-	Istaxable bool `json:"istaxable"`
-	Taxrate float64 `json:"taxrate"`
-	Minorderquantity int `json:"minorderquantity"`
-	Maxorderquantity int `json:"maxorderquantity"`
+	IsFeatured bool `json:"is_featured"`
+	IsNew bool `json:"is_new"`
+	IsOnSale bool `json:"is_on_sale"`
+	IsDigital bool `json:"is_digital"`
+	RequiresShipping bool `json:"requires_shipping"`
+	IsTaxable bool `json:"is_taxable"`
+	TaxRate float64 `json:"tax_rate"`
+	MinOrderQuantity int `json:"min_order_quantity"`
+	MaxOrderQuantity int `json:"max_order_quantity"`
 	Tags string `json:"tags" binding:"required"`
 	Images string `json:"images" binding:"required"`
-	Videourl string `json:"videourl" binding:"required"`
-	Publishedat time.Time `json:"publishedat"`
-	Discontinuedat time.Time `json:"discontinuedat"`
+	VideoUrl string `json:"video_url" binding:"required"`
+	PublishedAt *time.Time `json:"published_at"`
+	DiscontinuedAt *time.Time `json:"discontinued_at"`
 }
 
 // UpdateProductRequest 是更新 Product 的请求体。
@@ -59,20 +59,20 @@ type UpdateProductRequest struct {
 	Name *string `json:"name,omitempty"`
 	Slug *string `json:"slug,omitempty"`
 	Description *string `json:"description,omitempty"`
-	Shortdescription *string `json:"shortdescription,omitempty"`
+	ShortDescription *string `json:"short_description,omitempty"`
 	Brand *string `json:"brand,omitempty"`
 	Category *string `json:"category,omitempty"`
 	Subcategory *string `json:"subcategory,omitempty"`
 	Price *int64 `json:"price,omitempty"`
-	Originalprice *int64 `json:"originalprice,omitempty"`
-	Costprice *int64 `json:"costprice,omitempty"`
-	Discountpercentage *int `json:"discountpercentage,omitempty"`
+	OriginalPrice *int64 `json:"original_price,omitempty"`
+	CostPrice *int64 `json:"cost_price,omitempty"`
+	DiscountPercentage *int `json:"discount_percentage,omitempty"`
 	Stock *int `json:"stock,omitempty"`
-	Reservedstock *int `json:"reservedstock,omitempty"`
-	Soldcount *int `json:"soldcount,omitempty"`
-	Viewcount *int `json:"viewcount,omitempty"`
+	ReservedStock *int `json:"reserved_stock,omitempty"`
+	SoldCount *int `json:"sold_count,omitempty"`
+	ViewCount *int `json:"view_count,omitempty"`
 	Rating *float64 `json:"rating,omitempty"`
-	Reviewcount *int `json:"reviewcount,omitempty"`
+	ReviewCount *int `json:"review_count,omitempty"`
 	Weight *float64 `json:"weight,omitempty"`
 	Length *float64 `json:"length,omitempty"`
 	Width *float64 `json:"width,omitempty"`
@@ -81,23 +81,23 @@ type UpdateProductRequest struct {
 	Size *string `json:"size,omitempty"`
 	Material *string `json:"material,omitempty"`
 	Manufacturer *string `json:"manufacturer,omitempty"`
-	Countryoforigin *string `json:"countryoforigin,omitempty"`
+	CountryOfOrigin *string `json:"country_of_origin,omitempty"`
 	Barcode *string `json:"barcode,omitempty"`
 	Status *string `json:"status,omitempty" binding:"omitempty,oneof=draft active inactive out_of_stock discontinued"`
-	Isfeatured *bool `json:"isfeatured,omitempty"`
-	Isnew *bool `json:"isnew,omitempty"`
-	Isonsale *bool `json:"isonsale,omitempty"`
-	Isdigital *bool `json:"isdigital,omitempty"`
-	Requiresshipping *bool `json:"requiresshipping,omitempty"`
-	Istaxable *bool `json:"istaxable,omitempty"`
-	Taxrate *float64 `json:"taxrate,omitempty"`
-	Minorderquantity *int `json:"minorderquantity,omitempty"`
-	Maxorderquantity *int `json:"maxorderquantity,omitempty"`
+	IsFeatured *bool `json:"is_featured,omitempty"`
+	IsNew *bool `json:"is_new,omitempty"`
+	IsOnSale *bool `json:"is_on_sale,omitempty"`
+	IsDigital *bool `json:"is_digital,omitempty"`
+	RequiresShipping *bool `json:"requires_shipping,omitempty"`
+	IsTaxable *bool `json:"is_taxable,omitempty"`
+	TaxRate *float64 `json:"tax_rate,omitempty"`
+	MinOrderQuantity *int `json:"min_order_quantity,omitempty"`
+	MaxOrderQuantity *int `json:"max_order_quantity,omitempty"`
 	Tags *string `json:"tags,omitempty"`
 	Images *string `json:"images,omitempty"`
-	Videourl *string `json:"videourl,omitempty"`
-	Publishedat *time.Time `json:"publishedat,omitempty"`
-	Discontinuedat *time.Time `json:"discontinuedat,omitempty"`
+	VideoUrl *string `json:"video_url,omitempty"`
+	PublishedAt *time.Time `json:"published_at,omitempty"`
+	DiscontinuedAt *time.Time `json:"discontinued_at,omitempty"`
 }
 
 // ProductResponse 是 Product 的响应体。
@@ -107,20 +107,20 @@ type ProductResponse struct {
 	Name string `json:"name"`
 	Slug string `json:"slug"`
 	Description string `json:"description"`
-	Shortdescription string `json:"shortdescription"`
+	ShortDescription string `json:"short_description"`
 	Brand string `json:"brand"`
 	Category string `json:"category"`
 	Subcategory string `json:"subcategory"`
 	Price int64 `json:"price"`
-	Originalprice int64 `json:"originalprice"`
-	Costprice int64 `json:"costprice"`
-	Discountpercentage int `json:"discountpercentage"`
+	OriginalPrice int64 `json:"original_price"`
+	CostPrice int64 `json:"cost_price"`
+	DiscountPercentage int `json:"discount_percentage"`
 	Stock int `json:"stock"`
-	Reservedstock int `json:"reservedstock"`
-	Soldcount int `json:"soldcount"`
-	Viewcount int `json:"viewcount"`
+	ReservedStock int `json:"reserved_stock"`
+	SoldCount int `json:"sold_count"`
+	ViewCount int `json:"view_count"`
 	Rating float64 `json:"rating"`
-	Reviewcount int `json:"reviewcount"`
+	ReviewCount int `json:"review_count"`
 	Weight float64 `json:"weight"`
 	Length float64 `json:"length"`
 	Width float64 `json:"width"`
@@ -129,23 +129,23 @@ type ProductResponse struct {
 	Size string `json:"size"`
 	Material string `json:"material"`
 	Manufacturer string `json:"manufacturer"`
-	Countryoforigin string `json:"countryoforigin"`
+	CountryOfOrigin string `json:"country_of_origin"`
 	Barcode string `json:"barcode"`
 	Status string `json:"status"`
-	Isfeatured bool `json:"isfeatured"`
-	Isnew bool `json:"isnew"`
-	Isonsale bool `json:"isonsale"`
-	Isdigital bool `json:"isdigital"`
-	Requiresshipping bool `json:"requiresshipping"`
-	Istaxable bool `json:"istaxable"`
-	Taxrate float64 `json:"taxrate"`
-	Minorderquantity int `json:"minorderquantity"`
-	Maxorderquantity int `json:"maxorderquantity"`
+	IsFeatured bool `json:"is_featured"`
+	IsNew bool `json:"is_new"`
+	IsOnSale bool `json:"is_on_sale"`
+	IsDigital bool `json:"is_digital"`
+	RequiresShipping bool `json:"requires_shipping"`
+	IsTaxable bool `json:"is_taxable"`
+	TaxRate float64 `json:"tax_rate"`
+	MinOrderQuantity int `json:"min_order_quantity"`
+	MaxOrderQuantity int `json:"max_order_quantity"`
 	Tags string `json:"tags"`
 	Images string `json:"images"`
-	Videourl string `json:"videourl"`
-	Publishedat time.Time `json:"publishedat"`
-	Discontinuedat time.Time `json:"discontinuedat"`
+	VideoUrl string `json:"video_url"`
+	PublishedAt *time.Time `json:"published_at"`
+	DiscontinuedAt *time.Time `json:"discontinued_at"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
@@ -158,20 +158,20 @@ func ToProductResponse(e *product.Product) ProductResponse {
 		Name: e.Name,
 		Slug: e.Slug,
 		Description: e.Description,
-		Shortdescription: e.Shortdescription,
+		ShortDescription: e.ShortDescription,
 		Brand: e.Brand,
 		Category: e.Category,
 		Subcategory: e.Subcategory,
 		Price: e.Price,
-		Originalprice: e.Originalprice,
-		Costprice: e.Costprice,
-		Discountpercentage: e.Discountpercentage,
+		OriginalPrice: e.OriginalPrice,
+		CostPrice: e.CostPrice,
+		DiscountPercentage: e.DiscountPercentage,
 		Stock: e.Stock,
-		Reservedstock: e.Reservedstock,
-		Soldcount: e.Soldcount,
-		Viewcount: e.Viewcount,
+		ReservedStock: e.ReservedStock,
+		SoldCount: e.SoldCount,
+		ViewCount: e.ViewCount,
 		Rating: e.Rating,
-		Reviewcount: e.Reviewcount,
+		ReviewCount: e.ReviewCount,
 		Weight: e.Weight,
 		Length: e.Length,
 		Width: e.Width,
@@ -180,23 +180,23 @@ func ToProductResponse(e *product.Product) ProductResponse {
 		Size: e.Size,
 		Material: e.Material,
 		Manufacturer: e.Manufacturer,
-		Countryoforigin: e.Countryoforigin,
+		CountryOfOrigin: e.CountryOfOrigin,
 		Barcode: e.Barcode,
 		Status: string(e.Status),
-		Isfeatured: e.Isfeatured,
-		Isnew: e.Isnew,
-		Isonsale: e.Isonsale,
-		Isdigital: e.Isdigital,
-		Requiresshipping: e.Requiresshipping,
-		Istaxable: e.Istaxable,
-		Taxrate: e.Taxrate,
-		Minorderquantity: e.Minorderquantity,
-		Maxorderquantity: e.Maxorderquantity,
+		IsFeatured: e.IsFeatured,
+		IsNew: e.IsNew,
+		IsOnSale: e.IsOnSale,
+		IsDigital: e.IsDigital,
+		RequiresShipping: e.RequiresShipping,
+		IsTaxable: e.IsTaxable,
+		TaxRate: e.TaxRate,
+		MinOrderQuantity: e.MinOrderQuantity,
+		MaxOrderQuantity: e.MaxOrderQuantity,
 		Tags: e.Tags,
 		Images: e.Images,
-		Videourl: e.Videourl,
-		Publishedat: e.Publishedat,
-		Discontinuedat: e.Discontinuedat,
+		VideoUrl: e.VideoUrl,
+		PublishedAt: e.PublishedAt,
+		DiscontinuedAt: e.DiscontinuedAt,
 		CreatedAt: e.CreatedAt,
 		UpdatedAt: e.UpdatedAt,
 	}

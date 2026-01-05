@@ -17,6 +17,7 @@ import (
 	interfaceshttp "github.com/soliton-go/application/internal/interfaces/http"
 	orderapp "github.com/soliton-go/application/internal/application/order"
 	productapp "github.com/soliton-go/application/internal/application/product"
+	"github.com/soliton-go/framework/event"
 	// soliton-gen:imports
 )
 
@@ -26,6 +27,8 @@ func main() {
 			config.NewConfig,
 			logger.NewLogger,
 			orm.NewGormDB,
+			func() event.EventBus { return event.NewLocalEventBus() },
+		// soliton-gen:providers
 			NewRouter,
 		),
 

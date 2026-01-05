@@ -2,6 +2,7 @@ package persistence
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/soliton-go/application/internal/domain/product"
 	"github.com/soliton-go/framework/orm"
@@ -21,18 +22,23 @@ func NewProductRepository(db *gorm.DB) product.ProductRepository {
 }
 
 // FindPaginated 返回分页数据和总数。
-func (r *ProductRepoImpl) FindPaginated(ctx context.Context, page, pageSize int) ([]*product.Product, int64, error) {
+func (r *ProductRepoImpl) FindPaginated(ctx context.Context, page, pageSize int, sortBy, sortOrder string) ([]*product.Product, int64, error) {
 	var entities []*product.Product
 	var total int64
 
 	// 查询总数
-	if err := r.db.WithContext(ctx).Model(&product.Product{}).Count(&total).Error; err != nil {
+	baseQuery := r.db.WithContext(ctx).Model(&product.Product{})
+	if err := baseQuery.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
 	// 获取分页数据
 	offset := (page - 1) * pageSize
-	if err := r.db.WithContext(ctx).Offset(offset).Limit(pageSize).Find(&entities).Error; err != nil {
+	query := r.db.WithContext(ctx).Offset(offset).Limit(pageSize)
+	if sortBy != "" {
+		query = query.Order(fmt.Sprintf("%s %s", sortBy, sortOrder))
+	}
+	if err := query.Find(&entities).Error; err != nil {
 		return nil, 0, err
 	}
 

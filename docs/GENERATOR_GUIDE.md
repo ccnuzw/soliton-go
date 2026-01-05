@@ -37,9 +37,15 @@ go build -o soliton-gen .
 ./soliton-gen init my-project --module github.com/myorg/my-project
 ```
 
-**生成内容：** `cmd/main.go`, `cmd/migrate.go`, `configs/`, `internal/`, `go.mod`, `Makefile`, `README.md`
+**生成内容：** `cmd/main.go`, `cmd/migrate/main.go`, `configs/`, `internal/`, `go.mod`, `Makefile`, `README.md`
 
 > **提示**: 生成的 `configs/config.example.yaml` 默认支持 sqlite/postgres，如需 MySQL 请扩展 `framework/orm/db.go`。
+
+初始化后建议先执行依赖整理：
+
+```bash
+GOWORK=off go mod tidy
+```
 
 ---
 
@@ -64,7 +70,7 @@ go build -o soliton-gen .
 - 添加 Module 注册
 - 添加 Handler Provider
 - 添加路由和迁移注册
-同时会更新 `cmd/migrate.go`：
+同时会更新 `cmd/migrate/main.go`：
 - 注入对应的迁移调用
 
 **多模块支持**: 模板使用标记行 (`// soliton-gen:xxx`)，支持追加多个模块：
@@ -157,9 +163,9 @@ GET /api/users?page=1&page_size=20&sort_by=created_at&sort_order=desc
 ```
 
 #### 数据库迁移入口
-初始化项目会生成 `cmd/migrate.go`，用于执行迁移：
+初始化项目会生成 `cmd/migrate/main.go`，用于执行迁移：
 ```bash
-GOWORK=off go run ./cmd/migrate.go
+GOWORK=off go run ./cmd/migrate
 ```
 Makefile 已内置 `migrate` 目标：
 ```bash
@@ -298,15 +304,17 @@ const (
 ## 🆕 event-handler - 生成事件处理器
 
 ```bash
-./soliton-gen event-handler user UserCreatedEvent
+./soliton-gen event-handler user UserCreated
 ./soliton-gen event-handler order OrderPaid --topic "order.paid"
 ```
 
 **生成文件：** `internal/application/<domain>/event_handler_<name>.go`
 
+> 事件名可带或不带 `Event` 后缀，生成时统一规范为 `<Name>Event`。
+
 **自动更新：**
 - `internal/application/<domain>/module.go` 注入 `fx.Provide`/`fx.Invoke`
-- `cmd/main.go` 注入事件总线 Provider（`event.NewLocalEventBus`）
+- `cmd/main.go` 注入事件总线 Provider（EventBus 接口）
 
 ---
 

@@ -9,7 +9,7 @@
 - **分布式能力**: 分布式锁、事件驱动、Saga 分布式事务
 - **CQRS 模式**: 内置 Command/Query 处理器
 - **依赖注入**: 全项目集成 Uber Fx
-- **迁移入口**: 自动生成 `cmd/migrate.go`，支持一键建表
+- **迁移入口**: 自动生成 `cmd/migrate/main.go`，支持一键建表
 - **默认可用配置**: 未提供 `config.yaml` 也可启动（默认 sqlite + log.level=info）
 
 ## ⚡ 30 秒快速体验
@@ -153,9 +153,9 @@ curl "http://localhost:8080/api/users?page=1&page_size=20&sort_by=created_at&sor
 ```
 
 ### 数据库迁移入口
-生成项目包含 `cmd/migrate.go`，可单独执行迁移：
+生成项目包含 `cmd/migrate/main.go`，可单独执行迁移：
 ```bash
-GOWORK=off go run ./cmd/migrate.go
+GOWORK=off go run ./cmd/migrate
 ```
 
 ### 软删除

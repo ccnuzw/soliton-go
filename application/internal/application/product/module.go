@@ -15,6 +15,9 @@ var Module = fx.Options(
 		return persistence.NewProductRepository(db)
 	}),
 
+	// Domain Services
+	fx.Provide(product.NewProductDomainService),
+
 	// Command Handlers
 	fx.Provide(NewCreateProductHandler),
 	fx.Provide(NewUpdateProductHandler),
@@ -24,8 +27,8 @@ var Module = fx.Options(
 	fx.Provide(NewGetProductHandler),
 	fx.Provide(NewListProductsHandler),
 	
-	fx.Provide(NewProductService),
 	// soliton-gen:services
+	// soliton-gen:event-handlers
 
 	// 可选：注册到 CQRS 总线
 	// 取消注释以启用 CQRS 模式：

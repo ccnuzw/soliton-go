@@ -152,7 +152,13 @@ func generateDomainInternal(cfg DomainConfig, previewOnly bool) (*GenerationResu
 	if cfg.Wire && !previewOnly {
 		mainGoPath := filepath.Join(filepath.Dir(layout.InternalDir), "cmd", "main.go")
 		wiredMain := WireMainGo(mainGoPath, entityName, packageName, layout.ModulePath)
-		migrateGoPath := filepath.Join(filepath.Dir(layout.InternalDir), "cmd", "migrate.go")
+		migrateGoPath := filepath.Join(filepath.Dir(layout.InternalDir), "cmd", "migrate", "main.go")
+		if !IsFile(migrateGoPath) {
+			legacyPath := filepath.Join(filepath.Dir(layout.InternalDir), "cmd", "migrate.go")
+			if IsFile(legacyPath) {
+				migrateGoPath = legacyPath
+			}
+		}
 		_ = WireMigrateGo(migrateGoPath, entityName, packageName, layout.ModulePath)
 		if wiredMain {
 			result.Message = fmt.Sprintf("Domain %s 生成成功，已自动注入到 main.go", entityName)
@@ -342,7 +348,7 @@ func wireMainGoNew(mainGoPath, entityName, packageName, modulePath, original str
 	return os.WriteFile(mainGoPath, []byte(result), 0644) == nil
 }
 
-// WireMigrateGo attempts to inject migration calls into cmd/migrate.go using marker comments.
+// WireMigrateGo attempts to inject migration calls into cmd/migrate/main.go (or legacy cmd/migrate.go) using marker comments.
 func WireMigrateGo(migrateGoPath, entityName, packageName, modulePath string) bool {
 	content, err := os.ReadFile(migrateGoPath)
 	if err != nil {

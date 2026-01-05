@@ -2,6 +2,7 @@ package orderapp
 
 import (
 	"context"
+	"strings"
 
 	"github.com/soliton-go/application/internal/domain/order"
 )
@@ -28,6 +29,8 @@ func (h *GetOrderHandler) Handle(ctx context.Context, query GetOrderQuery) (*ord
 type ListOrdersQuery struct {
 	Page     int // 页码（从 1 开始）
 	PageSize int // 每页数量（默认: 20, 最大: 100）
+	SortBy   string // 排序字段（默认: id）
+	SortOrder string // 排序方式（asc/desc）
 }
 
 // ListOrdersResult 是分页查询结果。
@@ -62,8 +65,55 @@ func (h *ListOrdersHandler) Handle(ctx context.Context, query ListOrdersQuery) (
 		pageSize = 100
 	}
 
+	// 排序字段白名单
+	sortBy := strings.ToLower(strings.TrimSpace(query.SortBy))
+	sortOrder := strings.ToLower(strings.TrimSpace(query.SortOrder))
+	if sortOrder != "asc" && sortOrder != "desc" {
+		sortOrder = "desc"
+	}
+	allowedSorts := map[string]struct{}{
+		"id":         {},
+		"created_at": {},
+		"updated_at": {},
+		"user_id": {},
+		"order_no": {},
+		"total_amount": {},
+		"discount_amount": {},
+		"tax_amount": {},
+		"shipping_fee": {},
+		"final_amount": {},
+		"currency": {},
+		"payment_method": {},
+		"payment_status": {},
+		"order_status": {},
+		"shipping_method": {},
+		"tracking_number": {},
+		"receiver_name": {},
+		"receiver_phone": {},
+		"receiver_email": {},
+		"receiver_address": {},
+		"receiver_city": {},
+		"receiver_state": {},
+		"receiver_country": {},
+		"receiver_postal_code": {},
+		"notes": {},
+		"paid_at": {},
+		"shipped_at": {},
+		"delivered_at": {},
+		"cancelled_at": {},
+		"refund_amount": {},
+		"refund_reason": {},
+		"item_count": {},
+		"weight": {},
+		"is_gift": {},
+		"gift_message": {},
+	}
+	if _, ok := allowedSorts[sortBy]; !ok {
+		sortBy = "id"
+	}
+
 	// 获取总数和分页数据
-	items, total, err := h.repo.FindPaginated(ctx, page, pageSize)
+	items, total, err := h.repo.FindPaginated(ctx, page, pageSize, sortBy, sortOrder)
 	if err != nil {
 		return nil, err
 	}

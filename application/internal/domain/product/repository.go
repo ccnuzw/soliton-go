@@ -10,5 +10,5 @@ import (
 type ProductRepository interface {
 	orm.Repository[*Product, ProductID]
 	// FindPaginated 返回分页数据和总数。
-	FindPaginated(ctx context.Context, page, pageSize int) ([]*Product, int64, error)
+	FindPaginated(ctx context.Context, page, pageSize int, sortBy, sortOrder string) ([]*Product, int64, error)
 }

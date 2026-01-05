@@ -1,4 +1,4 @@
-.PHONY: run build test clean gen tidy
+.PHONY: run build test clean gen tidy migrate
 
 # Disable go.work by default for monorepo compatibility (override with GOWORK=on).
 GOWORK ?= off
@@ -23,6 +23,10 @@ clean:
 # Usage: make gen NAME=User FIELDS="username,email,status:enum(active|inactive)"
 gen:
 	soliton-gen domain $(NAME) --fields "$(FIELDS)"
+
+# Run database migrations
+migrate:
+	GOWORK=$(GOWORK) go run ./cmd/migrate
 
 # Tidy dependencies
 tidy:

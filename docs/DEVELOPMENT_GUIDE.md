@@ -33,13 +33,19 @@ cd tools/generator && go build -o soliton-gen .
 ./soliton-gen event user UserActivated --fields "user_id:uuid"
 
 # 事件处理器（自动注入 module.go / main.go）
-./soliton-gen event-handler user UserActivatedEvent
+./soliton-gen event-handler user UserActivated
 ```
 
-### 步骤 2.2: 执行数据库迁移
+### 步骤 2.2: 安装依赖
 
 ```bash
-GOWORK=off go run ./cmd/migrate.go
+GOWORK=off go mod tidy
+```
+
+### 步骤 2.3: 执行数据库迁移
+
+```bash
+GOWORK=off go run ./cmd/migrate
 ```
 
 ### 步骤 3: 配置 main.go
@@ -93,7 +99,7 @@ GOWORK=off go run ./cmd/main.go
 ```
 my-project/
 ├── cmd/main.go                           # 入口
-├── cmd/migrate.go                        # 迁移入口
+├── cmd/migrate/main.go                   # 迁移入口
 ├── configs/config.yaml                   # 配置
 └── internal/
     ├── domain/                           # 领域层（生成）

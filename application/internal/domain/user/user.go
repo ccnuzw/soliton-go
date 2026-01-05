@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/soliton-go/framework/ddd"
-	"gorm.io/gorm"
 )
 
 // UserID 是强类型的实体标识符。
@@ -50,26 +49,25 @@ type User struct {
 	Username string `gorm:"size:255"`
 	Email string `gorm:"size:255"`
 	Password string `gorm:"size:255"`
-	Fullname string `gorm:"size:255"`
+	FullName string `gorm:"size:255"`
 	Phone string `gorm:"size:255"`
 	Avatar string `gorm:"size:255"`
-	Bio string `gorm:"size:255"`
-	Birthdate time.Time `gorm:"type:timestamp"`
+	Bio string `gorm:"type:text"`
+	BirthDate *time.Time 
 	Gender UserGender `gorm:"size:50;default:'male'"`
 	Role UserRole `gorm:"size:50;default:'admin'"`
 	Status UserStatus `gorm:"size:50;default:'active'"`
-	Emailverified bool `gorm:"default:false"`
-	Phoneverified bool `gorm:"default:false"`
-	Lastloginat time.Time `gorm:"type:timestamp"`
-	Logincount int `gorm:"not null;default:0"`
-	Failedlogincount int `gorm:"not null;default:0"`
+	EmailVerified bool `gorm:"default:false"`
+	PhoneVerified bool `gorm:"default:false"`
+	LastLoginAt *time.Time 
+	LoginCount int `gorm:"not null;default:0"`
+	FailedLoginCount int `gorm:"not null;default:0"`
 	Balance int64 `gorm:"not null;default:0"`
 	Points int `gorm:"not null;default:0"`
-	Viplevel int `gorm:"not null;default:0"`
-	Preferences string `gorm:"size:255"`
+	VipLevel int `gorm:"not null;default:0"`
+	Preferences string `gorm:"type:text"`
 	CreatedAt time.Time `gorm:"autoCreateTime"`
 	UpdatedAt time.Time `gorm:"autoUpdateTime"`
-	DeletedAt gorm.DeletedAt `gorm:"index"`
 }
 
 // TableName 返回 GORM 映射的数据库表名。
@@ -78,28 +76,28 @@ func (User) TableName() string {
 }
 
 // NewUser 创建一个新的 User 实体。
-func NewUser(id string, username string, email string, password string, fullname string, phone string, avatar string, bio string, birthdate time.Time, gender UserGender, role UserRole, status UserStatus, emailverified bool, phoneverified bool, lastloginat time.Time, logincount int, failedlogincount int, balance int64, points int, viplevel int, preferences string) *User {
+func NewUser(id string, username string, email string, password string, fullName string, phone string, avatar string, bio string, birthDate *time.Time, gender UserGender, role UserRole, status UserStatus, emailVerified bool, phoneVerified bool, lastLoginAt *time.Time, loginCount int, failedLoginCount int, balance int64, points int, vipLevel int, preferences string) *User {
 	e := &User{
 		ID: UserID(id),
 		Username: username,
 		Email: email,
 		Password: password,
-		Fullname: fullname,
+		FullName: fullName,
 		Phone: phone,
 		Avatar: avatar,
 		Bio: bio,
-		Birthdate: birthdate,
+		BirthDate: birthDate,
 		Gender: gender,
 		Role: role,
 		Status: status,
-		Emailverified: emailverified,
-		Phoneverified: phoneverified,
-		Lastloginat: lastloginat,
-		Logincount: logincount,
-		Failedlogincount: failedlogincount,
+		EmailVerified: emailVerified,
+		PhoneVerified: phoneVerified,
+		LastLoginAt: lastLoginAt,
+		LoginCount: loginCount,
+		FailedLoginCount: failedLoginCount,
 		Balance: balance,
 		Points: points,
-		Viplevel: viplevel,
+		VipLevel: vipLevel,
 		Preferences: preferences,
 	}
 	e.AddDomainEvent(NewUserCreatedEvent(id))
@@ -107,7 +105,7 @@ func NewUser(id string, username string, email string, password string, fullname
 }
 
 // Update 更新实体字段。
-func (e *User) Update(username *string, email *string, password *string, fullname *string, phone *string, avatar *string, bio *string, birthdate *time.Time, gender *UserGender, role *UserRole, status *UserStatus, emailverified *bool, phoneverified *bool, lastloginat *time.Time, logincount *int, failedlogincount *int, balance *int64, points *int, viplevel *int, preferences *string) {
+func (e *User) Update(username *string, email *string, password *string, fullName *string, phone *string, avatar *string, bio *string, birthDate *time.Time, gender *UserGender, role *UserRole, status *UserStatus, emailVerified *bool, phoneVerified *bool, lastLoginAt *time.Time, loginCount *int, failedLoginCount *int, balance *int64, points *int, vipLevel *int, preferences *string) {
 	if username != nil {
 		e.Username = *username
 	}
@@ -117,8 +115,8 @@ func (e *User) Update(username *string, email *string, password *string, fullnam
 	if password != nil {
 		e.Password = *password
 	}
-	if fullname != nil {
-		e.Fullname = *fullname
+	if fullName != nil {
+		e.FullName = *fullName
 	}
 	if phone != nil {
 		e.Phone = *phone
@@ -129,8 +127,8 @@ func (e *User) Update(username *string, email *string, password *string, fullnam
 	if bio != nil {
 		e.Bio = *bio
 	}
-	if birthdate != nil {
-		e.Birthdate = *birthdate
+	if birthDate != nil {
+		e.BirthDate = birthDate
 	}
 	if gender != nil {
 		e.Gender = *gender
@@ -141,20 +139,20 @@ func (e *User) Update(username *string, email *string, password *string, fullnam
 	if status != nil {
 		e.Status = *status
 	}
-	if emailverified != nil {
-		e.Emailverified = *emailverified
+	if emailVerified != nil {
+		e.EmailVerified = *emailVerified
 	}
-	if phoneverified != nil {
-		e.Phoneverified = *phoneverified
+	if phoneVerified != nil {
+		e.PhoneVerified = *phoneVerified
 	}
-	if lastloginat != nil {
-		e.Lastloginat = *lastloginat
+	if lastLoginAt != nil {
+		e.LastLoginAt = lastLoginAt
 	}
-	if logincount != nil {
-		e.Logincount = *logincount
+	if loginCount != nil {
+		e.LoginCount = *loginCount
 	}
-	if failedlogincount != nil {
-		e.Failedlogincount = *failedlogincount
+	if failedLoginCount != nil {
+		e.FailedLoginCount = *failedLoginCount
 	}
 	if balance != nil {
 		e.Balance = *balance
@@ -162,8 +160,8 @@ func (e *User) Update(username *string, email *string, password *string, fullnam
 	if points != nil {
 		e.Points = *points
 	}
-	if viplevel != nil {
-		e.Viplevel = *viplevel
+	if vipLevel != nil {
+		e.VipLevel = *vipLevel
 	}
 	if preferences != nil {
 		e.Preferences = *preferences

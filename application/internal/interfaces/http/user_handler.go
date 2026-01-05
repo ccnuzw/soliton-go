@@ -62,22 +62,22 @@ func (h *UserHandler) Create(c *gin.Context) {
 		Username: req.Username,
 		Email: req.Email,
 		Password: req.Password,
-		Fullname: req.Fullname,
+		FullName: req.FullName,
 		Phone: req.Phone,
 		Avatar: req.Avatar,
 		Bio: req.Bio,
-		Birthdate: req.Birthdate,
+		BirthDate: req.BirthDate,
 		Gender: user.UserGender(req.Gender),
 		Role: user.UserRole(req.Role),
 		Status: user.UserStatus(req.Status),
-		Emailverified: req.Emailverified,
-		Phoneverified: req.Phoneverified,
-		Lastloginat: req.Lastloginat,
-		Logincount: req.Logincount,
-		Failedlogincount: req.Failedlogincount,
+		EmailVerified: req.EmailVerified,
+		PhoneVerified: req.PhoneVerified,
+		LastLoginAt: req.LastLoginAt,
+		LoginCount: req.LoginCount,
+		FailedLoginCount: req.FailedLoginCount,
 		Balance: req.Balance,
 		Points: req.Points,
-		Viplevel: req.Viplevel,
+		VipLevel: req.VipLevel,
 		Preferences: req.Preferences,
 	}
 
@@ -103,14 +103,18 @@ func (h *UserHandler) Get(c *gin.Context) {
 	Success(c, userapp.ToUserResponse(entity))
 }
 
-// List 处理 GET /api/users?page=1&page_size=20
+// List 处理 GET /api/users?page=1&page_size=20&sort_by=id&sort_order=desc
 func (h *UserHandler) List(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+	sortBy := c.DefaultQuery("sort_by", "id")
+	sortOrder := c.DefaultQuery("sort_order", "desc")
 
 	result, err := h.listHandler.Handle(c.Request.Context(), userapp.ListUsersQuery{
 		Page:     page,
 		PageSize: pageSize,
+		SortBy:   sortBy,
+		SortOrder: sortOrder,
 	})
 	if err != nil {
 		InternalError(c, err.Error())
@@ -141,22 +145,22 @@ func (h *UserHandler) Update(c *gin.Context) {
 		Username: req.Username,
 		Email: req.Email,
 		Password: req.Password,
-		Fullname: req.Fullname,
+		FullName: req.FullName,
 		Phone: req.Phone,
 		Avatar: req.Avatar,
 		Bio: req.Bio,
-		Birthdate: req.Birthdate,
+		BirthDate: req.BirthDate,
 		Gender: EnumPtr(req.Gender, func(v string) user.UserGender { return user.UserGender(v) }),
 		Role: EnumPtr(req.Role, func(v string) user.UserRole { return user.UserRole(v) }),
 		Status: EnumPtr(req.Status, func(v string) user.UserStatus { return user.UserStatus(v) }),
-		Emailverified: req.Emailverified,
-		Phoneverified: req.Phoneverified,
-		Lastloginat: req.Lastloginat,
-		Logincount: req.Logincount,
-		Failedlogincount: req.Failedlogincount,
+		EmailVerified: req.EmailVerified,
+		PhoneVerified: req.PhoneVerified,
+		LastLoginAt: req.LastLoginAt,
+		LoginCount: req.LoginCount,
+		FailedLoginCount: req.FailedLoginCount,
 		Balance: req.Balance,
 		Points: req.Points,
-		Viplevel: req.Viplevel,
+		VipLevel: req.VipLevel,
 		Preferences: req.Preferences,
 	}
 

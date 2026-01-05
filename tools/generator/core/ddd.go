@@ -369,10 +369,10 @@ func normalizeTargetType(target string) (string, bool) {
 
 func normalizeEventStructName(name string) string {
 	eventName := ToPascalCase(name)
-	if !strings.HasSuffix(eventName, "Event") {
-		eventName += "Event"
+	if !strings.HasSuffix(strings.ToLower(eventName), "event") {
+		return eventName + "Event"
 	}
-	return eventName
+	return eventName[:len(eventName)-5] + "Event"
 }
 
 func normalizeEventTopic(topic, domainName, eventStructName string) string {
@@ -480,8 +480,12 @@ func ensureEventBusProvider(mainGoPath string) bool {
 		}
 	}
 
-	provider := "event.NewLocalEventBus,"
-	if !strings.Contains(result, provider) {
+	provider := "func() event.EventBus { return event.NewLocalEventBus() },"
+	legacyProvider := "event.NewLocalEventBus,"
+	if strings.Contains(result, legacyProvider) && !strings.Contains(result, provider) {
+		result = strings.Replace(result, legacyProvider, provider, 1)
+		modified = true
+	} else if !strings.Contains(result, provider) {
 		if strings.Contains(result, "// soliton-gen:providers") {
 			result = strings.Replace(result,
 				"\t\t// soliton-gen:providers",

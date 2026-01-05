@@ -10,53 +10,54 @@ import (
 // CreateOrderCommand 是创建 Order 的命令。
 type CreateOrderCommand struct {
 	ID string
-	Userid string
-	Orderno string
-	Totalamount int64
-	Discountamount int64
-	Taxamount int64
-	Shippingfee int64
-	Finalamount int64
+	UserId string
+	OrderNo string
+	TotalAmount int64
+	DiscountAmount int64
+	TaxAmount int64
+	ShippingFee int64
+	FinalAmount int64
 	Currency string
-	Paymentmethod order.OrderPaymentmethod
-	Paymentstatus order.OrderPaymentstatus
-	Orderstatus order.OrderOrderstatus
-	Shippingmethod order.OrderShippingmethod
-	Trackingnumber string
-	Receivername string
-	Receiverphone string
-	Receiveremail string
-	Receiveraddress string
-	Receivercity string
-	Receiverstate string
-	Receivercountry string
-	Receiverpostalcode string
+	PaymentMethod order.OrderPaymentMethod
+	PaymentStatus order.OrderPaymentStatus
+	OrderStatus order.OrderOrderStatus
+	ShippingMethod order.OrderShippingMethod
+	TrackingNumber string
+	ReceiverName string
+	ReceiverPhone string
+	ReceiverEmail string
+	ReceiverAddress string
+	ReceiverCity string
+	ReceiverState string
+	ReceiverCountry string
+	ReceiverPostalCode string
 	Notes string
-	Paidat time.Time
-	Shippedat time.Time
-	Deliveredat time.Time
-	Cancelledat time.Time
-	Refundamount int64
-	Refundreason string
-	Itemcount int
+	PaidAt *time.Time
+	ShippedAt *time.Time
+	DeliveredAt *time.Time
+	CancelledAt *time.Time
+	RefundAmount int64
+	RefundReason string
+	ItemCount int
 	Weight float64
-	Isgift bool
-	Giftmessage string
+	IsGift bool
+	GiftMessage string
 }
 
 // CreateOrderHandler 处理 CreateOrderCommand。
 type CreateOrderHandler struct {
 	repo order.OrderRepository
+	service *order.OrderDomainService
 	// 可选：添加事件总线用于发布领域事件
 	// eventBus event.EventBus
 }
 
-func NewCreateOrderHandler(repo order.OrderRepository) *CreateOrderHandler {
-	return &CreateOrderHandler{repo: repo}
+func NewCreateOrderHandler(repo order.OrderRepository, service *order.OrderDomainService) *CreateOrderHandler {
+	return &CreateOrderHandler{repo: repo, service: service}
 }
 
 func (h *CreateOrderHandler) Handle(ctx context.Context, cmd CreateOrderCommand) (*order.Order, error) {
-	entity := order.NewOrder(cmd.ID, cmd.Userid, cmd.Orderno, cmd.Totalamount, cmd.Discountamount, cmd.Taxamount, cmd.Shippingfee, cmd.Finalamount, cmd.Currency, cmd.Paymentmethod, cmd.Paymentstatus, cmd.Orderstatus, cmd.Shippingmethod, cmd.Trackingnumber, cmd.Receivername, cmd.Receiverphone, cmd.Receiveremail, cmd.Receiveraddress, cmd.Receivercity, cmd.Receiverstate, cmd.Receivercountry, cmd.Receiverpostalcode, cmd.Notes, cmd.Paidat, cmd.Shippedat, cmd.Deliveredat, cmd.Cancelledat, cmd.Refundamount, cmd.Refundreason, cmd.Itemcount, cmd.Weight, cmd.Isgift, cmd.Giftmessage)
+	entity := order.NewOrder(cmd.ID, cmd.UserId, cmd.OrderNo, cmd.TotalAmount, cmd.DiscountAmount, cmd.TaxAmount, cmd.ShippingFee, cmd.FinalAmount, cmd.Currency, cmd.PaymentMethod, cmd.PaymentStatus, cmd.OrderStatus, cmd.ShippingMethod, cmd.TrackingNumber, cmd.ReceiverName, cmd.ReceiverPhone, cmd.ReceiverEmail, cmd.ReceiverAddress, cmd.ReceiverCity, cmd.ReceiverState, cmd.ReceiverCountry, cmd.ReceiverPostalCode, cmd.Notes, cmd.PaidAt, cmd.ShippedAt, cmd.DeliveredAt, cmd.CancelledAt, cmd.RefundAmount, cmd.RefundReason, cmd.ItemCount, cmd.Weight, cmd.IsGift, cmd.GiftMessage)
 	if err := h.repo.Save(ctx, entity); err != nil {
 		return nil, err
 	}
@@ -76,47 +77,48 @@ func (h *CreateOrderHandler) Handle(ctx context.Context, cmd CreateOrderCommand)
 // UpdateOrderCommand 是更新 Order 的命令。
 type UpdateOrderCommand struct {
 	ID string
-	Userid *string
-	Orderno *string
-	Totalamount *int64
-	Discountamount *int64
-	Taxamount *int64
-	Shippingfee *int64
-	Finalamount *int64
+	UserId *string
+	OrderNo *string
+	TotalAmount *int64
+	DiscountAmount *int64
+	TaxAmount *int64
+	ShippingFee *int64
+	FinalAmount *int64
 	Currency *string
-	Paymentmethod *order.OrderPaymentmethod
-	Paymentstatus *order.OrderPaymentstatus
-	Orderstatus *order.OrderOrderstatus
-	Shippingmethod *order.OrderShippingmethod
-	Trackingnumber *string
-	Receivername *string
-	Receiverphone *string
-	Receiveremail *string
-	Receiveraddress *string
-	Receivercity *string
-	Receiverstate *string
-	Receivercountry *string
-	Receiverpostalcode *string
+	PaymentMethod *order.OrderPaymentMethod
+	PaymentStatus *order.OrderPaymentStatus
+	OrderStatus *order.OrderOrderStatus
+	ShippingMethod *order.OrderShippingMethod
+	TrackingNumber *string
+	ReceiverName *string
+	ReceiverPhone *string
+	ReceiverEmail *string
+	ReceiverAddress *string
+	ReceiverCity *string
+	ReceiverState *string
+	ReceiverCountry *string
+	ReceiverPostalCode *string
 	Notes *string
-	Paidat *time.Time
-	Shippedat *time.Time
-	Deliveredat *time.Time
-	Cancelledat *time.Time
-	Refundamount *int64
-	Refundreason *string
-	Itemcount *int
+	PaidAt *time.Time
+	ShippedAt *time.Time
+	DeliveredAt *time.Time
+	CancelledAt *time.Time
+	RefundAmount *int64
+	RefundReason *string
+	ItemCount *int
 	Weight *float64
-	Isgift *bool
-	Giftmessage *string
+	IsGift *bool
+	GiftMessage *string
 }
 
 // UpdateOrderHandler 处理 UpdateOrderCommand。
 type UpdateOrderHandler struct {
 	repo order.OrderRepository
+	service *order.OrderDomainService
 }
 
-func NewUpdateOrderHandler(repo order.OrderRepository) *UpdateOrderHandler {
-	return &UpdateOrderHandler{repo: repo}
+func NewUpdateOrderHandler(repo order.OrderRepository, service *order.OrderDomainService) *UpdateOrderHandler {
+	return &UpdateOrderHandler{repo: repo, service: service}
 }
 
 func (h *UpdateOrderHandler) Handle(ctx context.Context, cmd UpdateOrderCommand) (*order.Order, error) {
@@ -124,7 +126,7 @@ func (h *UpdateOrderHandler) Handle(ctx context.Context, cmd UpdateOrderCommand)
 	if err != nil {
 		return nil, err
 	}
-	entity.Update(cmd.Userid, cmd.Orderno, cmd.Totalamount, cmd.Discountamount, cmd.Taxamount, cmd.Shippingfee, cmd.Finalamount, cmd.Currency, cmd.Paymentmethod, cmd.Paymentstatus, cmd.Orderstatus, cmd.Shippingmethod, cmd.Trackingnumber, cmd.Receivername, cmd.Receiverphone, cmd.Receiveremail, cmd.Receiveraddress, cmd.Receivercity, cmd.Receiverstate, cmd.Receivercountry, cmd.Receiverpostalcode, cmd.Notes, cmd.Paidat, cmd.Shippedat, cmd.Deliveredat, cmd.Cancelledat, cmd.Refundamount, cmd.Refundreason, cmd.Itemcount, cmd.Weight, cmd.Isgift, cmd.Giftmessage)
+	entity.Update(cmd.UserId, cmd.OrderNo, cmd.TotalAmount, cmd.DiscountAmount, cmd.TaxAmount, cmd.ShippingFee, cmd.FinalAmount, cmd.Currency, cmd.PaymentMethod, cmd.PaymentStatus, cmd.OrderStatus, cmd.ShippingMethod, cmd.TrackingNumber, cmd.ReceiverName, cmd.ReceiverPhone, cmd.ReceiverEmail, cmd.ReceiverAddress, cmd.ReceiverCity, cmd.ReceiverState, cmd.ReceiverCountry, cmd.ReceiverPostalCode, cmd.Notes, cmd.PaidAt, cmd.ShippedAt, cmd.DeliveredAt, cmd.CancelledAt, cmd.RefundAmount, cmd.RefundReason, cmd.ItemCount, cmd.Weight, cmd.IsGift, cmd.GiftMessage)
 	if err := h.repo.Save(ctx, entity); err != nil {
 		return nil, err
 	}
@@ -139,10 +141,11 @@ type DeleteOrderCommand struct {
 // DeleteOrderHandler 处理 DeleteOrderCommand。
 type DeleteOrderHandler struct {
 	repo order.OrderRepository
+	service *order.OrderDomainService
 }
 
-func NewDeleteOrderHandler(repo order.OrderRepository) *DeleteOrderHandler {
-	return &DeleteOrderHandler{repo: repo}
+func NewDeleteOrderHandler(repo order.OrderRepository, service *order.OrderDomainService) *DeleteOrderHandler {
+	return &DeleteOrderHandler{repo: repo, service: service}
 }
 
 func (h *DeleteOrderHandler) Handle(ctx context.Context, cmd DeleteOrderCommand) error {
