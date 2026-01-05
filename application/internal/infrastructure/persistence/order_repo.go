@@ -39,7 +39,7 @@ func (r *OrderRepoImpl) FindPaginated(ctx context.Context, page, pageSize int) (
 	return entities, total, nil
 }
 
-// Migrate creates the table if it doesn't exist.
+// MigrateOrder creates the table if it doesn't exist.
 func MigrateOrder(db *gorm.DB) error {
 	return db.AutoMigrate(&order.Order{})
 }

@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/soliton-go/framework/ddd"
+	"gorm.io/gorm"
 )
 
 // OrderID is a strong typed ID.
@@ -61,40 +62,41 @@ const (
 type Order struct {
 	ddd.BaseAggregateRoot
 	ID OrderID `gorm:"primaryKey"`
-	UserId string `gorm:"size:36;index"`
-	OrderNo string `gorm:"size:255"`
-	TotalAmount int64 `gorm:"not null;default:0"`
-	DiscountAmount int64 `gorm:"not null;default:0"`
-	TaxAmount int64 `gorm:"not null;default:0"`
-	ShippingFee int64 `gorm:"not null;default:0"`
-	FinalAmount int64 `gorm:"not null;default:0"`
-	Currency string `gorm:"size:255"`
-	PaymentMethod OrderPaymentMethod `gorm:"size:50;default:'credit_card'"`
-	PaymentStatus OrderPaymentStatus `gorm:"size:50;default:'pending'"`
-	OrderStatus OrderOrderStatus `gorm:"size:50;default:'pending'"`
-	ShippingMethod OrderShippingMethod `gorm:"size:50;default:'standard'"`
-	TrackingNumber string `gorm:"size:255"`
-	ReceiverName string `gorm:"size:255"`
-	ReceiverPhone string `gorm:"size:255"`
-	ReceiverEmail string `gorm:"size:255"`
-	ReceiverAddress string `gorm:"size:255"`
-	ReceiverCity string `gorm:"size:255"`
-	ReceiverState string `gorm:"size:255"`
-	ReceiverCountry string `gorm:"size:255"`
-	ReceiverPostalCode string `gorm:"size:255"`
-	Notes string `gorm:"type:text"`
-	PaidAt *time.Time 
-	ShippedAt *time.Time 
-	DeliveredAt *time.Time 
-	CancelledAt *time.Time 
-	RefundAmount int64 `gorm:"not null;default:0"`
-	RefundReason string `gorm:"type:text"`
-	ItemCount int `gorm:"not null;default:0"`
-	Weight float64 `gorm:"default:0"`
-	IsGift bool `gorm:"default:false"`
-	GiftMessage string `gorm:"type:text"`
+	UserId string `gorm:"size:255"` // 用户ID
+	OrderNo string `gorm:"size:255"` // 订单号
+	TotalAmount int64 `gorm:"not null;default:0"` // 总金额
+	DiscountAmount int64 `gorm:"not null;default:0"` // 折扣金额
+	TaxAmount int64 `gorm:"not null;default:0"` // 税费
+	ShippingFee int64 `gorm:"not null;default:0"` // 运费
+	FinalAmount int64 `gorm:"not null;default:0"` // 最终金额
+	Currency string `gorm:"size:255"` // 货币
+	PaymentMethod OrderPaymentMethod `gorm:"size:50;default:'credit_card'"` // 支付方式
+	PaymentStatus OrderPaymentStatus `gorm:"size:50;default:'pending'"` // 支付状态
+	OrderStatus OrderOrderStatus `gorm:"size:50;default:'pending'"` // 订单状态
+	ShippingMethod OrderShippingMethod `gorm:"size:50;default:'standard'"` // 配送方式
+	TrackingNumber string `gorm:"size:255"` // 物流单号
+	ReceiverName string `gorm:"size:255"` // 收货人姓名
+	ReceiverPhone string `gorm:"size:255"` // 收货人电话
+	ReceiverEmail string `gorm:"size:255"` // 收货人邮箱
+	ReceiverAddress string `gorm:"size:255"` // 收货地址
+	ReceiverCity string `gorm:"size:255"` // 城市
+	ReceiverState string `gorm:"size:255"` // 省份
+	ReceiverCountry string `gorm:"size:255"` // 国家
+	ReceiverPostalCode string `gorm:"size:255"` // 邮编
+	Notes string `gorm:"size:255"` // 订单备注
+	PaidAt time.Time `gorm:"type:timestamp"` // 支付时间
+	ShippedAt time.Time `gorm:"type:timestamp"` // 发货时间
+	DeliveredAt time.Time `gorm:"type:timestamp"` // 送达时间
+	CancelledAt time.Time `gorm:"type:timestamp"` // 取消时间
+	RefundAmount int64 `gorm:"not null;default:0"` // 退款金额
+	RefundReason string `gorm:"size:255"` // 退款原因
+	ItemCount int `gorm:"not null;default:0"` // 商品数量
+	Weight float64 `gorm:"default:0"` // 重量
+	IsGift bool `gorm:"default:false"` // 是否礼物
+	GiftMessage string `gorm:"size:255"` // 礼物留言
 	CreatedAt time.Time `gorm:"autoCreateTime"`
 	UpdatedAt time.Time `gorm:"autoUpdateTime"`
+	DeletedAt gorm.DeletedAt `gorm:"index"`
 }
 
 // TableName returns the table name for GORM.
@@ -103,7 +105,7 @@ func (Order) TableName() string {
 }
 
 // NewOrder creates a new Order.
-func NewOrder(id string, userId string, orderNo string, totalAmount int64, discountAmount int64, taxAmount int64, shippingFee int64, finalAmount int64, currency string, paymentMethod OrderPaymentMethod, paymentStatus OrderPaymentStatus, orderStatus OrderOrderStatus, shippingMethod OrderShippingMethod, trackingNumber string, receiverName string, receiverPhone string, receiverEmail string, receiverAddress string, receiverCity string, receiverState string, receiverCountry string, receiverPostalCode string, notes string, paidAt *time.Time, shippedAt *time.Time, deliveredAt *time.Time, cancelledAt *time.Time, refundAmount int64, refundReason string, itemCount int, weight float64, isGift bool, giftMessage string) *Order {
+func NewOrder(id string, userId string, orderNo string, totalAmount int64, discountAmount int64, taxAmount int64, shippingFee int64, finalAmount int64, currency string, paymentMethod OrderPaymentMethod, paymentStatus OrderPaymentStatus, orderStatus OrderOrderStatus, shippingMethod OrderShippingMethod, trackingNumber string, receiverName string, receiverPhone string, receiverEmail string, receiverAddress string, receiverCity string, receiverState string, receiverCountry string, receiverPostalCode string, notes string, paidAt time.Time, shippedAt time.Time, deliveredAt time.Time, cancelledAt time.Time, refundAmount int64, refundReason string, itemCount int, weight float64, isGift bool, giftMessage string) *Order {
 	e := &Order{
 		ID: OrderID(id),
 		UserId: userId,
@@ -212,16 +214,16 @@ func (e *Order) Update(userId *string, orderNo *string, totalAmount *int64, disc
 		e.Notes = *notes
 	}
 	if paidAt != nil {
-		e.PaidAt = paidAt
+		e.PaidAt = *paidAt
 	}
 	if shippedAt != nil {
-		e.ShippedAt = shippedAt
+		e.ShippedAt = *shippedAt
 	}
 	if deliveredAt != nil {
-		e.DeliveredAt = deliveredAt
+		e.DeliveredAt = *deliveredAt
 	}
 	if cancelledAt != nil {
-		e.CancelledAt = cancelledAt
+		e.CancelledAt = *cancelledAt
 	}
 	if refundAmount != nil {
 		e.RefundAmount = *refundAmount

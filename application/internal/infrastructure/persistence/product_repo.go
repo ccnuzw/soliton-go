@@ -39,7 +39,7 @@ func (r *ProductRepoImpl) FindPaginated(ctx context.Context, page, pageSize int)
 	return entities, total, nil
 }
 
-// Migrate creates the table if it doesn't exist.
+// MigrateProduct creates the table if it doesn't exist.
 func MigrateProduct(db *gorm.DB) error {
 	return db.AutoMigrate(&product.Product{})
 }

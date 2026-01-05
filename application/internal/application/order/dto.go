@@ -30,10 +30,10 @@ type CreateOrderRequest struct {
 	ReceiverCountry string `json:"receiver_country" binding:"required"`
 	ReceiverPostalCode string `json:"receiver_postal_code" binding:"required"`
 	Notes string `json:"notes" binding:"required"`
-	PaidAt *time.Time `json:"paid_at"`
-	ShippedAt *time.Time `json:"shipped_at"`
-	DeliveredAt *time.Time `json:"delivered_at"`
-	CancelledAt *time.Time `json:"cancelled_at"`
+	PaidAt time.Time `json:"paid_at"`
+	ShippedAt time.Time `json:"shipped_at"`
+	DeliveredAt time.Time `json:"delivered_at"`
+	CancelledAt time.Time `json:"cancelled_at"`
 	RefundAmount int64 `json:"refund_amount"`
 	RefundReason string `json:"refund_reason" binding:"required"`
 	ItemCount int `json:"item_count"`
@@ -103,10 +103,10 @@ type OrderResponse struct {
 	ReceiverCountry string `json:"receiver_country"`
 	ReceiverPostalCode string `json:"receiver_postal_code"`
 	Notes string `json:"notes"`
-	PaidAt *time.Time `json:"paid_at"`
-	ShippedAt *time.Time `json:"shipped_at"`
-	DeliveredAt *time.Time `json:"delivered_at"`
-	CancelledAt *time.Time `json:"cancelled_at"`
+	PaidAt time.Time `json:"paid_at"`
+	ShippedAt time.Time `json:"shipped_at"`
+	DeliveredAt time.Time `json:"delivered_at"`
+	CancelledAt time.Time `json:"cancelled_at"`
 	RefundAmount int64 `json:"refund_amount"`
 	RefundReason string `json:"refund_reason"`
 	ItemCount int `json:"item_count"`

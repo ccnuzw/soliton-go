@@ -39,7 +39,7 @@ func (r *UserRepoImpl) FindPaginated(ctx context.Context, page, pageSize int) ([
 	return entities, total, nil
 }
 
-// Migrate creates the table if it doesn't exist.
+// MigrateUser creates the table if it doesn't exist.
 func MigrateUser(db *gorm.DB) error {
 	return db.AutoMigrate(&user.User{})
 }

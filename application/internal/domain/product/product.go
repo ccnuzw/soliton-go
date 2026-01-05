@@ -28,49 +28,49 @@ const (
 type Product struct {
 	ddd.BaseAggregateRoot
 	ID ProductID `gorm:"primaryKey"`
-	Sku string `gorm:"size:255"`
-	Name string `gorm:"size:255"`
-	Slug string `gorm:"size:255"`
-	Description string `gorm:"type:text"`
-	ShortDescription string `gorm:"type:text"`
-	Brand string `gorm:"size:255"`
-	Category string `gorm:"size:255"`
-	Subcategory string `gorm:"size:255"`
-	Price int64 `gorm:"not null;default:0"`
-	OriginalPrice int64 `gorm:"not null;default:0"`
-	CostPrice int64 `gorm:"not null;default:0"`
-	DiscountPercentage int `gorm:"not null;default:0"`
-	Stock int `gorm:"not null;default:0"`
-	ReservedStock int `gorm:"not null;default:0"`
-	SoldCount int `gorm:"not null;default:0"`
-	ViewCount int `gorm:"not null;default:0"`
-	Rating float64 `gorm:"default:0"`
-	ReviewCount int `gorm:"not null;default:0"`
-	Weight float64 `gorm:"default:0"`
-	Length float64 `gorm:"default:0"`
-	Width float64 `gorm:"default:0"`
-	Height float64 `gorm:"default:0"`
-	Color string `gorm:"size:255"`
-	Size string `gorm:"size:255"`
-	Material string `gorm:"size:255"`
-	Manufacturer string `gorm:"size:255"`
-	CountryOfOrigin string `gorm:"size:255"`
-	Barcode string `gorm:"size:255"`
-	Status ProductStatus `gorm:"size:50;default:'draft'"`
-	IsFeatured bool `gorm:"default:false"`
-	IsNew bool `gorm:"default:false"`
-	IsOnSale bool `gorm:"default:false"`
-	IsDigital bool `gorm:"default:false"`
-	RequiresShipping bool `gorm:"default:false"`
-	IsTaxable bool `gorm:"default:false"`
-	TaxRate float64 `gorm:"default:0"`
-	MinOrderQuantity int `gorm:"not null;default:0"`
-	MaxOrderQuantity int `gorm:"not null;default:0"`
-	Tags string `gorm:"type:text"`
-	Images string `gorm:"type:text"`
-	VideoUrl string `gorm:"size:255"`
-	PublishedAt *time.Time 
-	DiscontinuedAt *time.Time 
+	Sku string `gorm:"size:255"` // SKU编号
+	Name string `gorm:"size:255"` // 商品名称
+	Slug string `gorm:"size:255"` // URL别名
+	Description string `gorm:"type:text"` // 详细描述
+	ShortDescription string `gorm:"type:text"` // 简短描述
+	Brand string `gorm:"size:255"` // 品牌
+	Category string `gorm:"size:255"` // 分类
+	Subcategory string `gorm:"size:255"` // 子分类
+	Price int64 `gorm:"not null;default:0"` // 售价
+	OriginalPrice int64 `gorm:"not null;default:0"` // 原价
+	CostPrice int64 `gorm:"not null;default:0"` // 成本价
+	DiscountPercentage int `gorm:"not null;default:0"` // 折扣百分比
+	Stock int `gorm:"not null;default:0"` // 库存
+	ReservedStock int `gorm:"not null;default:0"` // 预留库存
+	SoldCount int `gorm:"not null;default:0"` // 已售数量
+	ViewCount int `gorm:"not null;default:0"` // 浏览次数
+	Rating float64 `gorm:"default:0"` // 评分
+	ReviewCount int `gorm:"not null;default:0"` // 评论数
+	Weight float64 `gorm:"default:0"` // 重量
+	Length float64 `gorm:"default:0"` // 长度
+	Width float64 `gorm:"default:0"` // 宽度
+	Height float64 `gorm:"default:0"` // 高度
+	Color string `gorm:"size:255"` // 颜色
+	Size string `gorm:"size:255"` // 尺寸
+	Material string `gorm:"size:255"` // 材质
+	Manufacturer string `gorm:"size:255"` // 制造商
+	CountryOfOrigin string `gorm:"size:255"` // 原产国
+	Barcode string `gorm:"size:255"` // 条形码
+	Status ProductStatus `gorm:"size:50;default:'draft'"` // 状态
+	IsFeatured bool `gorm:"default:false"` // 是否精选
+	IsNew bool `gorm:"default:false"` // 是否新品
+	IsOnSale bool `gorm:"default:false"` // 是否促销
+	IsDigital bool `gorm:"default:false"` // 是否数字商品
+	RequiresShipping bool `gorm:"default:false"` // 是否需要配送
+	IsTaxable bool `gorm:"default:false"` // 是否需要税费
+	TaxRate float64 `gorm:"default:0"` // 税率
+	MinOrderQuantity int `gorm:"not null;default:0"` // 最小订购量
+	MaxOrderQuantity int `gorm:"not null;default:0"` // 最大订购量
+	Tags string `gorm:"type:text"` // 标签
+	Images string `gorm:"type:text"` // 图片列表
+	VideoUrl string `gorm:"size:255"` // 视频URL
+	PublishedAt *time.Time  // 发布时间
+	DiscontinuedAt *time.Time  // 停产时间
 	CreatedAt time.Time `gorm:"autoCreateTime"`
 	UpdatedAt time.Time `gorm:"autoUpdateTime"`
 }

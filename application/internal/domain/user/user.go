@@ -46,26 +46,26 @@ const (
 type User struct {
 	ddd.BaseAggregateRoot
 	ID UserID `gorm:"primaryKey"`
-	Username string `gorm:"size:255"`
-	Email string `gorm:"size:255"`
-	Password string `gorm:"size:255"`
-	FullName string `gorm:"size:255"`
-	Phone string `gorm:"size:255"`
-	Avatar string `gorm:"size:255"`
-	Bio string `gorm:"type:text"`
-	BirthDate *time.Time 
-	Gender UserGender `gorm:"size:50;default:'male'"`
-	Role UserRole `gorm:"size:50;default:'admin'"`
-	Status UserStatus `gorm:"size:50;default:'active'"`
-	EmailVerified bool `gorm:"default:false"`
-	PhoneVerified bool `gorm:"default:false"`
-	LastLoginAt *time.Time 
-	LoginCount int `gorm:"not null;default:0"`
-	FailedLoginCount int `gorm:"not null;default:0"`
-	Balance int64 `gorm:"not null;default:0"`
-	Points int `gorm:"not null;default:0"`
-	VipLevel int `gorm:"not null;default:0"`
-	Preferences string `gorm:"type:text"`
+	Username string `gorm:"size:255"` // 用户名
+	Email string `gorm:"size:255"` // 邮箱
+	Password string `gorm:"size:255"` // 密码
+	FullName string `gorm:"size:255"` // 全名
+	Phone string `gorm:"size:255"` // 电话
+	Avatar string `gorm:"size:255"` // 头像URL
+	Bio string `gorm:"type:text"` // 个人简介
+	BirthDate *time.Time  // 生日
+	Gender UserGender `gorm:"size:50;default:'male'"` // 性别
+	Role UserRole `gorm:"size:50;default:'admin'"` // 角色
+	Status UserStatus `gorm:"size:50;default:'active'"` // 状态
+	EmailVerified bool `gorm:"default:false"` // 邮箱已验证
+	PhoneVerified bool `gorm:"default:false"` // 电话已验证
+	LastLoginAt *time.Time  // 最后登录时间
+	LoginCount int `gorm:"not null;default:0"` // 登录次数
+	FailedLoginCount int `gorm:"not null;default:0"` // 失败登录次数
+	Balance int64 `gorm:"not null;default:0"` // 账户余额
+	Points int `gorm:"not null;default:0"` // 积分
+	VipLevel int `gorm:"not null;default:0"` // VIP等级
+	Preferences string `gorm:"type:text"` // 用户偏好设置
 	CreatedAt time.Time `gorm:"autoCreateTime"`
 	UpdatedAt time.Time `gorm:"autoUpdateTime"`
 }
