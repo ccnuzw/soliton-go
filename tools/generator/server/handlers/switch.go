@@ -114,8 +114,9 @@ func ListProjects(c *gin.Context) {
 
 			dirPath := filepath.Join(searchDir, entry.Name())
 
-			// Skip if it's the current project or tools directory
-			if dirPath == currentProjectDir || entry.Name() == "tools" {
+			// Skip if it's the current project, tools, docs, framework, or hidden directories
+			if dirPath == currentProjectDir || entry.Name() == "tools" || entry.Name() == "docs" ||
+				entry.Name() == "framework" || len(entry.Name()) > 0 && entry.Name()[0] == '.' {
 				continue
 			}
 

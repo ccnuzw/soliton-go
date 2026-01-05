@@ -151,9 +151,9 @@ func generateDomainInternal(cfg DomainConfig, previewOnly bool) (*GenerationResu
 	if cfg.Wire && !previewOnly {
 		mainGoPath := filepath.Join(filepath.Dir(layout.InternalDir), "cmd", "main.go")
 		if WireMainGo(mainGoPath, entityName, packageName, layout.ModulePath) {
-			result.Message = fmt.Sprintf("Domain %s generated and wired to main.go", entityName)
+			result.Message = fmt.Sprintf("Domain %s 生成成功，已自动注入到 main.go", entityName)
 		} else {
-			result.Message = fmt.Sprintf("Domain %s generated (manual wiring required)", entityName)
+			result.Message = fmt.Sprintf("Domain %s 生成成功（需手动注入到 main.go）", entityName)
 		}
 	} else {
 		result.Message = fmt.Sprintf("Domain %s 生成成功", entityName)

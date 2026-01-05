@@ -185,8 +185,21 @@ func ConvertToFields(configs []FieldConfig, entityName, packageName string) []Fi
 		}
 	}
 
+	// Built-in fields that should be skipped (already defined in template)
+	builtinFields := map[string]bool{
+		"id":        true,
+		"createdat": true,
+		"updatedat": true,
+		"deletedat": true,
+	}
+
 	fields := make([]Field, 0, len(configs))
 	for _, cfg := range configs {
+		// Skip built-in fields to avoid duplication
+		fieldNameLower := strings.ToLower(cfg.Name)
+		if builtinFields[fieldNameLower] {
+			continue
+		}
 		field := convertFieldConfig(cfg, entityName, packageName)
 		fields = append(fields, field)
 	}

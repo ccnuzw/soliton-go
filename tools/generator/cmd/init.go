@@ -57,8 +57,16 @@ func initProject(projectName, module string) {
 	frameworkReplaceValue := frameworkReplace
 
 	if frameworkReplaceValue == "" {
+		cwd, _ := os.Getwd()
+		// Check if framework exists in current directory
 		if info, err := os.Stat("framework"); err == nil && info.IsDir() {
 			frameworkReplaceValue = filepath.ToSlash(filepath.Join("..", "framework"))
+		} else if strings.Contains(cwd, filepath.Join("tools", "generator")) {
+			// Running from tools/generator, check ../../framework
+			frameworkPath := filepath.Join(cwd, "..", "..", "framework")
+			if info, err := os.Stat(frameworkPath); err == nil && info.IsDir() {
+				frameworkReplaceValue = filepath.ToSlash(filepath.Join("..", "framework"))
+			}
 		}
 	}
 

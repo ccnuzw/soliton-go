@@ -47,7 +47,31 @@ func ResolveProjectLayoutFrom(startDir string) (ProjectLayout, error) {
 		return buildLayout(appDir)
 	}
 
-	// PRIORITY 3: Walk up the directory tree (only if current dir doesn't have a project)
+	// PRIORITY 3: Scan sibling directories (for monorepo with multiple projects)
+	// This allows running from tools/generator and finding test-app, application, etc.
+	parentDir := filepath.Dir(startDir)
+	// CRITICAL FIX: If we're in tools/generator, go up one more level to reach monorepo root
+	if filepath.Base(startDir) == "generator" && filepath.Base(parentDir) == "tools" {
+		parentDir = filepath.Dir(parentDir)
+	}
+
+	if entries, err := os.ReadDir(parentDir); err == nil {
+		for _, entry := range entries {
+			if !entry.IsDir() || entry.Name() == "." || entry.Name() == ".." {
+				continue
+			}
+			// Skip tools, docs, framework, and hidden directories
+			if entry.Name() == "tools" || entry.Name() == "docs" || entry.Name() == "framework" || strings.HasPrefix(entry.Name(), ".") {
+				continue
+			}
+			siblingDir := filepath.Join(parentDir, entry.Name())
+			if IsDir(filepath.Join(siblingDir, "internal")) && IsFile(filepath.Join(siblingDir, "go.mod")) {
+				return buildLayout(siblingDir)
+			}
+		}
+	}
+
+	// PRIORITY 4: Walk up the directory tree (only if current dir doesn't have a project)
 	for dir := filepath.Dir(startDir); ; dir = filepath.Dir(dir) {
 		// Standalone layout: <root>/internal with <root>/go.mod.
 		if IsDir(filepath.Join(dir, "internal")) && IsFile(filepath.Join(dir, "go.mod")) {

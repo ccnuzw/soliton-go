@@ -1,0 +1,23 @@
+@@ -35,8 +35,21 @@
+ 	frameworkVersion := cfg.FrameworkVersion
+ 	frameworkReplace := cfg.FrameworkReplace
+ 
++// Determine where the project will be created
++cwd, _ := os.Getwd()
++var projectParentDir string
++
++// If running from tools/generator, projects are created at ../../
++if strings.HasSuffix(cwd, filepath.Join("tools", "generator")) {
++projectParentDir = filepath.Join(cwd, "..", "..")
++} else {
++projectParentDir = cwd
++}
++
++// Detect framework relative to where the project will be created
+ 	if frameworkReplace == "" {
+- if info, err := os.Stat("framework"); err == nil && info.IsDir() {
++frameworkPath := filepath.Join(projectParentDir, "framework")
++if info, err := os.Stat(frameworkPath); err == nil && info.IsDir() {
+ 			frameworkReplace = filepath.ToSlash(filepath.Join("..", "framework"))
+ 		}
+ 	}

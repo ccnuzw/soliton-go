@@ -39,6 +39,7 @@ func Start(host string, port int) {
 		api.POST("/projects/init/preview", handlers.PreviewInitProject)
 		api.POST("/projects/switch", handlers.SwitchProject)
 		api.GET("/projects/list", handlers.ListProjects)
+		api.POST("/projects/tidy", handlers.RunGoModTidy)
 
 		// Domain endpoints
 		api.POST("/domains", handlers.GenerateDomain)

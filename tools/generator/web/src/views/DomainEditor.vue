@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { api, type DomainConfig, type GenerationResult, type DomainListItem, type FieldConfig, type FieldType, type FieldDetail } from '../api'
-import { showSuccess } from '../toast'
+import { showSuccess, showError } from '../toast'
 
 const loading = ref(false)
 const result = ref<GenerationResult | null>(null)
@@ -13,6 +13,8 @@ const activeTab = ref<'new' | 'existing'>('new')
 const loadingDomains = ref(false)
 const editingDomain = ref<string | null>(null)
 const searchQuery = ref('')
+const showDeleteConfirm = ref(false)
+const deleteConfirmName = ref<string | null>(null)
 
 const config = ref<DomainConfig>({
   name: '',
@@ -60,15 +62,25 @@ async function loadDomains() {
 async function deleteDomain(domainName: string, event: Event) {
   event.stopPropagation() // 防止触发卡片点击
   
-  if (!confirm(`确定要删除领域模块 "${domainName}" 吗？\n\n这将删除整个目录及其所有文件，此操作不可恢复！`)) {
-    return
-  }
+  // 使用自定义确认对话框
+  deleteConfirmName.value = domainName
+  showDeleteConfirm.value = true
+}
 
+async function confirmDelete() {
+  if (!deleteConfirmName.value) return
+  
+  const domainName = deleteConfirmName.value
+  showDeleteConfirm.value = false
+  
   try {
     await api.deleteDomain(domainName)
-    await loadDomains() // 刷新列表
+    await loadDomains()
+    showSuccess(`领域模块 "${domainName}" 删除成功`)
   } catch (e: any) {
-    alert(`删除失败: ${e.message}`)
+    showError(`删除失败: ${e.message}`)
+  } finally {
+    deleteConfirmName.value = null
   }
 }
 
@@ -132,6 +144,20 @@ function addField() {
 function removeField(index: number) {
   if (config.value.fields.length > 1) {
     config.value.fields.splice(index, 1)
+  }
+}
+
+function moveFieldUp(index: number) {
+  if (index > 0) {
+    const fields = config.value.fields
+    ;[fields[index - 1], fields[index]] = [fields[index], fields[index - 1]]
+  }
+}
+
+function moveFieldDown(index: number) {
+  const fields = config.value.fields
+  if (index < fields.length - 1) {
+    ;[fields[index], fields[index + 1]] = [fields[index + 1], fields[index]]
   }
 }
 
@@ -343,7 +369,11 @@ function getStatusText(status: string): string {
               class="field-enum"
               data-tooltip="枚举值用 | 分隔，如：active|inactive"
             />
-            <button class="btn-remove" @click="removeField(index)" :disabled="config.fields.length === 1">×</button>
+            <div class="field-actions">
+              <button class="btn-move" @click="moveFieldUp(index)" :disabled="index === 0" title="上移">↑</button>
+              <button class="btn-move" @click="moveFieldDown(index)" :disabled="index === config.fields.length - 1" title="下移">↓</button>
+              <button class="btn-remove" @click="removeField(index)" :disabled="config.fields.length === 1">×</button>
+            </div>
           </div>
         </div>
 
@@ -419,6 +449,24 @@ function getStatusText(status: string): string {
       </div> <!-- end layout -->
     </div> <!-- end activeTab === 'new' -->
   </div> <!-- end editor -->
+
+  <!-- 删除确认对话框 -->
+  <div v-if="showDeleteConfirm" class="modal-overlay" @click="showDeleteConfirm = false">
+    <div class="modal-dialog" @click.stop>
+      <div class="modal-icon">⚠️</div>
+      <h3>确认删除</h3>
+      <p class="modal-message">
+        确定要删除领域模块 <strong>"{{ deleteConfirmName }}"</strong> 吗？
+      </p>
+      <p class="modal-warning">
+        这将删除整个目录及其所有文件，此操作不可恢复！
+      </p>
+      <div class="modal-actions">
+        <button class="btn" @click="showDeleteConfirm = false">取消</button>
+        <button class="btn danger" @click="confirmDelete">确认删除</button>
+      </div>
+    </div>
+  </div>
 </template>
 
 <style scoped>
@@ -835,17 +883,43 @@ h1 {
   padding: 10px;
   background: var(--bg-input);
   border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--text);
 }
 
 .field-enum {
-  width: 150px;
-  padding: 10px;
+  min-width: 150px;
+  flex-shrink: 0;
+}
+
+.field-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.btn-move {
+  width: 28px;
+  height: 28px;
   background: var(--bg-input);
   border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--text);
+  color: var(--text-muted);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-move:hover:not(:disabled) {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.btn-move:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
 }
 
 .btn-remove {
@@ -963,5 +1037,86 @@ h1 {
   background: rgba(34, 197, 94, 0.2);
   border-radius: 8px;
   color: var(--success);
+}
+
+/* 模态对话框 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal-dialog {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 420px;
+  width: 90%;
+  text-align: center;
+  animation: slideIn 0.2s ease;
+}
+
+@keyframes slideIn {
+  from { transform: translateY(-20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.modal-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.modal-dialog h3 {
+  margin: 0 0 16px;
+  font-size: 1.25rem;
+  color: var(--text);
+}
+
+.modal-message {
+  margin: 0 0 12px;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.modal-message strong {
+  color: var(--primary);
+}
+
+.modal-warning {
+  margin: 0 0 24px;
+  padding: 12px;
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: 8px;
+  color: #ef4444;
+  font-size: 0.9rem;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.btn.danger {
+  background: #ef4444;
+  color: white;
+}
+
+.btn.danger:hover {
+  background: #dc2626;
 }
 </style>

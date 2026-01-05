@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -109,6 +110,7 @@ func parseEntityFields(filePath string) []string {
 		if inStruct && line != "" && !strings.HasPrefix(line, "//") {
 			// Skip embedded structs and base fields
 			if strings.Contains(line, "ddd.AggregateRoot") ||
+				strings.Contains(line, "ddd.BaseAggregateRoot") ||
 				strings.Contains(line, "ddd.Entity") ||
 				strings.Contains(line, "ID") && strings.Contains(line, "uuid.UUID") {
 				continue
@@ -118,6 +120,18 @@ func parseEntityFields(filePath string) []string {
 			parts := strings.Fields(line)
 			if len(parts) > 0 {
 				fieldName := parts[0]
+
+				// Skip built-in fields (already defined in template)
+				builtinFields := map[string]bool{
+					"ID":        true,
+					"CreatedAt": true,
+					"UpdatedAt": true,
+					"DeletedAt": true,
+				}
+				if builtinFields[fieldName] {
+					continue
+				}
+
 				// Skip if it's a comment or special character
 				if !strings.HasPrefix(fieldName, "//") && fieldName != "{" && fieldName != "}" {
 					fields = append(fields, fieldName)
@@ -207,8 +221,9 @@ func parseEntityFieldsDetailed(filePath string) []FieldDetail {
 
 		// Parse field line
 		if inStruct && trimmed != "" && !strings.HasPrefix(trimmed, "//") {
-			// Skip base fields
+			// Skip base fields and embedded types
 			if strings.Contains(trimmed, "ddd.AggregateRoot") ||
+				strings.Contains(trimmed, "ddd.BaseAggregateRoot") ||
 				strings.Contains(trimmed, "ddd.Entity") ||
 				(strings.Contains(trimmed, "ID") && strings.Contains(trimmed, "uuid.UUID")) {
 				continue
@@ -218,6 +233,17 @@ func parseEntityFieldsDetailed(filePath string) []FieldDetail {
 			parts := strings.Fields(trimmed)
 			if len(parts) >= 2 {
 				fieldName := parts[0]
+
+				// Skip built-in fields (already defined in template)
+				builtinFields := map[string]bool{
+					"ID":        true,
+					"CreatedAt": true,
+					"UpdatedAt": true,
+					"DeletedAt": true,
+				}
+				if builtinFields[fieldName] {
+					continue
+				}
 				fieldType := parts[1]
 
 				// Extract tags
@@ -307,14 +333,101 @@ func DeleteDomain(c *gin.Context) {
 		return
 	}
 
-	// Delete the entire domain directory
+	var deletedItems []string
+	var errors []string
+
+	// 1. Delete domain layer directory (internal/domain/<name>/)
 	if err := os.RemoveAll(domainDir); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete domain"})
+		errors = append(errors, fmt.Sprintf("domain dir: %v", err))
+	} else {
+		deletedItems = append(deletedItems, "domain/"+domainName)
+	}
+
+	// 2. Delete application layer directory (internal/application/<name>/)
+	appDir := filepath.Join(layout.AppDir, domainName)
+	if core.IsDir(appDir) {
+		if err := os.RemoveAll(appDir); err != nil {
+			errors = append(errors, fmt.Sprintf("application dir: %v", err))
+		} else {
+			deletedItems = append(deletedItems, "application/"+domainName)
+		}
+	}
+
+	// 3. Delete infrastructure persistence file (internal/infrastructure/persistence/<name>_repo.go)
+	repoFile := filepath.Join(layout.InfraDir, "persistence", domainName+"_repo.go")
+	if core.IsFile(repoFile) {
+		if err := os.Remove(repoFile); err != nil {
+			errors = append(errors, fmt.Sprintf("repo file: %v", err))
+		} else {
+			deletedItems = append(deletedItems, "persistence/"+domainName+"_repo.go")
+		}
+	}
+
+	// 4. Delete interfaces HTTP handler file (internal/interfaces/http/<name>_handler.go)
+	handlerFile := filepath.Join(layout.InterfacesDir, "http", domainName+"_handler.go")
+	if core.IsFile(handlerFile) {
+		if err := os.Remove(handlerFile); err != nil {
+			errors = append(errors, fmt.Sprintf("handler file: %v", err))
+		} else {
+			deletedItems = append(deletedItems, "http/"+domainName+"_handler.go")
+		}
+	}
+
+	// 5. Remove injection from main.go
+	mainGoPath := filepath.Join(filepath.Dir(layout.InternalDir), "cmd", "main.go")
+	if core.IsFile(mainGoPath) {
+		if unwireMainGo(mainGoPath, domainName) {
+			deletedItems = append(deletedItems, "main.go injection")
+		}
+	}
+
+	if len(errors) > 0 {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "部分删除失败: " + strings.Join(errors, "; "),
+			"deleted": deletedItems,
+		})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"message": fmt.Sprintf("Domain %s deleted successfully", domainName),
+		"message": fmt.Sprintf("领域 %s 删除成功", domainName),
+		"deleted": deletedItems,
 	})
+}
+
+// unwireMainGo removes domain module injection from main.go
+func unwireMainGo(mainGoPath, domainName string) bool {
+	content, err := os.ReadFile(mainGoPath)
+	if err != nil {
+		return false
+	}
+
+	original := string(content)
+	modified := original
+
+	// Remove import line for the domain module
+	// Pattern: "module-path/internal/application/<domainName>"
+	importPattern := fmt.Sprintf(`\n\t"[^"]+/internal/application/%s"`, domainName)
+	re := regexp.MustCompile(importPattern)
+	modified = re.ReplaceAllString(modified, "")
+
+	// Remove module.Module from fx.Options
+	// Pattern: <domainName>.Module,
+	modulePattern := fmt.Sprintf(`\n?\s*%s\.Module,?`, domainName)
+	re = regexp.MustCompile(modulePattern)
+	modified = re.ReplaceAllString(modified, "")
+
+	// Clean up empty lines and trailing commas
+	modified = regexp.MustCompile(`\n\n\n+`).ReplaceAllString(modified, "\n\n")
+
+	if modified == original {
+		return false
+	}
+
+	if err := os.WriteFile(mainGoPath, []byte(modified), 0644); err != nil {
+		return false
+	}
+
+	return true
 }

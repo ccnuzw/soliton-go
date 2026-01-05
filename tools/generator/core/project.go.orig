@@ -31,33 +31,12 @@ func initProjectInternal(cfg ProjectConfig, previewOnly bool) (*GenerationResult
 		moduleName = "github.com/soliton-go/" + projectName
 	}
 
-	// Determine project root path FIRST
-	// Create project at ../../<project-name> (parallel to tools directory)
-	cwd, _ := os.Getwd()
-	var projectRoot string
-	var projectParentDir string
-
-	fmt.Printf("   DEBUG cwd: %s\n", cwd)
-	fmt.Printf("   DEBUG pattern: %s\n", filepath.Join("tools", "generator"))
-	fmt.Printf("   DEBUG contains: %v\n", strings.Contains(cwd, filepath.Join("tools", "generator")))
-
-	if strings.Contains(cwd, filepath.Join("tools", "generator")) {
-		// Running from tools/generator, create at ../../<project>
-		projectRoot = filepath.Join("..", "..", projectName)
-		projectParentDir = filepath.Join(cwd, "..", "..")
-	} else {
-		// Running from elsewhere
-		projectRoot = projectName
-		projectParentDir = cwd
-	}
-
-	// Now detect framework based on where project will be created
+	// Determine framework version and replace
 	frameworkVersion := cfg.FrameworkVersion
 	frameworkReplace := cfg.FrameworkReplace
 
 	if frameworkReplace == "" {
-		frameworkPath := filepath.Join(projectParentDir, "framework")
-		if info, err := os.Stat(frameworkPath); err == nil && info.IsDir() {
+		if info, err := os.Stat("framework"); err == nil && info.IsDir() {
 			frameworkReplace = filepath.ToSlash(filepath.Join("..", "framework"))
 		}
 	}
@@ -77,7 +56,17 @@ func initProjectInternal(cfg ProjectConfig, previewOnly bool) (*GenerationResult
 		FrameworkReplace: frameworkReplace,
 	}
 
-	// projectRoot was already determined above
+	// Determine project root path
+	// Create project at ../../<project-name> (parallel to tools directory)
+	// This allows running soliton-gen from tools/generator while creating projects at workspace root
+	projectRoot := projectName
+	if cwd, err := os.Getwd(); err == nil {
+		// Check if we're in tools/generator directory
+		if strings.Contains(cwd, filepath.Join("tools", "generator")) {
+			// Create project two levels up (parallel to tools/)
+			projectRoot = filepath.Join("..", "..", projectName)
+		}
+	}
 
 	// Create project root directory
 	if !previewOnly {

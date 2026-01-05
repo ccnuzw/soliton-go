@@ -42,16 +42,76 @@ async function preview() {
 async function generate() {
   error.value = ''
   loading.value = true
+  tidying.value = false
+  tidyOutput.value = ''
+  tidyError.value = ''
+  
   try {
     result.value = await api.initProject({
       ...config.value,
       module_name: effectiveModuleName.value,
     })
     step.value = 3
+    
+    // Auto-run go mod tidy after successful initialization
+    await runGoModTidy()
   } catch (e: any) {
     error.value = e.message
   } finally {
     loading.value = false
+  }
+}
+
+const tidying = ref(false)
+const tidyOutput = ref('')
+const tidyError = ref('')
+
+async function runGoModTidy() {
+  tidying.value = true
+  tidyOutput.value = ''
+  tidyError.value = ''
+  
+  // 确保至少显示 1.5 秒的进度
+  const minDisplayTime = 1500
+  const startTime = Date.now()
+  
+  try {
+    // Use the full path from the result message
+    // Extract path from: "Project myproject initialized successfully at /path/to/myproject"
+    const resultMessage = result.value?.message || ''
+    const pathMatch = resultMessage.match(/at (.+)$/)
+    const projectPath = pathMatch ? pathMatch[1] : config.value.name
+    
+    console.log('Running go mod tidy for:', projectPath)
+    
+    const response = await fetch('/api/projects/tidy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ project_path: projectPath }),
+    })
+    
+    const data = await response.json()
+    console.log('Tidy result:', data)
+    
+    // 等待最小显示时间
+    const elapsed = Date.now() - startTime
+    if (elapsed < minDisplayTime) {
+      await new Promise(resolve => setTimeout(resolve, minDisplayTime - elapsed))
+    }
+    
+    if (data.success) {
+      tidyOutput.value = data.message || 'Dependencies downloaded successfully'
+    } else {
+      tidyError.value = data.error || 'Failed to download dependencies'
+      if (data.output) {
+        tidyOutput.value = data.output
+      }
+    }
+  } catch (e: any) {
+    console.error('Tidy error:', e)
+    tidyError.value = `Failed to run go mod tidy: ${e.message}`
+  } finally {
+    tidying.value = false
   }
 }
 
@@ -72,8 +132,8 @@ async function switchToNewProject() {
       throw new Error('Failed to switch project')
     }
 
-    // Reload the page to reflect the new project
-    window.location.reload()
+    // Navigate to domain editor after switching
+    window.location.href = '/domain'
   } catch (e: any) {
     error.value = e.message
   } finally {
@@ -179,17 +239,33 @@ function reset() {
       <h2>项目创建成功！Project Created Successfully!</h2>
       <p class="success-message">{{ result?.message }}</p>
 
+      <!-- Go mod tidy progress -->
+      <div class="tidy-section">
+        <h3>📦 下载依赖 Downloading Dependencies</h3>
+        <div v-if="tidying" class="tidy-progress">
+          <div class="spinner"></div>
+          <span>正在运行 go mod tidy...</span>
+        </div>
+        <div v-else-if="tidyOutput" class="tidy-success">
+          ✅ {{ tidyOutput }}
+        </div>
+        <div v-else-if="tidyError" class="tidy-error">
+          ❌ {{ tidyError }}
+        </div>
+      </div>
+
       <div class="next-steps">
         <h3>下一步 Next Steps:</h3>
         <pre>cd {{ config.name }}
-GOWORK=off go mod tidy
 soliton-gen domain User --fields "username,email" --wire
 GOWORK=off go run ./cmd/main.go</pre>
       </div>
 
       <div class="actions" style="margin-top: 24px;">
         <button class="btn" @click="reset">创建另一个项目</button>
-        <button class="btn primary" @click="switchToNewProject">切换到新项目 →</button>
+        <button class="btn primary" :disabled="tidying" @click="switchToNewProject">
+          {{ tidying ? '请等待依赖下载完成...' : '切换到新项目并生成领域 →' }}
+        </button>
       </div>
     </div>
   </div>
@@ -446,10 +522,57 @@ h1 {
 }
 
 .next-steps pre {
-  background: var(--bg-dark);
+  background: var(--bg-secondary);
   padding: 16px;
   border-radius: 8px;
   overflow-x: auto;
   font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.tidy-section {
+  margin: 24px 0;
+  padding: 16px;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+}
+
+.tidy-section h3 {
+  margin: 0 0 12px 0;
+  font-size: 1rem;
+}
+
+.tidy-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--primary);
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 3px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.tidy-success {
+  color: var(--success);
+  padding: 8px;
+  background: rgba(34, 197, 94, 0.1);
+  border-radius: 4px;
+}
+
+.tidy-error {
+  color: var(--error);
+  padding: 8px;
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: 4px;
 }
 </style>
