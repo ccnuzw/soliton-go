@@ -52,7 +52,7 @@ func (s *{{$.ServiceName}}) {{.Name}}(ctx context.Context, req {{.Name}}Request)
 {{end}}
 `
 
-const ServiceDTOTemplate = `package services
+const ServiceDTOTemplate = `package {{.PackageName}}
 
 {{range .Methods}}
 // {{.Name}}Request is the request for {{.Name}}.

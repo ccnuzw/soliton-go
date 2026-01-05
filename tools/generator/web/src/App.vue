@@ -15,17 +15,34 @@ const navItems = [
   <div class="app">
     <aside class="sidebar">
       <div class="logo">
-        <span class="logo-icon">⚡</span>
+        <svg class="logo-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+          <defs>
+            <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" style="stop-color:#6366f1" />
+              <stop offset="100%" style="stop-color:#8b5cf6" />
+            </linearGradient>
+            <linearGradient id="waveGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" style="stop-color:#ffffff;stop-opacity:0.9" />
+              <stop offset="100%" style="stop-color:#c7d2fe;stop-opacity:0.9" />
+            </linearGradient>
+          </defs>
+          <circle cx="32" cy="32" r="30" fill="url(#bgGrad)" />
+          <path d="M12 32 Q22 22, 32 32 T52 32" stroke="url(#waveGrad)" stroke-width="4" fill="none"
+            stroke-linecap="round" />
+          <path d="M12 40 Q22 30, 32 40 T52 40" stroke="url(#waveGrad)" stroke-width="3" fill="none"
+            stroke-linecap="round" opacity="0.7" />
+          <path d="M12 24 Q22 34, 32 24 T52 24" stroke="url(#waveGrad)" stroke-width="3" fill="none"
+            stroke-linecap="round" opacity="0.7" />
+          <path d="M18 20 L26 32 L18 44" stroke="white" stroke-width="3" fill="none" stroke-linecap="round"
+            stroke-linejoin="round" opacity="0.5" />
+          <path d="M46 20 L38 32 L46 44" stroke="white" stroke-width="3" fill="none" stroke-linecap="round"
+            stroke-linejoin="round" opacity="0.5" />
+        </svg>
         <span class="logo-text">Soliton-Gen</span>
       </div>
       <nav class="nav">
-        <RouterLink
-          v-for="item in navItems"
-          :key="item.path"
-          :to="item.path"
-          class="nav-item"
-          :class="{ active: route.path === item.path }"
-        >
+        <RouterLink v-for="item in navItems" :key="item.path" :to="item.path" class="nav-item"
+          :class="{ active: route.path === item.path }">
           <span class="nav-icon">{{ item.icon }}</span>
           <span class="nav-text">{{ item.name }}</span>
         </RouterLink>
@@ -89,7 +106,8 @@ body {
 }
 
 .logo-icon {
-  font-size: 24px;
+  width: 32px;
+  height: 32px;
 }
 
 .logo-text {

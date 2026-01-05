@@ -164,23 +164,32 @@ func ListServices() ([]string, error) {
 		return nil, err
 	}
 
-	servicesDir := filepath.Join(layout.AppDir, "services")
-	entries, err := os.ReadDir(servicesDir)
+	entries, err := os.ReadDir(layout.AppDir)
 	if err != nil {
-		// services directory might not exist
 		return []string{}, nil
+	}
+
+	// Get list of domains to exclude domain-only modules
+	domains, _ := ListDomains()
+	domainSet := make(map[string]bool)
+	for _, d := range domains {
+		domainSet[d] = true
 	}
 
 	var services []string
 	for _, entry := range entries {
-		if !entry.IsDir() && hasServiceSuffix(entry.Name()) {
-			// Extract service name from filename (e.g., order_service.go -> OrderService)
-			name := entry.Name()
-			name = name[:len(name)-3] // remove .go
-			if idx := len(name) - 8; idx > 0 && name[idx:] == "_service" {
-				name = name[:idx]
-			}
-			services = append(services, ToPascalCase(name)+"Service")
+		if !entry.IsDir() || startsWith(entry.Name(), ".") {
+			continue
+		}
+
+		dirPath := filepath.Join(layout.AppDir, entry.Name())
+
+		// Check if this directory contains a service.go file
+		serviceFile := filepath.Join(dirPath, "service.go")
+		if IsFile(serviceFile) {
+			// This is a service module
+			serviceName := ToPascalCase(entry.Name()) + "Service"
+			services = append(services, serviceName)
 		}
 	}
 
@@ -198,29 +207,18 @@ func DeleteService(serviceName string) DeleteResult {
 		}
 	}
 
-	servicesDir := filepath.Join(layout.AppDir, "services")
-
-	// Convert service name to file pattern
-	snakeName := ToSnakeCase(serviceName)
-	// Remove "Service" suffix if present for file matching
-	if len(snakeName) > 8 && snakeName[len(snakeName)-8:] == "_service" {
-		snakeName = snakeName[:len(snakeName)-8]
+	// Convert service name to directory name (e.g., OrderService -> order)
+	dirName := ToSnakeCase(serviceName)
+	// Remove "_service" suffix if present
+	if len(dirName) > 8 && dirName[len(dirName)-8:] == "_service" {
+		dirName = dirName[:len(dirName)-8]
 	}
 
-	var deletedItems []string
-	var errors []string
+	serviceDir := filepath.Join(layout.AppDir, dirName)
 
-	// Look for service files
-	serviceFile := filepath.Join(servicesDir, snakeName+"_service.go")
-	dtoFile := filepath.Join(servicesDir, snakeName+"_dto.go")
-
-	if IsFile(serviceFile) {
-		if err := os.Remove(serviceFile); err != nil {
-			errors = append(errors, fmt.Sprintf("service file: %v", err))
-		} else {
-			deletedItems = append(deletedItems, snakeName+"_service.go")
-		}
-	} else {
+	// Check if service.go exists in this directory
+	serviceFile := filepath.Join(serviceDir, "service.go")
+	if !IsFile(serviceFile) {
 		return DeleteResult{
 			Success: false,
 			Errors:  []string{"service not found"},
@@ -228,11 +226,27 @@ func DeleteService(serviceName string) DeleteResult {
 		}
 	}
 
-	if IsFile(dtoFile) {
-		if err := os.Remove(dtoFile); err != nil {
-			errors = append(errors, fmt.Sprintf("dto file: %v", err))
+	var deletedItems []string
+	var errors []string
+
+	// Check if this directory also has domain files (commands.go, queries.go)
+	// If so, only delete service.go and not the whole directory
+	commandsFile := filepath.Join(serviceDir, "commands.go")
+	queriesFile := filepath.Join(serviceDir, "queries.go")
+
+	if IsFile(commandsFile) || IsFile(queriesFile) {
+		// This is a domain module with a service, only delete service.go
+		if err := os.Remove(serviceFile); err != nil {
+			errors = append(errors, fmt.Sprintf("service file: %v", err))
 		} else {
-			deletedItems = append(deletedItems, snakeName+"_dto.go")
+			deletedItems = append(deletedItems, "application/"+dirName+"/service.go")
+		}
+	} else {
+		// This is a standalone service, delete the whole directory
+		if err := os.RemoveAll(serviceDir); err != nil {
+			errors = append(errors, fmt.Sprintf("service directory: %v", err))
+		} else {
+			deletedItems = append(deletedItems, "application/"+dirName+"/")
 		}
 	}
 
@@ -254,8 +268,4 @@ func DeleteService(serviceName string) DeleteResult {
 
 func startsWith(s, prefix string) bool {
 	return len(s) >= len(prefix) && s[:len(prefix)] == prefix
-}
-
-func hasServiceSuffix(name string) bool {
-	return len(name) > 11 && name[len(name)-11:] == "_service.go"
 }

@@ -27,7 +27,7 @@ const filteredServices = computed(() => {
     return services.value || []
   }
   const query = searchQuery.value.toLowerCase()
-  return services.value.filter(service => 
+  return services.value.filter(service =>
     service.name.toLowerCase().includes(query) ||
     service.methods.some(method => method.toLowerCase().includes(query))
   )
@@ -51,7 +51,7 @@ async function loadServices() {
 
 async function deleteService(serviceName: string, event: Event) {
   event.stopPropagation() // 防止触发卡片点击
-  
+
   if (!confirm(`确定要删除应用服务 "${serviceName}" 吗？\n\n这将删除服务文件，此操作不可恢复！`)) {
     return
   }
@@ -69,7 +69,7 @@ async function detectServiceType() {
     showDetection.value = false
     return
   }
-  
+
   try {
     const result = await api.detectServiceType(config.value.name)
     detectionResult.value = result
@@ -92,7 +92,7 @@ async function loadService(serviceName: string) {
   error.value = ''
   try {
     const detail = await api.getServiceDetail(serviceName)
-    
+
     config.value = {
       name: detail.name,
       methods: detail.methods.map(m => m.name),
@@ -146,7 +146,7 @@ async function generate() {
     })
     showPreview.value = true
     await loadServices()
-    
+
     // 显示成功提示
     if (result.value.success) {
       showSuccess(result.value.message || '生成成功！')
@@ -186,18 +186,10 @@ function getStatusText(status: string): string {
 
     <!-- Tabs -->
     <div class="tabs">
-      <button 
-        class="tab" 
-        :class="{ active: activeTab === 'new' }"
-        @click="activeTab = 'new'"
-      >
+      <button class="tab" :class="{ active: activeTab === 'new' }" @click="activeTab = 'new'">
         ✨ 新建服务
       </button>
-      <button 
-        class="tab" 
-        :class="{ active: activeTab === 'existing' }"
-        @click="activeTab = 'existing'"
-      >
+      <button class="tab" :class="{ active: activeTab === 'existing' }" @click="activeTab = 'existing'">
         📋 已生成服务 ({{ services?.length || 0 }})
       </button>
     </div>
@@ -206,12 +198,7 @@ function getStatusText(status: string): string {
     <div v-if="activeTab === 'existing'" class="services-list">
       <!-- Search Box -->
       <div class="search-box">
-        <input 
-          v-model="searchQuery" 
-          type="text" 
-          placeholder="🔍 搜索应用服务或方法..."
-          class="search-input"
-        />
+        <input v-model="searchQuery" type="text" placeholder="🔍 搜索应用服务或方法..." class="search-input" />
         <span v-if="searchQuery" class="search-clear" @click="searchQuery = ''">✕</span>
       </div>
 
@@ -225,21 +212,17 @@ function getStatusText(status: string): string {
         <p class="hint">尝试其他关键词</p>
       </div>
       <div v-else class="service-grid">
-        <div 
-          v-for="service in filteredServices" 
-          :key="service.name"
-          class="service-card"
-          @click="loadService(service.name)"
-        >
+        <div v-for="service in filteredServices" :key="service.name" class="service-card"
+          :class="{ 'domain-service': service.type === 'domain_service', 'cross-domain-service': service.type === 'cross_domain_service' }"
+          @click="loadService(service.name)">
           <div class="service-header">
             <h3>{{ service.name }}</h3>
             <div class="header-actions">
+              <span class="type-badge" :class="service.type">
+                {{ service.type === 'domain_service' ? '领域' : '跨域' }}
+              </span>
               <span class="badge">{{ service.methods?.length || 0 }} 方法</span>
-              <button 
-                class="btn-delete" 
-                @click="deleteService(service.name, $event)"
-                title="删除服务"
-              >
+              <button class="btn-delete" @click="deleteService(service.name, $event)" title="删除服务">
                 🗑️
               </button>
             </div>
@@ -265,135 +248,128 @@ function getStatusText(status: string): string {
       </div>
 
       <div class="layout">
-      <!-- Left: Form -->
-      <div class="form-panel">
-        <!-- Usage Guide -->
-        <details class="help-tips">
-          <summary>📖 使用指南 Usage Guide</summary>
-          <div class="tips-content">
-            <p><strong>服务名称：</strong>使用 PascalCase 格式，如 <code>OrderService</code>、<code>PaymentService</code></p>
-            <p><strong>方法定义：</strong>每行一个方法名，如 <code>CreateOrder</code>、<code>ProcessPayment</code></p>
-            <p><strong>默认方法：</strong>如果不填写方法，将自动生成 Create、Get、List 三个基础方法</p>
-            <p><strong>注意：</strong></p>
-            <ul>
-              <li>Service 用于编排跨领域的业务逻辑，可以调用多个 Repository</li>
-              <li>生成后会自动运行 go mod tidy 下载依赖</li>
-              <li>勾选"自动注入到 main.go"可自动完成模块注册</li>
-            </ul>
-          </div>
-        </details>
-
-        <div class="form-group">
-          <label>
-            服务名称 Service Name *
-            <span class="tooltip" data-tooltip="应用服务名称，用于跨领域业务逻辑">ⓘ</span>
-          </label>
-          <input v-model="config.name" placeholder="OrderService / PaymentService" />
-          <span class="hint">如果未包含 "Service" 后缀会自动添加</span>
-        </div>
-
-        <!-- Detection Result -->
-        <div v-if="showDetection && detectionResult" class="detection-result">
-          <div class="detection-header">
-            <div class="detection-icon">
-              {{ detectionResult.domain_exists ? '✅' : 'ℹ️' }}
+        <!-- Left: Form -->
+        <div class="form-panel">
+          <!-- Usage Guide -->
+          <details class="help-tips">
+            <summary>📖 使用指南 Usage Guide</summary>
+            <div class="tips-content">
+              <p><strong>服务名称：</strong>使用 PascalCase 格式，如 <code>OrderService</code>、<code>PaymentService</code></p>
+              <p><strong>方法定义：</strong>每行一个方法名，如 <code>CreateOrder</code>、<code>ProcessPayment</code></p>
+              <p><strong>默认方法：</strong>如果不填写方法，将自动生成 Create、Get、List 三个基础方法</p>
+              <p><strong>注意：</strong></p>
+              <ul>
+                <li>Service 用于编排跨领域的业务逻辑，可以调用多个 Repository</li>
+                <li>生成后会自动运行 go mod tidy 下载依赖</li>
+                <li>勾选"自动注入到 main.go"可自动完成模块注册</li>
+              </ul>
             </div>
-            <div class="detection-content">
-              <p class="detection-message">{{ detectionResult.message }}</p>
-              <div class="detection-details">
-                <span class="detail-item">
-                  <strong>类型:</strong> {{ detectionResult.service_type === 'domain_service' ? '领域服务' : '跨领域服务' }}
-                </span>
-                <span class="detail-item">
-                  <strong>目标:</strong> {{ detectionResult.target_dir }}
-                </span>
-                <span v-if="detectionResult.should_reuse_dto" class="detail-item highlight">
-                  ✅ 复用现有 DTO
-                </span>
+          </details>
+
+          <div class="form-group">
+            <label>
+              服务名称 Service Name *
+              <span class="tooltip" data-tooltip="应用服务名称，用于跨领域业务逻辑">ⓘ</span>
+            </label>
+            <input v-model="config.name" placeholder="OrderService / PaymentService" />
+            <span class="hint">如果未包含 "Service" 后缀会自动添加</span>
+          </div>
+
+          <!-- Detection Result -->
+          <div v-if="showDetection && detectionResult" class="detection-result">
+            <div class="detection-header">
+              <div class="detection-icon">
+                {{ detectionResult.domain_exists ? '✅' : 'ℹ️' }}
+              </div>
+              <div class="detection-content">
+                <p class="detection-message">{{ detectionResult.message }}</p>
+                <div class="detection-details">
+                  <span class="detail-item">
+                    <strong>类型:</strong> {{ detectionResult.service_type === 'domain_service' ? '领域服务' : '跨领域服务' }}
+                  </span>
+                  <span class="detail-item">
+                    <strong>目标:</strong> {{ detectionResult.target_dir }}
+                  </span>
+                  <span v-if="detectionResult.should_reuse_dto" class="detail-item highlight">
+                    ✅ 复用现有 DTO
+                  </span>
+                </div>
+              </div>
+              <button class="btn-toggle-manual" @click="manualMode = !manualMode" type="button">
+                {{ manualMode ? '🔄 自动' : '⚙️ 手动' }}
+              </button>
+            </div>
+          </div>
+
+          <div class="methods-section">
+            <div class="section-header">
+              <h3>方法 Methods</h3>
+              <button class="btn-add" @click="addMethod">+ 添加方法</button>
+            </div>
+
+            <div class="method-row" v-for="(_method, index) in config.methods" :key="index">
+              <input v-model="config.methods[index]" placeholder="CreateOrder / ProcessPayment / CancelOrder"
+                class="method-name" />
+              <button class="btn-remove" @click="removeMethod(index)" :disabled="config.methods.length === 1">×</button>
+            </div>
+
+            <p class="hint">留空将生成默认方法：Create、Get、List</p>
+          </div>
+
+          <div class="options">
+            <div class="form-group inline">
+              <label data-tooltip="覆盖已存在的文件">
+                <input type="checkbox" v-model="config.force" />
+                强制覆盖 Force
+              </label>
+              <div v-if="config.force" class="force-warning">
+                ⚠️ <strong>警告：</strong>强制覆盖将<strong>永久删除</strong>所有手动修改的代码！<br>
+                只在首次生成后立即修改时使用。一旦开始写业务逻辑，请勿勾选此选项。
               </div>
             </div>
-            <button 
-              class="btn-toggle-manual" 
-              @click="manualMode = !manualMode"
-              type="button"
-            >
-              {{ manualMode ? '🔄 自动' : '⚙️ 手动' }}
+          </div>
+
+          <div class="error" v-if="error">{{ error }}</div>
+
+          <div class="actions">
+            <button class="btn" @click="preview" :disabled="!config.name || loading">
+              {{ loading ? '加载中...' : '预览 Preview' }}
+            </button>
+            <button class="btn primary" @click="generate" :disabled="!config.name || loading">
+              {{ loading ? '生成中...' : '生成 Generate' }}
             </button>
           </div>
         </div>
 
-        <div class="methods-section">
-          <div class="section-header">
-            <h3>方法 Methods</h3>
-            <button class="btn-add" @click="addMethod">+ 添加方法</button>
+        <!-- Right: Preview -->
+        <div class="preview-panel" v-if="showPreview && result">
+          <div class="preview-header">
+            <h3>{{ result.success ? '✅ 已生成文件' : '❌ 错误' }}</h3>
+            <button class="btn-close" @click="showPreview = false">×</button>
           </div>
 
-          <div class="method-row" v-for="(_method, index) in config.methods" :key="index">
-            <input
-              v-model="config.methods[index]"
-              placeholder="CreateOrder / ProcessPayment / CancelOrder"
-              class="method-name"
-            />
-            <button class="btn-remove" @click="removeMethod(index)" :disabled="config.methods.length === 1">×</button>
-          </div>
-
-          <p class="hint">留空将生成默认方法：Create、Get、List</p>
-        </div>
-
-        <div class="options">
-          <div class="form-group inline">
-            <label data-tooltip="覆盖已存在的文件">
-              <input type="checkbox" v-model="config.force" />
-              强制覆盖 Force
-            </label>
-            <div v-if="config.force" class="force-warning">
-              ⚠️ <strong>警告：</strong>强制覆盖将<strong>永久删除</strong>所有手动修改的代码！<br>
-              只在首次生成后立即修改时使用。一旦开始写业务逻辑，请勿勾选此选项。
+          <div class="file-list">
+            <div class="file" v-for="file in result.files" :key="file.path">
+              <span class="file-status" :class="file.status">{{ getStatusText(file.status) }}</span>
+              <span class="file-path">{{ file.path.split('/').pop() }}</span>
             </div>
           </div>
-        </div>
 
-        <div class="error" v-if="error">{{ error }}</div>
+          <div class="message" v-if="result.message">{{ result.message }}</div>
 
-        <div class="actions">
-          <button class="btn" @click="preview" :disabled="!config.name || loading">
-            {{ loading ? '加载中...' : '预览 Preview' }}
-          </button>
-          <button class="btn primary" @click="generate" :disabled="!config.name || loading">
-            {{ loading ? '生成中...' : '生成 Generate' }}
-          </button>
-        </div>
-      </div>
-
-      <!-- Right: Preview -->
-      <div class="preview-panel" v-if="showPreview && result">
-        <div class="preview-header">
-          <h3>{{ result.success ? '✅ 已生成文件' : '❌ 错误' }}</h3>
-          <button class="btn-close" @click="showPreview = false">×</button>
-        </div>
-
-        <div class="file-list">
-          <div class="file" v-for="file in result.files" :key="file.path">
-            <span class="file-status" :class="file.status">{{ getStatusText(file.status) }}</span>
-            <span class="file-path">{{ file.path.split('/').pop() }}</span>
+          <div class="next-steps">
+            <h4>下一步 Next Steps:</h4>
+            <ol>
+              <li>在服务结构体中注入所需的 Repository</li>
+              <li>在每个方法中实现业务逻辑</li>
+              <li>在 main.go 中注册服务</li>
+            </ol>
           </div>
+
+          <button class="btn primary" @click="reset" style="width: 100%; margin-top: 16px;">
+            生成另一个
+          </button>
         </div>
-
-        <div class="message" v-if="result.message">{{ result.message }}</div>
-
-        <div class="next-steps">
-          <h4>下一步 Next Steps:</h4>
-          <ol>
-            <li>在服务结构体中注入所需的 Repository</li>
-            <li>在每个方法中实现业务逻辑</li>
-            <li>在 main.go 中注册服务</li>
-          </ol>
-        </div>
-
-        <button class="btn primary" @click="reset" style="width: 100%; margin-top: 16px;">
-          生成另一个
-        </button>
-      </div>
       </div> <!-- end layout -->
     </div> <!-- end activeTab === 'new' -->
   </div> <!-- end editor -->
@@ -479,7 +455,8 @@ h1 {
   color: var(--error);
 }
 
-.loading, .empty {
+.loading,
+.empty {
   text-align: center;
   padding: 60px 20px;
   color: var(--text-muted);
@@ -552,6 +529,42 @@ h1 {
   color: var(--primary);
   border-radius: 4px;
   font-size: 0.75rem;
+}
+
+.type-badge {
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.type-badge.domain_service {
+  background: rgba(34, 197, 94, 0.2);
+  color: #22c55e;
+}
+
+.type-badge.cross_domain_service {
+  background: rgba(168, 85, 247, 0.2);
+  color: #a855f7;
+}
+
+.service-card.domain-service {
+  border-left: 3px solid #22c55e;
+}
+
+.service-card.domain-service:hover {
+  border-color: #22c55e;
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.2);
+}
+
+.service-card.cross-domain-service {
+  border-left: 3px solid #a855f7;
+}
+
+.service-card.cross-domain-service:hover {
+  border-color: #a855f7;
+  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.2);
 }
 
 .service-methods {
@@ -627,6 +640,7 @@ h1 {
     opacity: 0;
     transform: translateY(-10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);

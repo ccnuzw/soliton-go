@@ -15,6 +15,7 @@ import (
 type ServiceInfo struct {
 	Name    string   `json:"name"`
 	Methods []string `json:"methods"`
+	Type    string   `json:"type"` // "domain_service" or "cross_domain_service"
 }
 
 // ServiceMethodDetail represents detailed method information
@@ -45,41 +46,43 @@ func ListServices(c *gin.Context) {
 		return
 	}
 
-	// Recursively scan for *_service.go files
-	err = filepath.Walk(appDir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
+	// Scan application subdirectories for service.go files
+	entries, err := os.ReadDir(appDir)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"services": services,
+		})
+		return
+	}
+
+	for _, entry := range entries {
+		if !entry.IsDir() || strings.HasPrefix(entry.Name(), ".") {
+			continue
 		}
 
-		// Skip directories
-		if info.IsDir() {
-			return nil
+		dirPath := filepath.Join(appDir, entry.Name())
+		serviceFile := filepath.Join(dirPath, "service.go")
+
+		// Check if this directory has a service.go
+		if !core.IsFile(serviceFile) {
+			continue
 		}
 
-		// Look for *_service.go files
-		fileName := info.Name()
-		if !strings.HasSuffix(fileName, "_service.go") {
-			return nil
+		serviceName := toPascalCase(entry.Name()) + "Service"
+		methods := parseServiceMethods(serviceFile)
+
+		// Detect service type: check if corresponding domain exists
+		domainDir := filepath.Join(layout.DomainDir, entry.Name())
+		serviceType := "cross_domain_service"
+		if core.IsDir(domainDir) {
+			serviceType = "domain_service"
 		}
-
-		// Extract service name (e.g., "order_service.go" -> "OrderService")
-		// Keep the full name including "Service" suffix
-		baseName := strings.TrimSuffix(fileName, ".go")
-		serviceName := toPascalCase(baseName)
-
-		methods := parseServiceMethods(path)
 
 		services = append(services, ServiceInfo{
 			Name:    serviceName,
 			Methods: methods,
+			Type:    serviceType,
 		})
-
-		return nil
-	})
-
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to scan application directory"})
-		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -101,27 +104,20 @@ func GetServiceDetail(c *gin.Context) {
 		return
 	}
 
-	// Convert service name to file name (e.g., "OrderService" -> "order_service.go")
-	fileName := toSnakeCase(serviceName) + ".go"
+	// Convert service name to directory name (e.g., "OrderService" -> "order")
+	dirName := toSnakeCase(serviceName)
+	// Remove "_service" suffix if present
+	if len(dirName) > 8 && dirName[len(dirName)-8:] == "_service" {
+		dirName = dirName[:len(dirName)-8]
+	}
 
-	fmt.Printf("[DEBUG] Looking for service: %s, fileName: %s\n", serviceName, fileName)
+	// Look for service.go in the directory
+	serviceFile := filepath.Join(layout.AppDir, dirName, "service.go")
 
-	// Recursively search for the service file
-	var serviceFile string
-	err = filepath.Walk(layout.AppDir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if !info.IsDir() && info.Name() == fileName {
-			fmt.Printf("[DEBUG] Found file: %s\n", path)
-			serviceFile = path
-			return filepath.SkipAll // Found it, stop walking
-		}
-		return nil
-	})
+	fmt.Printf("[DEBUG] Looking for service: %s, file: %s\n", serviceName, serviceFile)
 
-	if err != nil || serviceFile == "" {
-		fmt.Printf("[DEBUG] File not found. Searched for: %s in %s\n", fileName, layout.AppDir)
+	if !core.IsFile(serviceFile) {
+		fmt.Printf("[DEBUG] File not found: %s\n", serviceFile)
 		c.JSON(http.StatusNotFound, gin.H{"error": "service file not found"})
 		return
 	}

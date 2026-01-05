@@ -91,6 +91,7 @@ export interface DomainDetail {
 export interface ServiceListItem {
   name: string
   methods: string[]
+  type: 'domain_service' | 'cross_domain_service'
 }
 
 export interface ServiceMethodDetail {
