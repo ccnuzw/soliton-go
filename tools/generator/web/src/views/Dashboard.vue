@@ -63,23 +63,23 @@ async function runGoModTidy() {
     alert('未检测到项目')
     return
   }
-  
+
   tidying.value = true
   tidyResult.value = null
-  
+
   try {
     const response = await fetch('/api/projects/tidy', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ project_path: layout.value.module_dir }),
     })
-    
+
     const data = await response.json()
     tidyResult.value = {
       success: data.success,
       message: data.success ? (data.message || '依赖更新成功') : (data.error || '依赖更新失败'),
     }
-    
+
     // 3秒后清除提示
     setTimeout(() => {
       tidyResult.value = null
@@ -230,6 +230,7 @@ async function runGoModTidy() {
 .header h1 {
   font-size: 2.5rem;
   background: linear-gradient(135deg, var(--primary), #8b5cf6);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   margin-bottom: 8px;
@@ -452,7 +453,7 @@ async function runGoModTidy() {
 
 .cards {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 20px;
   margin-bottom: 40px;
 }

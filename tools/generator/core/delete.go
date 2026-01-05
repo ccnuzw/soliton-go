@@ -233,6 +233,8 @@ func DeleteService(serviceName string) DeleteResult {
 	// If so, only delete service.go and not the whole directory
 	commandsFile := filepath.Join(serviceDir, "commands.go")
 	queriesFile := filepath.Join(serviceDir, "queries.go")
+	dtoFile := filepath.Join(serviceDir, "service_dto.go")
+	moduleFile := filepath.Join(serviceDir, "module.go")
 
 	if IsFile(commandsFile) || IsFile(queriesFile) {
 		// This is a domain module with a service, only delete service.go
@@ -240,6 +242,22 @@ func DeleteService(serviceName string) DeleteResult {
 			errors = append(errors, fmt.Sprintf("service file: %v", err))
 		} else {
 			deletedItems = append(deletedItems, "application/"+dirName+"/service.go")
+		}
+
+		// Also delete service_dto.go if exists
+		if IsFile(dtoFile) {
+			if err := os.Remove(dtoFile); err != nil {
+				errors = append(errors, fmt.Sprintf("service_dto file: %v", err))
+			} else {
+				deletedItems = append(deletedItems, "application/"+dirName+"/service_dto.go")
+			}
+		}
+
+		// Update module.go to remove fx.Provide(NewXService)
+		if IsFile(moduleFile) {
+			if removeServiceFromModuleGo(moduleFile, serviceName) {
+				deletedItems = append(deletedItems, "module.go (updated)")
+			}
 		}
 	} else {
 		// This is a standalone service, delete the whole directory
@@ -264,6 +282,36 @@ func DeleteService(serviceName string) DeleteResult {
 		DeletedItems: deletedItems,
 		Message:      fmt.Sprintf("服务 %s 删除成功", serviceName),
 	}
+}
+
+// removeServiceFromModuleGo removes fx.Provide(NewXService) from module.go
+func removeServiceFromModuleGo(moduleGoPath, serviceName string) bool {
+	content, err := os.ReadFile(moduleGoPath)
+	if err != nil {
+		return false
+	}
+
+	original := string(content)
+	modified := original
+
+	// Remove fx.Provide(NewXService), line
+	// Pattern: fx.Provide(NewServiceName),
+	providePattern := fmt.Sprintf(`\n?\s*fx\.Provide\(New%s\),?`, serviceName)
+	re := regexp.MustCompile(providePattern)
+	modified = re.ReplaceAllString(modified, "")
+
+	// Clean up empty lines
+	modified = regexp.MustCompile(`\n\n\n+`).ReplaceAllString(modified, "\n\n")
+
+	if modified == original {
+		return false
+	}
+
+	if err := os.WriteFile(moduleGoPath, []byte(modified), 0644); err != nil {
+		return false
+	}
+
+	return true
 }
 
 func startsWith(s, prefix string) bool {

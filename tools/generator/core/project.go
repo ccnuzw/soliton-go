@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"text/template"
 )
@@ -71,11 +72,38 @@ func initProjectInternal(cfg ProjectConfig, previewOnly bool) (*GenerationResult
 	}
 
 	// Detect Go version
-	// User requested to standardize on v1.22.0 to avoid 1.24+ issues
-	goVersion := "1.22"
+	goVersion := "1.23" // Default safe fallback
 
-	// Optional: We could still check runtime if it's strictly older than 1.22,
-	// but for now we enforce 1.22 as the safe baseline.
+	// 1. Try to read from go.work (Project Preference)
+	// We look for go.work in current dir or parent dirs, but InitProject usually runs at root or uses logical root.
+	// For simplicity, we check the probable workspace root: projectParentDir
+	goWorkPath := filepath.Join(projectParentDir, "go.work")
+	if goWorkData, err := os.ReadFile(goWorkPath); err == nil {
+		lines := strings.Split(string(goWorkData), "\n")
+		for _, line := range lines {
+			line = strings.TrimSpace(line)
+			if strings.HasPrefix(line, "go ") {
+				v := strings.TrimSpace(strings.TrimPrefix(line, "go "))
+				if v != "" {
+					goVersion = v
+					break
+				}
+			}
+		}
+	} else {
+		// 2. Try runtime version (Environment Preference)
+		runtimeVer := runtime.Version()
+		runtimeVer = strings.TrimPrefix(runtimeVer, "go")
+		if parts := strings.Split(runtimeVer, "."); len(parts) >= 2 {
+			// Extract major.minor (e.g. 1.23)
+			goVersion = parts[0] + "." + parts[1]
+		}
+	}
+
+	// Ensure we don't output "devel" or unstable versions inadvertently
+	if strings.Contains(goVersion, "devel") {
+		goVersion = "1.22"
+	}
 
 	data := ProjectData{
 		ProjectName:      projectName,

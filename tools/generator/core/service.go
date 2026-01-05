@@ -46,10 +46,6 @@ func DetectServiceType(serviceName string) (*ServiceDetectionResult, error) {
 	domainPath := filepath.Join(layout.DomainDir, domainName)
 	domainExists := IsDir(domainPath)
 
-	// Check if DTO exists
-	dtoPath := filepath.Join(layout.InternalDir, "application", domainName, "dto.go")
-	dtoExists := IsFile(dtoPath)
-
 	result := &ServiceDetectionResult{
 		ServiceName:  serviceName,
 		DomainName:   domainName,
@@ -59,11 +55,7 @@ func DetectServiceType(serviceName string) (*ServiceDetectionResult, error) {
 
 	if domainExists {
 		result.ServiceType = "domain_service"
-		if dtoExists {
-			result.Message = fmt.Sprintf("检测到已有 %s 领域，将生成领域服务并生成独立的服务层 DTO (service_dto.go)", domainName)
-		} else {
-			result.Message = fmt.Sprintf("检测到已有 %s 领域，将生成领域服务并生成独立的服务层 DTO (service_dto.go)", domainName)
-		}
+		result.Message = fmt.Sprintf("检测到已有 %s 领域，将生成领域服务并生成独立的服务层 DTO (service_dto.go)", domainName)
 	} else {
 		result.ServiceType = "cross_domain_service"
 		result.Message = fmt.Sprintf("未检测到 %s 领域，将生成跨领域服务", domainName)
@@ -132,7 +124,7 @@ func generateServiceInternal(cfg ServiceConfig, previewOnly bool) (*GenerationRe
 		// Domain doesn't exist -> generate in application/{service}/
 		serviceDir = filepath.Join(layout.InternalDir, "application", packageName)
 		serviceFileName = "service.go"
-		dtoFileName = "dto.go"
+		dtoFileName = "service_dto.go"
 		shouldGenerateDTO = true
 
 		// Use service name as package
@@ -181,13 +173,25 @@ func generateServiceInternal(cfg ServiceConfig, previewOnly bool) (*GenerationRe
 	}
 
 	// Check for errors
+	var skippedCount int
 	for _, f := range result.Files {
 		if f.Status == FileStatusError {
 			result.Success = false
 			result.Errors = append(result.Errors, fmt.Sprintf("%s: generation failed", f.Path))
 		} else if f.Status == FileStatusSkip {
-			result.Message += fmt.Sprintf("\n(注意: %s 已存在未更新，使用 --force 覆盖)", filepath.Base(f.Path))
+			skippedCount++
 		}
+	}
+
+	if skippedCount > 0 {
+		var skippedFiles []string
+		for _, f := range result.Files {
+			if f.Status == FileStatusSkip {
+				skippedFiles = append(skippedFiles, filepath.Base(f.Path))
+			}
+		}
+		result.Message += fmt.Sprintf("\n⚠️  跳过更新: %s", strings.Join(skippedFiles, ", "))
+		result.Message += "\n   (方法变更不会自动同步，使用 --force 强制覆盖)"
 	}
 
 	return result, nil

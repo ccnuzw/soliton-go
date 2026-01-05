@@ -30,7 +30,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
-	_ "gorm.io/gorm" // required for fx.Invoke with *gorm.DB
+	"gorm.io/gorm"
 
 	"github.com/soliton-go/framework/core/config"
 	"github.com/soliton-go/framework/core/logger"
