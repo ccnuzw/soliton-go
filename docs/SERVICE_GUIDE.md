@@ -41,12 +41,67 @@
 
 ---
 
+## 🔍 智能服务类型检测
+
+生成器会自动检测并区分两种类型的服务：
+
+### 服务类型对照表
+
+| 类型 | 判断条件 | 生成目录 | GUI 卡片颜色 |
+|------|----------|----------|--------------|
+| **领域服务** (Domain Service) | 存在同名 Domain（如 `domain/order/`） | `application/order/service.go` | 🟢 绿色边框 |
+| **跨域服务** (Cross-domain Service) | 不存在同名 Domain | `application/payment/service.go` | 🟣 紫色边框 |
+
+### CLI 智能提示
+
+运行 `soliton-gen service` 时会输出检测结果：
+
+```bash
+$ ./soliton-gen service OrderService
+📋 服务类型检测
+━━━━━━━━━━━━━━━
+✅ 类型：领域服务 (Domain Service)
+📁 目标路径：application/order
+🔄 DTO 复用：是（使用现有 DTO）
+
+正在生成 Service OrderService...
+```
+
+```bash
+$ ./soliton-gen service PaymentService
+📋 服务类型检测
+━━━━━━━━━━━━━━━
+ℹ️  类型：跨领域服务 (Cross-domain Service)
+📁 目标路径：application/payment
+📝 DTO 生成：是（新建 DTO）
+
+正在生成 Service PaymentService...
+```
+
+### GUI 颜色标识
+
+在 Web GUI 的"已生成服务"列表中，卡片会通过颜色区分：
+
+- 🟢 **绿色左边框 + "领域" 徽章**：表示此服务有对应的 Domain
+- 🟣 **紫色左边框 + "跨域" 徽章**：表示此服务是独立的跨域编排服务
+
+### DTO 复用逻辑
+
+| 场景 | 行为 |
+|------|------|
+| 领域服务 + 已有 DTO | 跳过 DTO 生成，复用现有 DTO |
+| 领域服务 + 无 DTO | 生成新的 DTO |
+| 跨域服务 | 始终生成新的 DTO |
+
+---
+
 ## 📁 生成文件
 
 ```
-application/services/
-├── order_service.go    # 服务结构和方法
-└── order_dto.go        # 请求/响应 DTO
+application/{servicename}/
+├── service.go    # 服务结构和方法
+├── dto.go        # 请求/响应 DTO
+└── module.go     # Fx 模块注册
 ```
 
 ---

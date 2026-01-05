@@ -190,11 +190,40 @@ const (
 ./soliton-gen service OrderService --methods "CreateOrder,CancelOrder,GetUserOrders"
 ```
 
-### 生成文件 (2个)
-- `application/services/{name}_service.go` - 服务结构和方法
-- `application/services/{name}_dto.go` - 请求/响应 DTO
+### 🆕 智能服务类型检测
 
-📖 **详细文档**: [Service 应用服务使用指南](./docs/SERVICE_GUIDE.md)
+生成器会自动检测服务类型并输出提示：
+
+| 类型 | 判断条件 | 生成目录 | CLI 图标 | GUI 卡片颜色 |
+|------|----------|----------|----------|--------------|
+| **领域服务** | 存在同名 Domain | `application/{name}/` | ✅ | 🟢 绿色边框 |
+| **跨域服务** | 不存在同名 Domain | `application/{name}/` | ℹ️ | 🟣 紫色边框 |
+
+**CLI 输出示例：**
+```
+📋 服务类型检测
+━━━━━━━━━━━━━━━
+✅ 类型：领域服务 (Domain Service)
+📁 目标路径：application/order
+🔄 DTO 复用：是
+
+正在生成 Service OrderService...
+```
+
+### 🆕 DTO 复用逻辑
+
+| 场景 | 行为 |
+|------|------|
+| 领域服务 + 已有 DTO | 跳过 DTO 生成，复用现有 DTO |
+| 领域服务 + 无 DTO | 生成新的 DTO |
+| 跨域服务 | 始终生成新的 DTO |
+
+### 生成文件 (3个)
+- `application/{name}/service.go` - 服务结构和方法
+- `application/{name}/dto.go` - 请求/响应 DTO（可能复用）
+- `application/{name}/module.go` - Fx 模块注册
+
+📖 **详细文档**: [Service 应用服务使用指南](./SERVICE_GUIDE.md)
 
 ---
 
