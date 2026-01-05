@@ -9,6 +9,7 @@ const navItems = [
   { path: '/domain', name: '领域模块', icon: '📦' },
   { path: '/service', name: '应用服务', icon: '⚙️' },
   { path: '/ddd', name: '领域增强', icon: '🧩' },
+  { path: '/migration', name: '迁移中心', icon: '🛠️' },
 ]
 </script>
 

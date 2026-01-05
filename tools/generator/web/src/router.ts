@@ -24,6 +24,11 @@ const router = createRouter({
             component: () => import('./views/ServiceEditor.vue'),
         },
         {
+            path: '/migration',
+            name: 'migration',
+            component: () => import('./views/MigrationCenter.vue'),
+        },
+        {
             path: '/ddd',
             name: 'ddd',
             component: () => import('./views/DddEditor.vue'),

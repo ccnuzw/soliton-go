@@ -93,6 +93,11 @@ cd /path/to/your/project
 - 支持 Value Object / Specification / Policy / Event / Handler 可视化生成
 - 支持 Event + Handler 组合生成
 
+### 6. Migration Center（迁移中心）
+- 详细迁移日志（SYSTEM / TIDY / MIGRATE）
+- 支持自动 tidy 与执行前确认
+- 支持历史记录、复制与下载日志
+
 ## 🔌 命令列表
 
 | 命令 | 说明 | 示例 |

@@ -5,7 +5,7 @@
 ```bash
 cd /Users/mac/Progame/soliton-go/tools/generator
 ./soliton-gen serve
-# 访问 http://localhost:8888
+# 访问 http://127.0.0.1:3000
 ```
 
 ---
@@ -20,6 +20,7 @@ cd /Users/mac/Progame/soliton-go/tools/generator
 | 使用指南 | 点击展开 | 显示快速开始、新功能、提示 |
 | 切换项目 | 点击 ⇄ 按钮 | 显示可切换的项目列表 |
 | 更新依赖 | 点击卡片 | 显示"正在更新..."然后"成功" |
+| 新入口 | 卡片/侧边栏 | 显示“领域增强”“迁移中心”入口 |
 
 ---
 
@@ -64,9 +65,10 @@ cd /Users/mac/Progame/soliton-go/tools/generator
 | 🆕 字段备注 | 在"备注"输入框填写 | 输入框显示输入的备注 |
 | 枚举输入 | 选择 enum 类型 | 显示枚举值输入框 |
 | 预览 | 点击预览 | 显示将生成的文件 |
-| 生成 | 点击生成 | 创建所有文件，自段备注生成为行尾注释 |
+| 生成 | 点击生成 | 创建所有文件，字段备注生成为行尾注释 |
 | 编辑现有 | 点击已有领域卡片 | 加载字段和备注到编辑器 |
 | 强制覆盖 | 勾选后生成 | 显示警告，文件状态为 OVERWRITE |
+| 自动 tidy | 生成后 | 显示依赖更新结果 |
 
 ---
 
@@ -98,6 +100,50 @@ find internal -name "*article*" 2>/dev/null
 
 ---
 
+### 6. DDD 领域增强
+
+#### 测试数据
+
+**领域：** `Article`（需先生成）
+
+**Value Object：** `Slug`
+**字段：** `value:string`
+
+**Specification：** `PublishedSpec`（Target 留空）
+
+**Policy：** `PublishPolicy`（Target 留空）
+
+**Event：** `ArticlePublished`  
+**字段：** `article_id:uuid`
+
+#### 功能测试
+
+| 测试项 | 操作 | 预期结果 |
+|-------|------|---------|
+| 选择领域 | 选择 `Article` | 域提示显示可用 |
+| 生成 Value Object | 填写并生成 | 生成 value_object_slug.go |
+| 生成 Specification | 填写并生成 | 生成 spec_published_spec.go |
+| 生成 Policy | 填写并生成 | 生成 policy_publish_policy.go |
+| 组合生成 | 勾选 Event + Handler | 同时生成事件与处理器文件 |
+| 自定义 Topic | 填写 topic | 事件/处理器订阅使用该 topic |
+| 预览 | 点击预览 | 展示将生成的文件列表 |
+
+---
+
+### 7. 迁移中心
+
+| 测试项 | 操作 | 预期结果 |
+|-------|------|---------|
+| 项目检测 | 打开迁移中心 | 显示项目路径与命令提示 |
+| 自动 tidy | 勾选后执行 | 日志出现 TIDY 步骤 |
+| 执行迁移 | 点击开始迁移 | 返回完整日志与结果状态 |
+| 日志筛选 | 切换筛选 | 列表实时过滤 |
+| 日志复制 | 点击复制 | 复制日志到剪贴板 |
+| 日志下载 | 点击下载 | 下载日志文件 |
+| 历史记录 | 重新进入 | 可查看历史运行记录 |
+
+---
+
 ## 验证清单
 
 - [ ] Dashboard 显示正常
@@ -113,6 +159,8 @@ find internal -name "*article*" 2>/dev/null
 - [ ] 删除确认对话框美观
 - [ ] 删除后清理完整
 - [ ] go mod tidy 自动执行
+- [ ] DDD 领域增强生成正常
+- [ ] 迁移中心日志与历史记录正常
 - [ ] 编译通过
 
 ---

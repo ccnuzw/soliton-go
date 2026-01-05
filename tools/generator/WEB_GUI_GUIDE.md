@@ -33,7 +33,7 @@ cd /path/to/existing/project
 ./soliton-gen serve
 
 # 访问 http://127.0.0.1:3000
-# 直接使用"生成领域"和"生成服务"功能
+# 直接使用"生成领域"、"领域增强"、"生成服务"、"迁移中心"等功能
 ```
 
 ### 自定义端口和主机
@@ -53,8 +53,9 @@ cd /path/to/existing/project
 **功能特性：**
 - 自动检测当前目录是否为有效的 Go 项目
 - 显示项目模块路径
-- 提供四个主要功能入口
+- 提供五个主要功能入口
 - 新增 DDD 组件入口（Value Object / Spec / Policy / Event / Handler）
+- 新增迁移中心入口（详细日志 / 历史记录 / 筛选导出）
 - **使用指南**：点击展开查看快速开始步骤和使用提示
 
 **项目检测：**
@@ -110,8 +111,10 @@ cd /path/to/existing/project
 ```
 <项目名>/
 ├── cmd/
-│   └── main.go              # 应用入口
-├── config/
+│   ├── main.go              # 应用入口
+│   └── migrate/
+│       └── main.go          # 迁移入口
+├── configs/
 │   └── config.yaml          # 配置文件
 ├── internal/
 │   ├── application/         # 应用层
@@ -189,6 +192,8 @@ cd /path/to/existing/project
   - 说明：覆盖已存在的文件
   - 警告：会覆盖现有代码，请谨慎使用
 
+> **提示**：领域生成完成后会自动执行一次 `go mod tidy`，可在首页“更新依赖”卡片手动再次执行。
+
 #### 高级选项
 
 点击"高级选项 Advanced"展开：
@@ -265,6 +270,7 @@ internal/
 - 可以仅生成 Event 或仅生成 Handler
 - 同时勾选时会依次生成 Event 与 Handler
 - Handler Topic 留空时会复用 Event Topic
+- 默认注入 EventBus Provider 与事件注册
 
 ---
 
@@ -334,6 +340,38 @@ internal/application/<name>/
 
 ---
 
+### 6. Migration Center（迁移中心）
+
+用于执行数据库迁移，并查看详细日志与历史记录。
+
+#### 功能说明
+
+- ✅ 支持执行迁移命令并返回完整日志
+- ✅ 支持执行前自动 `go mod tidy`
+- ✅ 支持日志筛选（INFO / ERROR / SYSTEM / TIDY / MIGRATE）
+- ✅ 支持复制与下载日志
+- ✅ 支持历史记录查看与回溯
+
+#### 使用流程
+
+1. 打开「迁移中心 Migration Center」
+2. 确认检测到当前项目路径
+3. 选择是否先执行 `go mod tidy`
+4. 设置迁移超时（默认 300 秒）
+5. 点击「开始迁移」并确认执行
+6. 查看日志与结果状态
+
+#### 日志说明
+
+- **SYSTEM**：系统级日志（启动/结束/命令）
+- **TIDY**：依赖整理日志
+- **MIGRATE**：迁移执行日志
+- **INFO / ERROR**：信息与错误级别
+
+> **命令选择规则**：优先执行 `cmd/migrate/main.go`，不存在时回退 `cmd/migrate.go`。
+
+---
+
 ## 界面特性
 
 ### 中英双语
@@ -379,6 +417,13 @@ internal/application/<name>/
 DDD 增强页面支持：
 - Value Object / Specification / Policy / Event / Handler
 - Event 与 Handler 组合生成
+
+### 迁移中心
+
+迁移中心支持：
+- 详细日志、筛选、复制与下载
+- 迁移前自动 tidy
+- 历史记录回溯
 
 ### 状态反馈
 

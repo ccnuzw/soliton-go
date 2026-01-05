@@ -113,6 +113,7 @@ async function runGoModTidy() {
             <li><strong>生成领域：</strong>定义实体名称和字段，自动生成 Entity、Repository、Handler 等</li>
             <li><strong>生成服务：</strong>创建跨领域业务逻辑的应用服务层</li>
             <li><strong>领域增强：</strong>生成 Value Object、Specification、Policy、Event & Handler</li>
+            <li><strong>迁移中心：</strong>执行迁移并查看详细日志与历史记录</li>
             <li><strong>更新依赖：</strong>点击 <strong>更新依赖</strong> 卡片运行 go mod tidy</li>
           </ol>
         </div>
@@ -124,6 +125,7 @@ async function runGoModTidy() {
             <li>✅ 删除领域时 <strong>自动清理</strong> 所有相关文件和注入代码</li>
             <li>✅ 使用 <strong>强制覆盖</strong> 可完全替换现有领域定义</li>
             <li>✅ DDD 组件支持 <strong>组合生成</strong>（Event + Handler）</li>
+            <li>✅ 迁移中心支持 <strong>详细日志与历史记录</strong></li>
           </ul>
         </div>
         <div class="guide-section">
@@ -199,6 +201,12 @@ async function runGoModTidy() {
         <p>生成 Value Object、Specification、Policy、Event 和 Handler</p>
       </RouterLink>
 
+      <RouterLink to="/migration" class="card" :class="{ disabled: !layout?.found }">
+        <div class="card-icon">🛠️</div>
+        <h3>迁移中心 Migration</h3>
+        <p>执行迁移并查看详细日志与历史记录</p>
+      </RouterLink>
+
       <div class="card action-card" :class="{ disabled: !layout?.found }" @click="runGoModTidy">
         <div class="card-icon">📦</div>
         <h3>更新依赖 Dependencies</h3>
@@ -219,6 +227,7 @@ async function runGoModTidy() {
         <li>🗑️ 可选的软删除 Soft Delete</li>
         <li>📝 CQRS 模式的 Commands & Queries</li>
         <li>🧩 DDD 组件生成（Value Object / Spec / Policy / Event）</li>
+        <li>🛠️ 迁移中心（日志 / 历史 / 配置）</li>
       </ul>
     </div>
   </div>

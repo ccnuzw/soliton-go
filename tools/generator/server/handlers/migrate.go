@@ -33,14 +33,14 @@ type MigrationLogEntry struct {
 
 // MigrationResult is the response body for migration runs.
 type MigrationResult struct {
-	Success    bool               `json:"success"`
-	Message    string             `json:"message,omitempty"`
-	Logs       []MigrationLogEntry`json:"logs"`
-	DurationMs int64              `json:"duration_ms"`
-	ExitCode   int                `json:"exit_code"`
-	Command    string             `json:"command"`
-	StartedAt  string             `json:"started_at"`
-	FinishedAt string             `json:"finished_at"`
+	Success    bool                `json:"success"`
+	Message    string              `json:"message,omitempty"`
+	Logs       []MigrationLogEntry `json:"logs"`
+	DurationMs int64               `json:"duration_ms"`
+	ExitCode   int                 `json:"exit_code"`
+	Command    string              `json:"command"`
+	StartedAt  string              `json:"started_at"`
+	FinishedAt string              `json:"finished_at"`
 }
 
 // RunMigration handles POST /api/projects/migrate
