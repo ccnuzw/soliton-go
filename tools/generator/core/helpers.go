@@ -216,6 +216,7 @@ func convertFieldConfig(cfg FieldConfig, entityName, packageName string) Field {
 		Name:      pascalName,
 		SnakeName: snakeName,
 		CamelName: camelName,
+		Comment:   cfg.Comment,
 	}
 
 	if cfg.Type == "enum" || (len(cfg.EnumValues) > 0) {

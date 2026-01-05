@@ -42,7 +42,7 @@ type {{.EntityName}} struct {
 	ddd.BaseAggregateRoot
 	ID {{.EntityName}}ID ` + "`gorm:\"primaryKey\"`" + `
 {{- range .Fields}}
-	{{.Name}} {{.GoType}} {{.GormTag}}
+	{{.Name}} {{.GoType}} {{.GormTag}}{{if .Comment}} // {{.Comment}}{{end}}
 {{- end}}
 	CreatedAt time.Time ` + "`gorm:\"autoCreateTime\"`" + `
 	UpdatedAt time.Time ` + "`gorm:\"autoUpdateTime\"`" + `

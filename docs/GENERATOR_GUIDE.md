@@ -36,7 +36,13 @@ go build -o soliton-gen .
 
 ```bash
 ./soliton-gen domain User
+
+# 简单格式（无备注）
 ./soliton-gen domain User --fields "username,email,status:enum(active|inactive)"
+
+# 完整格式（带备注）
+./soliton-gen domain User --fields "username:string:用户名,email::邮箱,status:enum(active|inactive):状态"
+
 ./soliton-gen domain User --fields "..." --force  # 强制覆盖
 ./soliton-gen domain User --fields "..." --wire   # 自动接入 main.go
 ```
@@ -66,6 +72,18 @@ go build -o soliton-gen .
 | `--route` | 自定义路由 | `--route "members"` |
 | `--soft-delete` | 🆕 启用软删除 | `--soft-delete` |
 
+### 字段格式
+
+**基本格式：** `name:type:comment`（type 和 comment 可选）
+
+| 格式 | 示例 | 说明 |
+|------|------|------|
+| `name` | `username` | string 类型，无备注 |
+| `name:type` | `price:int64` | 指定类型，无备注 |
+| `name:type:comment` | `username:string:用户名` | 完整格式 |
+| `name::comment` | `email::邮箱` | 默认 string 类型 + 备注 |
+| `name:enum(...):comment` | `status:enum(a\|b):状态` | 枚举 + 备注 |
+
 ### 字段类型
 | 类型 | 格式 | 示例 | 说明 |
 |------|------|------|------|
@@ -75,6 +93,19 @@ go build -o soliton-gen .
 | uuid | `field:uuid` | `user_id:uuid` | 带索引的 UUID |
 | time? | `field:time?` | `login_at:time?` | 可选时间字段，无 binding:required |
 | enum | `field:enum(a\|b)` | `status:enum(active\|banned)` | 生成枚举类型 |
+
+### 字段备注效果
+
+生成的代码会在行尾添加注释：
+```go
+type User struct {
+    ddd.BaseAggregateRoot
+    ID        UserID `gorm:"primaryKey"`
+    Username  string `gorm:"size:255"` // 用户名
+    Email     string `gorm:"size:255"` // 邮箱
+    Status    UserStatus `gorm:"size:50"` // 状态
+}
+```
 
 ### 🆕 新功能
 
@@ -171,9 +202,9 @@ const (
 ./soliton-gen init my-shop && cd my-shop
 
 # 2. 生成领域模块 (--wire 自动接入)
-soliton-gen domain User --fields "username,email,role:enum(admin|customer)" --wire
-soliton-gen domain Product --fields "name,price:int64,stock:int" --wire
-soliton-gen domain Order --fields "user_id:uuid,total:int64,status:enum(pending|paid)" --wire
+soliton-gen domain User --fields "username:string:用户名,email::邮箱,role:enum(admin|customer):角色" --wire
+soliton-gen domain Product --fields "name:string:商品名,price:int64:价格,stock:int:库存" --wire
+soliton-gen domain Order --fields "user_id:uuid:用户ID,total:int64:总额,status:enum(pending|paid):订单状态" --wire
 
 # 3. 生成跨领域服务
 soliton-gen service OrderService --methods "CreateOrder,CancelOrder"

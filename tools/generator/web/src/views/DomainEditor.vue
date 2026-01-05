@@ -31,13 +31,13 @@ const filteredDomains = computed(() => {
     return domains.value || []
   }
   const query = searchQuery.value.toLowerCase()
-  return domains.value.filter(domain => 
+  return domains.value.filter(domain =>
     domain.name.toLowerCase().includes(query) ||
     domain.fields.some(field => field.toLowerCase().includes(query))
   )
 })
 
-onMounted(async () =>{
+onMounted(async () => {
   try {
     const res = await api.getFieldTypes()
     fieldTypes.value = res.types
@@ -61,7 +61,7 @@ async function loadDomains() {
 
 async function deleteDomain(domainName: string, event: Event) {
   event.stopPropagation() // 防止触发卡片点击
-  
+
   // 使用自定义确认对话框
   deleteConfirmName.value = domainName
   showDeleteConfirm.value = true
@@ -69,10 +69,10 @@ async function deleteDomain(domainName: string, event: Event) {
 
 async function confirmDelete() {
   if (!deleteConfirmName.value) return
-  
+
   const domainName = deleteConfirmName.value
   showDeleteConfirm.value = false
-  
+
   try {
     await api.deleteDomain(domainName)
     await loadDomains()
@@ -89,16 +89,17 @@ async function loadDomain(domainName: string) {
   error.value = ''
   try {
     const detail = await api.getDomainDetail(domainName)
-    
+
     // Map fields from detail to config
     const fields: FieldConfig[] = detail.fields.map((f: FieldDetail) => {
       // Map Go type to field type
-      let fieldType = mapGoTypeToFieldType(f.type)
-      
+      let fieldType = mapGoTypeToFieldType(f.type, f.is_enum)
+
       return {
         name: f.snake_name,
         type: fieldType,
-        enum_values: f.is_enum ? [] : undefined, // TODO: Extract enum values
+        comment: f.comment || '',
+        enum_values: f.enum_values || [],
       }
     })
 
@@ -121,10 +122,13 @@ async function loadDomain(domainName: string) {
   }
 }
 
-function mapGoTypeToFieldType(goType: string): string {
+function mapGoTypeToFieldType(goType: string, isEnum?: boolean): string {
+  // If backend already identified it as enum, return enum
+  if (isEnum) return 'enum'
+
   // Remove pointer
   goType = goType.replace('*', '')
-  
+
   if (goType === 'string') return 'string'
   if (goType === 'int') return 'int'
   if (goType === 'int64') return 'int64'
@@ -132,13 +136,13 @@ function mapGoTypeToFieldType(goType: string): string {
   if (goType === 'bool') return 'bool'
   if (goType === 'time.Time') return 'time'
   if (goType.includes('Time')) return 'time?'
-  
+
   // Default to enum for custom types
   return 'enum'
 }
 
 function addField() {
-  config.value.fields.push({ name: '', type: 'string', enum_values: [] })
+  config.value.fields.push({ name: '', type: 'string', comment: '', enum_values: [] })
 }
 
 function removeField(index: number) {
@@ -150,7 +154,7 @@ function removeField(index: number) {
 function moveFieldUp(index: number) {
   if (index > 0) {
     const fields = config.value.fields
-    ;[fields[index - 1], fields[index]] = [fields[index], fields[index - 1]]
+      ;[fields[index - 1], fields[index]] = [fields[index], fields[index - 1]]
   }
 }
 
@@ -188,7 +192,7 @@ async function generate() {
   tidying.value = false
   tidyOutput.value = ''
   tidyError.value = ''
-  
+
   try {
     const validFields = config.value.fields.filter(f => f.name && f.type)
     result.value = await api.generateDomain({
@@ -198,11 +202,11 @@ async function generate() {
     showPreview.value = true
     // Reload domains list
     await loadDomains()
-    
+
     // 显示成功提示
     if (result.value.success) {
       showSuccess(result.value.message || '生成成功！')
-      
+
       // 自动运行 go mod tidy 下载依赖
       await runGoModTidy()
     }
@@ -222,24 +226,24 @@ async function runGoModTidy() {
   tidying.value = true
   tidyOutput.value = ''
   tidyError.value = ''
-  
+
   try {
     // 获取当前项目路径
     const layoutRes = await fetch('/api/layout')
     const layoutData = await layoutRes.json()
     const projectPath = layoutData.module_dir || '.'
-    
+
     console.log('Running go mod tidy for:', projectPath)
-    
+
     const response = await fetch('/api/projects/tidy', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ project_path: projectPath }),
     })
-    
+
     const tidyResult = await response.json()
     console.log('Tidy result:', tidyResult)
-    
+
     if (tidyResult.success) {
       tidyOutput.value = tidyResult.message || '依赖下载成功'
     } else {
@@ -288,18 +292,10 @@ function getStatusText(status: string): string {
 
     <!-- Tabs -->
     <div class="tabs">
-      <button 
-        class="tab" 
-        :class="{ active: activeTab === 'new' }"
-        @click="activeTab = 'new'"
-      >
+      <button class="tab" :class="{ active: activeTab === 'new' }" @click="activeTab = 'new'">
         ✨ 新建模块
       </button>
-      <button 
-        class="tab" 
-        :class="{ active: activeTab === 'existing' }"
-        @click="activeTab = 'existing'"
-      >
+      <button class="tab" :class="{ active: activeTab === 'existing' }" @click="activeTab = 'existing'">
         📋 已生成模块 ({{ domains?.length || 0 }})
       </button>
     </div>
@@ -308,12 +304,7 @@ function getStatusText(status: string): string {
     <div v-if="activeTab === 'existing'" class="domains-list">
       <!-- Search Box -->
       <div class="search-box">
-        <input 
-          v-model="searchQuery" 
-          type="text" 
-          placeholder="🔍 搜索领域模块或字段..."
-          class="search-input"
-        />
+        <input v-model="searchQuery" type="text" placeholder="🔍 搜索领域模块或字段..." class="search-input" />
         <span v-if="searchQuery" class="search-clear" @click="searchQuery = ''">✕</span>
       </div>
 
@@ -327,21 +318,12 @@ function getStatusText(status: string): string {
         <p class="hint">尝试其他关键词</p>
       </div>
       <div v-else class="domain-grid">
-        <div 
-          v-for="domain in filteredDomains" 
-          :key="domain.name"
-          class="domain-card"
-          @click="loadDomain(domain.name)"
-        >
+        <div v-for="domain in filteredDomains" :key="domain.name" class="domain-card" @click="loadDomain(domain.name)">
           <div class="domain-header">
             <h3>{{ domain.name }}</h3>
             <div class="header-actions">
               <span class="badge">{{ domain.fields?.length || 0 }} 字段</span>
-              <button 
-                class="btn-delete" 
-                @click="deleteDomain(domain.name, $event)"
-                title="删除模块"
-              >
+              <button class="btn-delete" @click="deleteDomain(domain.name, $event)" title="删除模块">
                 🗑️
               </button>
             </div>
@@ -367,146 +349,139 @@ function getStatusText(status: string): string {
       </div>
 
       <div class="layout">
-      <!-- Left: Form -->
-      <div class="form-panel">
-        <!-- Usage Guide -->
-        <details class="help-tips">
-          <summary>📖 使用指南 Usage Guide</summary>
-          <div class="tips-content">
-            <p><strong>领域名称：</strong>使用 PascalCase 格式，如 <code>User</code>、<code>Order</code></p>
-            <p><strong>字段类型：</strong></p>
-            <ul>
-              <li><code>string</code> - 字符串 (varchar 255)</li>
-              <li><code>text</code> - 长文本</li>
-              <li><code>int</code> / <code>int64</code> - 整数</li>
-              <li><code>time</code> - 时间戳，<code>time?</code> - 可选时间</li>
-              <li><code>enum</code> - 枚举类型，需填写枚举值（用 | 分隔）</li>
-            </ul>
-            <p><strong>注意：</strong></p>
-            <ul>
-              <li>ID、CreatedAt、UpdatedAt 字段自动生成，无需手动添加</li>
-              <li>使用 ↑↓ 按钮可调整字段顺序</li>
-              <li>勾选"强制覆盖"会完全替换现有代码，请谨慎使用</li>
-              <li>生成后会自动运行 go mod tidy 下载依赖</li>
-            </ul>
-          </div>
-        </details>
+        <!-- Left: Form -->
+        <div class="form-panel">
+          <!-- Usage Guide -->
+          <details class="help-tips">
+            <summary>📖 使用指南 Usage Guide</summary>
+            <div class="tips-content">
+              <p><strong>领域名称：</strong>使用 PascalCase 格式，如 <code>User</code>、<code>Order</code></p>
+              <p><strong>字段类型：</strong></p>
+              <ul>
+                <li><code>string</code> - 字符串 (varchar 255)</li>
+                <li><code>text</code> - 长文本</li>
+                <li><code>int</code> / <code>int64</code> - 整数</li>
+                <li><code>time</code> - 时间戳，<code>time?</code> - 可选时间</li>
+                <li><code>enum</code> - 枚举类型，需填写枚举值（用 | 分隔）</li>
+              </ul>
+              <p><strong>注意：</strong></p>
+              <ul>
+                <li>ID、CreatedAt、UpdatedAt 字段自动生成，无需手动添加</li>
+                <li>使用 ↑↓ 按钮可调整字段顺序</li>
+                <li>勾选"强制覆盖"会完全替换现有代码，请谨慎使用</li>
+                <li>生成后会自动运行 go mod tidy 下载依赖</li>
+              </ul>
+            </div>
+          </details>
 
-        <div class="form-group">
-          <label>
-            领域名称 Domain Name *
-            <span class="tooltip" data-tooltip="实体名称，将生成对应的 Go 结构体">ⓘ</span>
-          </label>
-          <input v-model="config.name" placeholder="User / Order / Product" />
-        </div>
-
-        <div class="fields-section">
-          <div class="section-header">
-            <h3>字段 Fields</h3>
-            <button class="btn-add" @click="addField">+ 添加字段</button>
+          <div class="form-group">
+            <label>
+              领域名称 Domain Name *
+              <span class="tooltip" data-tooltip="实体名称，将生成对应的 Go 结构体">ⓘ</span>
+            </label>
+            <input v-model="config.name" placeholder="User / Order / Product" />
           </div>
 
-          <div class="field-row" v-for="(field, index) in config.fields" :key="index">
-            <input
-              v-model="field.name"
-              placeholder="username / email / status"
-              class="field-name"
-            />
-            <select v-model="field.type" class="field-type">
-              <option v-for="t in fieldTypes" :key="t.type" :value="t.type">
-                {{ t.type }} - {{ t.description }}
-              </option>
-            </select>
-            <input
-              v-if="field.type === 'enum'"
-              :value="field.enum_values?.join('|')"
-              @input="updateEnumValues(field, ($event.target as HTMLInputElement).value)"
-              placeholder="active|inactive|banned"
-              class="field-enum"
-              data-tooltip="枚举值用 | 分隔，如：active|inactive"
-            />
-            <div class="field-actions">
-              <button class="btn-move" @click="moveFieldUp(index)" :disabled="index === 0" title="上移">↑</button>
-              <button class="btn-move" @click="moveFieldDown(index)" :disabled="index === config.fields.length - 1" title="下移">↓</button>
-              <button class="btn-remove" @click="removeField(index)" :disabled="config.fields.length === 1">×</button>
+          <div class="fields-section">
+            <div class="section-header">
+              <h3>字段 Fields</h3>
+              <button class="btn-add" @click="addField">+ 添加字段</button>
+            </div>
+
+            <div class="field-row" v-for="(field, index) in config.fields" :key="index">
+              <input v-model="field.name" placeholder="username / email / status" class="field-name" />
+              <select v-model="field.type" class="field-type">
+                <option v-for="t in fieldTypes" :key="t.type" :value="t.type">
+                  {{ t.type }} - {{ t.description }}
+                </option>
+              </select>
+              <input v-if="field.type === 'enum'" :value="field.enum_values?.join('|')"
+                @input="updateEnumValues(field, ($event.target as HTMLInputElement).value)"
+                placeholder="active|inactive|banned" class="field-enum" data-tooltip="枚举值用 | 分隔，如：active|inactive" />
+              <input v-model="field.comment" placeholder="字段备注" class="field-comment" />
+              <div class="field-actions">
+                <button class="btn-move" @click="moveFieldUp(index)" :disabled="index === 0" title="上移">↑</button>
+                <button class="btn-move" @click="moveFieldDown(index)" :disabled="index === config.fields.length - 1"
+                  title="下移">↓</button>
+                <button class="btn-remove" @click="removeField(index)" :disabled="config.fields.length === 1">×</button>
+              </div>
             </div>
           </div>
+
+          <div class="options">
+            <div class="form-group inline">
+              <label data-tooltip="启用后将添加 DeletedAt 字段，删除时标记而非真删除">
+                <input type="checkbox" v-model="config.soft_delete" />
+                启用软删除 Soft Delete
+              </label>
+            </div>
+            <div class="form-group inline">
+              <label data-tooltip="自动在 main.go 中注册此模块">
+                <input type="checkbox" v-model="config.wire" />
+                自动注入到 main.go
+              </label>
+            </div>
+            <div class="form-group inline">
+              <label data-tooltip="覆盖已存在的文件">
+                <input type="checkbox" v-model="config.force" />
+                强制覆盖 Force
+              </label>
+            </div>
+          </div>
+
+          <!-- Force Warning -->
+          <div v-if="config.force" class="force-warning">
+            <div class="warning-icon">⚠️</div>
+            <div class="warning-content">
+              <strong>警告：强制覆盖将永久删除所有手动修改的代码！</strong>
+              <p>只在首次生成后立即修改字段时使用。一旦开始写业务逻辑，请勿勾选此选项。</p>
+            </div>
+          </div>
+
+          <details class="advanced">
+            <summary>高级选项 Advanced</summary>
+            <div class="form-group">
+              <label>自定义表名 Table Name</label>
+              <input v-model="config.table_name" placeholder="（自动：名称的复数形式）" />
+            </div>
+            <div class="form-group">
+              <label>自定义路由前缀 Route Base</label>
+              <input v-model="config.route_base" placeholder="（自动：名称的复数形式）" />
+            </div>
+          </details>
+
+          <div class="error" v-if="error">{{ error }}</div>
+
+          <div class="actions">
+            <button class="btn" @click="preview" :disabled="!config.name || loading">
+              {{ loading ? '加载中...' : '预览 Preview' }}
+            </button>
+            <button class="btn primary" @click="generate" :disabled="!config.name || loading">
+              {{ loading ? '生成中...' : '生成 Generate' }}
+            </button>
+          </div>
         </div>
 
-        <div class="options">
-          <div class="form-group inline">
-            <label data-tooltip="启用后将添加 DeletedAt 字段，删除时标记而非真删除">
-              <input type="checkbox" v-model="config.soft_delete" />
-              启用软删除 Soft Delete
-            </label>
+        <!-- Right: Preview -->
+        <div class="preview-panel" v-if="showPreview && result">
+          <div class="preview-header">
+            <h3>{{ result.success ? '✅ 已生成文件' : '❌ 错误' }}</h3>
+            <button class="btn-close" @click="showPreview = false">×</button>
           </div>
-          <div class="form-group inline">
-            <label data-tooltip="自动在 main.go 中注册此模块">
-              <input type="checkbox" v-model="config.wire" />
-              自动注入到 main.go
-            </label>
-          </div>
-          <div class="form-group inline">
-            <label data-tooltip="覆盖已存在的文件">
-              <input type="checkbox" v-model="config.force" />
-              强制覆盖 Force
-            </label>
-          </div>
-        </div>
 
-        <!-- Force Warning -->
-        <div v-if="config.force" class="force-warning">
-          <div class="warning-icon">⚠️</div>
-          <div class="warning-content">
-            <strong>警告：强制覆盖将永久删除所有手动修改的代码！</strong>
-            <p>只在首次生成后立即修改字段时使用。一旦开始写业务逻辑，请勿勾选此选项。</p>
+          <div class="file-list">
+            <div class="file" v-for="file in result.files" :key="file.path">
+              <span class="file-status" :class="file.status">{{ getStatusText(file.status) }}</span>
+              <span class="file-path">{{ file.path.split('/').pop() }}</span>
+            </div>
           </div>
-        </div>
 
-        <details class="advanced">
-          <summary>高级选项 Advanced</summary>
-          <div class="form-group">
-            <label>自定义表名 Table Name</label>
-            <input v-model="config.table_name" placeholder="（自动：名称的复数形式）" />
-          </div>
-          <div class="form-group">
-            <label>自定义路由前缀 Route Base</label>
-            <input v-model="config.route_base" placeholder="（自动：名称的复数形式）" />
-          </div>
-        </details>
+          <div class="message" v-if="result.message">{{ result.message }}</div>
 
-        <div class="error" v-if="error">{{ error }}</div>
-
-        <div class="actions">
-          <button class="btn" @click="preview" :disabled="!config.name || loading">
-            {{ loading ? '加载中...' : '预览 Preview' }}
+          <button class="btn primary" @click="reset" style="width: 100%; margin-top: 16px;">
+            生成另一个
           </button>
-          <button class="btn primary" @click="generate" :disabled="!config.name || loading">
-            {{ loading ? '生成中...' : '生成 Generate' }}
-          </button>
         </div>
-      </div>
-
-      <!-- Right: Preview -->
-      <div class="preview-panel" v-if="showPreview && result">
-        <div class="preview-header">
-          <h3>{{ result.success ? '✅ 已生成文件' : '❌ 错误' }}</h3>
-          <button class="btn-close" @click="showPreview = false">×</button>
-        </div>
-
-        <div class="file-list">
-          <div class="file" v-for="file in result.files" :key="file.path">
-            <span class="file-status" :class="file.status">{{ getStatusText(file.status) }}</span>
-            <span class="file-path">{{ file.path.split('/').pop() }}</span>
-          </div>
-        </div>
-
-        <div class="message" v-if="result.message">{{ result.message }}</div>
-
-        <button class="btn primary" @click="reset" style="width: 100%; margin-top: 16px;">
-          生成另一个
-        </button>
-      </div>
       </div> <!-- end layout -->
     </div> <!-- end activeTab === 'new' -->
   </div> <!-- end editor -->
@@ -610,7 +585,8 @@ h1 {
   color: var(--error);
 }
 
-.loading, .empty {
+.loading,
+.empty {
   text-align: center;
   padding: 60px 20px;
   color: var(--text-muted);
@@ -951,6 +927,14 @@ h1 {
   flex-shrink: 0;
 }
 
+.field-comment {
+  min-width: 100px;
+  flex: 1;
+  max-width: 200px;
+  color: var(--text-muted);
+  font-size: 0.9em;
+}
+
 .field-actions {
   display: flex;
   gap: 4px;
@@ -1150,8 +1134,13 @@ h1 {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .modal-dialog {
@@ -1166,8 +1155,15 @@ h1 {
 }
 
 @keyframes slideIn {
-  from { transform: translateY(-20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 .modal-icon {

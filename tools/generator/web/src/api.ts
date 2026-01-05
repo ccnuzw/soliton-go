@@ -3,6 +3,7 @@ const API_BASE = '/api'
 export interface FieldConfig {
   name: string
   type: string
+  comment?: string
   enum_values?: string[]
 }
 
@@ -70,6 +71,8 @@ export interface FieldDetail {
   name: string
   type: string
   is_enum: boolean
+  enum_values?: string[]
+  comment?: string
   gorm_tag: string
   json_tag: string
   snake_name: string

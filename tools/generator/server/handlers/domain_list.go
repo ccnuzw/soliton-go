@@ -186,12 +186,14 @@ func GetDomainDetail(c *gin.Context) {
 
 // FieldDetail represents detailed field information
 type FieldDetail struct {
-	Name      string `json:"name"`
-	Type      string `json:"type"`
-	IsEnum    bool   `json:"is_enum"`
-	GormTag   string `json:"gorm_tag"`
-	JsonTag   string `json:"json_tag"`
-	SnakeName string `json:"snake_name"`
+	Name       string   `json:"name"`
+	Type       string   `json:"type"`
+	IsEnum     bool     `json:"is_enum"`
+	EnumValues []string `json:"enum_values,omitempty"`
+	Comment    string   `json:"comment,omitempty"`
+	GormTag    string   `json:"gorm_tag"`
+	JsonTag    string   `json:"json_tag"`
+	SnakeName  string   `json:"snake_name"`
 }
 
 // parseEntityFieldsDetailed parses entity file and returns detailed field information
@@ -201,8 +203,14 @@ func parseEntityFieldsDetailed(filePath string) []FieldDetail {
 		return []FieldDetail{}
 	}
 
+	fileContent := string(content)
+	lines := strings.Split(fileContent, "\n")
+
+	// First pass: extract enum values from const blocks
+	// Format: EnumTypeName = "value"
+	enumValues := parseEnumValues(fileContent)
+
 	var fields []FieldDetail
-	lines := strings.Split(string(content), "\n")
 	inStruct := false
 
 	for _, line := range lines {
@@ -227,6 +235,13 @@ func parseEntityFieldsDetailed(filePath string) []FieldDetail {
 				strings.Contains(trimmed, "ddd.Entity") ||
 				(strings.Contains(trimmed, "ID") && strings.Contains(trimmed, "uuid.UUID")) {
 				continue
+			}
+
+			// Extract trailing comment if present (e.g., "FieldName Type `tag` // comment")
+			comment := ""
+			if idx := strings.Index(trimmed, "//"); idx != -1 {
+				comment = strings.TrimSpace(trimmed[idx+2:])
+				trimmed = strings.TrimSpace(trimmed[:idx])
 			}
 
 			// Parse field: Name Type `tags`
@@ -267,19 +282,74 @@ func parseEntityFieldsDetailed(filePath string) []FieldDetail {
 					snakeName = toSnakeCase(fieldName)
 				}
 
+				// Check if this field type is an enum
+				isEnum := !strings.Contains(fieldType, "string") &&
+					!strings.Contains(fieldType, "int") &&
+					!strings.Contains(fieldType, "float") &&
+					!strings.Contains(fieldType, "bool") &&
+					!strings.Contains(fieldType, "time") &&
+					!strings.Contains(fieldType, "uuid")
+
+				var fieldEnumValues []string
+				if isEnum {
+					// Look up enum values by type name
+					if values, ok := enumValues[fieldType]; ok {
+						fieldEnumValues = values
+					}
+				}
+
 				fields = append(fields, FieldDetail{
-					Name:      fieldName,
-					Type:      fieldType,
-					IsEnum:    !strings.Contains(fieldType, "string") && !strings.Contains(fieldType, "int") && !strings.Contains(fieldType, "time"),
-					GormTag:   gormTag,
-					JsonTag:   jsonTag,
-					SnakeName: snakeName,
+					Name:       fieldName,
+					Type:       fieldType,
+					IsEnum:     isEnum,
+					EnumValues: fieldEnumValues,
+					Comment:    comment,
+					GormTag:    gormTag,
+					JsonTag:    jsonTag,
+					SnakeName:  snakeName,
 				})
 			}
 		}
 	}
 
 	return fields
+}
+
+// parseEnumValues extracts enum values from const blocks
+// Returns a map of enum type name to slice of values
+func parseEnumValues(content string) map[string][]string {
+	result := make(map[string][]string)
+	lines := strings.Split(content, "\n")
+
+	inConst := false
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+
+		if trimmed == "const (" {
+			inConst = true
+			continue
+		}
+
+		if inConst && trimmed == ")" {
+			inConst = false
+			continue
+		}
+
+		if inConst && trimmed != "" && !strings.HasPrefix(trimmed, "//") {
+			// Parse: ConstName Type = "value"
+			// Example: OrderPaymentMethodCreditCard OrderPaymentMethod = "credit_card"
+			parts := strings.Fields(trimmed)
+			if len(parts) >= 4 && parts[2] == "=" {
+				enumType := parts[1]
+				valueStr := parts[3]
+				// Extract value from quotes
+				value := strings.Trim(valueStr, `"`)
+				result[enumType] = append(result[enumType], value)
+			}
+		}
+	}
+
+	return result
 }
 
 // extractTag extracts a specific tag value from a tag string

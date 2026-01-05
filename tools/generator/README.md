@@ -44,8 +44,11 @@ cd /path/to/your/project
 # 初始化项目
 ./soliton-gen init my-project
 
-# 生成领域模块
+# 生成领域模块（简单格式，无备注）
 ./soliton-gen domain User --fields "username,email,status:enum(active|inactive)" --wire
+
+# 生成领域模块（完整格式，带备注）
+./soliton-gen domain User --fields "username:string:用户名,email::邮箱,status:enum(active|inactive):账户状态" --wire
 
 # 生成应用服务
 ./soliton-gen service Order --methods "CreateOrder,ProcessPayment" --wire
@@ -71,10 +74,13 @@ cd /path/to/your/project
 
 ### 3. Domain Editor（领域编辑器）
 - 可视化字段编辑器
+- 🆕 **字段备注**：为每个字段添加注释，自动生成行尾注释
+- 🆕 **字段排序**：通过 ↑↓ 按钮调整字段顺序
 - 支持多种字段类型（string、int、enum 等）
 - 枚举值可视化配置
 - 软删除选项
 - 自动注入到 main.go
+- 🆕 **自动更新依赖**：生成后自动运行 go mod tidy
 - 代码预览功能
 
 ### 4. Service Editor（服务编辑器）
@@ -95,12 +101,24 @@ cd /path/to/your/project
 
 | 参数 | 说明 | 示例 |
 |------|------|------|
-| `--fields` | 字段列表 | `--fields "username,email,age:int"` |
+| `--fields` | 字段列表 | 见下方字段格式 |
 | `--table` | 自定义表名 | `--table "sys_users"` |
 | `--route` | 自定义路由 | `--route "/v1/users"` |
 | `--soft-delete` | 启用软删除 | `--soft-delete` |
 | `--wire` | 自动注入到 main.go | `--wire` |
 | `--force` | 强制覆盖 | `--force` |
+
+#### 字段格式
+
+**基本格式：** `name:type:comment`（type 和 comment 可选）
+
+| 格式 | 示例 | 说明 |
+|------|------|------|
+| `name` | `username` | string 类型，无备注 |
+| `name:type` | `price:int64` | 指定类型，无备注 |
+| `name:type:comment` | `username:string:用户名` | 完整格式 |
+| `name::comment` | `email::邮箱` | 默认 string 类型 + 备注 |
+| `name:enum(...):comment` | `status:enum(a\|b):状态` | 枚举 + 备注 |
 
 ### Service 命令参数
 
@@ -208,6 +226,16 @@ go build -o soliton-gen .
 - Vue Router
 
 ## 📝 更新日志
+
+### v1.1.0 (2026-01-05)
+
+**新增功能：**
+- ✅ 字段备注功能（GUI + CLI）
+- ✅ 字段排序功能（↑↓ 按钮）
+- ✅ 枚举字段编辑支持
+- ✅ 完整的领域删除（清理所有相关文件）
+- ✅ 生成后自动运行 go mod tidy
+- ✅ Dashboard 手动更新依赖按钮
 
 ### v1.0.0 (2026-01-04)
 

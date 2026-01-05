@@ -66,6 +66,7 @@ type Field struct {
 	AppGoType  string   // Go type in app layer with package prefix (e.g., "user.UserRole")
 	GormTag    string   // GORM tag
 	JsonTag    string   // JSON tag
+	Comment    string   // Field comment/description
 	IsEnum     bool     // Is this an enum type
 	EnumValues []string // Enum values if IsEnum is true
 	EnumType   string   // Enum type name (e.g., "UserStatus")
@@ -116,17 +117,47 @@ func parseFields(fieldsStr string, entityName string, packageName string) []Fiel
 }
 
 // parseFieldDefinition parses a single field definition
+// Format: name:type:comment (comment is optional)
+// Examples: "user_id:uuid:用户ID", "order_no::订单号", "name:string"
 func parseFieldDefinition(def string, entityName string, packageName string) Field {
-	// Check for type specification (field:type or field:enum(...))
-	colonIdx := strings.Index(def, ":")
+	// Split by colons, but handle enum(...) specially
+	var fieldName, fieldType, comment string
 
-	var fieldName, fieldType string
-	if colonIdx == -1 {
-		fieldName = def
-		fieldType = "string"
+	// Check if it contains enum(...)
+	if enumIdx := strings.Index(def, "enum("); enumIdx != -1 {
+		// Find the closing parenthesis
+		closeIdx := strings.LastIndex(def, ")")
+		if closeIdx > enumIdx {
+			// Extract enum part
+			beforeEnum := def[:enumIdx]
+			enumPart := def[enumIdx : closeIdx+1]
+			afterEnum := ""
+			if closeIdx+1 < len(def) {
+				afterEnum = def[closeIdx+1:]
+			}
+
+			// Parse name from before enum (removing trailing colon if any)
+			fieldName = strings.TrimSuffix(beforeEnum, ":")
+			fieldType = enumPart
+
+			// Parse comment from after enum (after colon if any)
+			if strings.HasPrefix(afterEnum, ":") {
+				comment = strings.TrimPrefix(afterEnum, ":")
+			}
+		}
 	} else {
-		fieldName = def[:colonIdx]
-		fieldType = def[colonIdx+1:]
+		// Regular parsing: name:type:comment
+		parts := strings.SplitN(def, ":", 3)
+		fieldName = parts[0]
+		if len(parts) >= 2 {
+			fieldType = parts[1]
+		}
+		if len(parts) >= 3 {
+			comment = parts[2]
+		}
+		if fieldType == "" {
+			fieldType = "string"
+		}
 	}
 
 	// Normalize field name
@@ -138,11 +169,12 @@ func parseFieldDefinition(def string, entityName string, packageName string) Fie
 		Name:      pascalName,
 		SnakeName: snakeName,
 		CamelName: camelName,
+		Comment:   comment,
 	}
 
 	// Parse type
 	if strings.HasPrefix(fieldType, "enum(") && strings.HasSuffix(fieldType, ")") {
-		// Enum type: enum(value1,value2,...)
+		// Enum type: enum(value1|value2|...)
 		enumContent := fieldType[5 : len(fieldType)-1]
 		field.IsEnum = true
 		field.EnumValues = parseEnumValues(enumContent)
@@ -542,7 +574,7 @@ type {{.EntityName}} struct {
 	ddd.BaseAggregateRoot
 	ID {{.EntityName}}ID ` + "`gorm:\"primaryKey\"`" + `
 {{- range .Fields}}
-	{{.Name}} {{.GoType}} {{.GormTag}}
+	{{.Name}} {{.GoType}} {{.GormTag}}{{if .Comment}} // {{.Comment}}{{end}}
 {{- end}}
 	CreatedAt time.Time ` + "`gorm:\"autoCreateTime\"`" + `
 	UpdatedAt time.Time ` + "`gorm:\"autoUpdateTime\"`" + `

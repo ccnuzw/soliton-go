@@ -31,6 +31,7 @@ type DomainConfig struct {
 type FieldConfig struct {
 	Name       string   `json:"name"`
 	Type       string   `json:"type"`                  // string, int, int64, text, uuid, time, time?, enum
+	Comment    string   `json:"comment,omitempty"`     // Field comment/description
 	EnumValues []string `json:"enum_values,omitempty"` // For enum type only
 }
 
@@ -85,6 +86,7 @@ type Field struct {
 	AppGoType  string   // Go type in app layer with package prefix (e.g., "user.UserRole")
 	GormTag    string   // GORM tag
 	JsonTag    string   // JSON tag
+	Comment    string   // Field comment/description
 	IsEnum     bool     // Is this an enum type
 	EnumValues []string // Enum values if IsEnum is true
 	EnumType   string   // Enum type name (e.g., "UserStatus")
