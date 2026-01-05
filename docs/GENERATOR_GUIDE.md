@@ -15,7 +15,13 @@ go build -o soliton-gen .
 |------|------|
 | `init` | 初始化新项目 |
 | `domain` | 生成领域模块 (Entity/Repo/Events/Handler) |
+| `domain list` | 🆕 列出所有领域模块 |
+| `domain delete` | 🆕 删除领域模块及所有相关文件 |
 | `service` | 生成应用服务 (跨领域业务逻辑) |
+| `service list` | 🆕 列出所有应用服务 |
+| `service delete` | 🆕 删除应用服务 |
+| `tidy` | 🆕 运行 go mod tidy 更新依赖 |
+| `serve` | 启动 Web GUI |
 
 ---
 
@@ -181,6 +187,61 @@ const (
 📖 **详细文档**: [Service 应用服务使用指南](./docs/SERVICE_GUIDE.md)
 
 ---
+
+## 🆕 domain list - 列出领域
+
+```bash
+./soliton-gen domain list
+```
+
+**输出示例：**
+```
+已检测到 3 个领域模型：
+
+  • order
+  • product
+  • user
+```
+
+---
+
+## 🆕 domain delete - 删除领域
+
+删除领域模块及所有相关文件。
+
+```bash
+./soliton-gen domain delete User          # 交互式确认
+./soliton-gen domain delete User --force  # 跳过确认
+```
+
+**删除内容：**
+- `internal/domain/<name>/`
+- `internal/application/<name>/`
+- `internal/infrastructure/persistence/<name>_repo.go`
+- `internal/interfaces/http/<name>_handler.go`
+- `main.go` 中的注入代码
+
+---
+
+## 🆕 service list / delete
+
+```bash
+./soliton-gen service list                    # 列出所有服务
+./soliton-gen service delete OrderService     # 删除服务
+./soliton-gen service delete OrderService --force
+```
+
+---
+
+## 🆕 tidy - 更新依赖
+
+运行 `go mod tidy` 更新项目依赖。
+
+```bash
+./soliton-gen tidy
+```
+
+等价于：`GOWORK=off go mod tidy`
 
 ## 🔄 修改已生成代码
 

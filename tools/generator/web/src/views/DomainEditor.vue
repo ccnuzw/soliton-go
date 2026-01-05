@@ -904,10 +904,12 @@ h1 {
   display: flex;
   gap: 8px;
   margin-bottom: 8px;
+  width: 100%;
 }
 
 .field-name {
-  flex: 1;
+  flex: 1.5;
+  min-width: 160px;
   padding: 10px;
   background: var(--bg-input);
   border: 1px solid var(--border);
@@ -917,20 +919,28 @@ h1 {
 
 .field-type {
   width: 200px;
+  flex-shrink: 0;
   padding: 10px;
   background: var(--bg-input);
   border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.field-type option {
+  background: var(--bg-card);
+  color: var(--text);
 }
 
 .field-enum {
   min-width: 150px;
-  flex-shrink: 0;
+  flex: 1.5;
 }
 
 .field-comment {
-  min-width: 100px;
   flex: 1;
-  max-width: 200px;
+  min-width: 80px;
   color: var(--text-muted);
   font-size: 0.9em;
 }

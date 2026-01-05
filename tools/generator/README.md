@@ -94,7 +94,12 @@ cd /path/to/your/project
 |------|------|------|
 | `init <name>` | 初始化新项目 | `soliton-gen init my-project` |
 | `domain <name>` | 生成领域模块 | `soliton-gen domain User --fields "username,email"` |
+| `domain list` | 🆕 列出所有领域 | `soliton-gen domain list` |
+| `domain delete <name>` | 🆕 删除领域模块 | `soliton-gen domain delete User` |
 | `service <name>` | 生成应用服务 | `soliton-gen service Order --methods "CreateOrder"` |
+| `service list` | 🆕 列出所有服务 | `soliton-gen service list` |
+| `service delete <name>` | 🆕 删除应用服务 | `soliton-gen service delete OrderService` |
+| `tidy` | 🆕 更新依赖 | `soliton-gen tidy` |
 | `serve` | 启动 Web GUI | `soliton-gen serve --port 3000` |
 
 ### Domain 命令参数
@@ -106,7 +111,7 @@ cd /path/to/your/project
 | `--route` | 自定义路由 | `--route "/v1/users"` |
 | `--soft-delete` | 启用软删除 | `--soft-delete` |
 | `--wire` | 自动注入到 main.go | `--wire` |
-| `--force` | 强制覆盖 | `--force` |
+| `--force` | 强制覆盖/跳过确认 | `--force` |
 
 #### 字段格式
 
@@ -125,7 +130,7 @@ cd /path/to/your/project
 | 参数 | 说明 | 示例 |
 |------|------|------|
 | `--methods` | 方法列表 | `--methods "Create,Update,Delete"` |
-| `--force` | 强制覆盖 | `--force` |
+| `--force` | 强制覆盖/跳过确认 | `--force` |
 
 ### Serve 命令参数
 
