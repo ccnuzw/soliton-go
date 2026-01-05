@@ -254,15 +254,62 @@ function getStatusText(status: string): string {
           <details class="help-tips">
             <summary>📖 使用指南 Usage Guide</summary>
             <div class="tips-content">
-              <p><strong>服务名称：</strong>使用 PascalCase 格式，如 <code>OrderService</code>、<code>PaymentService</code></p>
-              <p><strong>方法定义：</strong>每行一个方法名，如 <code>CreateOrder</code>、<code>ProcessPayment</code></p>
-              <p><strong>默认方法：</strong>如果不填写方法，将自动生成 Create、Get、List 三个基础方法</p>
-              <p><strong>注意：</strong></p>
-              <ul>
-                <li>Service 用于编排跨领域的业务逻辑，可以调用多个 Repository</li>
-                <li>生成后会自动运行 go mod tidy 下载依赖</li>
-                <li>勾选"自动注入到 main.go"可自动完成模块注册</li>
-              </ul>
+              <div class="tip-section">
+                <h4>🎯 什么是应用服务 (Application Service)?</h4>
+                <p>应用服务是 DDD 架构中的<strong>应用层组件</strong>，负责：</p>
+                <ul>
+                  <li>编排多个领域模型之间的业务逻辑</li>
+                  <li>处理跨领域的复杂操作（如：支付时更新订单状态+扣减库存+发送通知）</li>
+                  <li>作为领域层和接口层之间的桥梁</li>
+                </ul>
+              </div>
+
+              <div class="tip-section">
+                <h4>📝 服务名称规则</h4>
+                <ul>
+                  <li>使用 <strong>PascalCase</strong> 格式</li>
+                  <li>建议以 <code>Service</code> 结尾（不填会自动添加）</li>
+                  <li>示例：<code>PaymentService</code>、<code>OrderProcessService</code>、<code>NotificationService</code>
+                  </li>
+                </ul>
+              </div>
+
+              <div class="tip-section">
+                <h4>⚙️ 两种服务类型</h4>
+                <ul>
+                  <li><span class="type-hint domain">领域服务</span> - 与已有领域同名时，生成在
+                    <code>application/{domain}/service.go</code></li>
+                  <li><span class="type-hint cross">跨域服务</span> - 无对应领域时，生成在独立目录 <code>application/{service}/</code>
+                  </li>
+                </ul>
+              </div>
+
+              <div class="tip-section">
+                <h4>📋 方法定义</h4>
+                <ul>
+                  <li>每行输入一个方法名，使用 PascalCase</li>
+                  <li>示例：<code>ProcessPayment</code>、<code>RefundOrder</code>、<code>SendNotification</code></li>
+                  <li><strong>留空</strong>将自动生成：Create、Get、List 三个基础方法</li>
+                </ul>
+              </div>
+
+              <div class="tip-section">
+                <h4>📁 生成的文件</h4>
+                <ul>
+                  <li><code>service.go</code> - 服务主体，包含方法签名和桩代码</li>
+                  <li><code>service_dto.go</code> - 请求/响应的数据传输对象</li>
+                  <li><code>module.go</code> - Fx 依赖注入模块</li>
+                </ul>
+              </div>
+
+              <div class="tip-section warning">
+                <h4>⚠️ 注意事项</h4>
+                <ul>
+                  <li>生成后需要在 <code>service.go</code> 中注入所需的 Repository</li>
+                  <li>方法体为空实现，需手动填充业务逻辑</li>
+                  <li>使用<strong>强制覆盖</strong>会丢失已有代码！仅在首次生成或重置时使用</li>
+                </ul>
+              </div>
             </div>
           </details>
 
@@ -851,6 +898,68 @@ h1 {
   padding: 2px 6px;
   border-radius: 4px;
   font-size: 0.9em;
+}
+
+.tip-section {
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px dashed var(--border);
+}
+
+.tip-section:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.tip-section h4 {
+  margin: 0 0 8px 0;
+  font-size: 0.95rem;
+  color: var(--text);
+}
+
+.tip-section p {
+  margin: 0 0 8px 0;
+}
+
+.tip-section ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.tip-section ul li {
+  margin-bottom: 4px;
+  line-height: 1.5;
+}
+
+.tip-section.warning {
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 8px;
+}
+
+.tip-section.warning h4 {
+  color: var(--warning);
+}
+
+.type-hint {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.type-hint.domain {
+  background: rgba(34, 197, 94, 0.2);
+  color: #22c55e;
+}
+
+.type-hint.cross {
+  background: rgba(168, 85, 247, 0.2);
+  color: #a855f7;
 }
 
 .tooltip {
