@@ -354,7 +354,7 @@ func DeleteDomain(c *gin.Context) {
 	}
 
 	// 3. Delete infrastructure persistence file (internal/infrastructure/persistence/<name>_repo.go)
-	repoFile := filepath.Join(layout.InfraDir, "persistence", domainName+"_repo.go")
+	repoFile := filepath.Join(layout.InfraDir, domainName+"_repo.go")
 	if core.IsFile(repoFile) {
 		if err := os.Remove(repoFile); err != nil {
 			errors = append(errors, fmt.Sprintf("repo file: %v", err))
@@ -364,7 +364,7 @@ func DeleteDomain(c *gin.Context) {
 	}
 
 	// 4. Delete interfaces HTTP handler file (internal/interfaces/http/<name>_handler.go)
-	handlerFile := filepath.Join(layout.InterfacesDir, "http", domainName+"_handler.go")
+	handlerFile := filepath.Join(layout.InterfacesDir, domainName+"_handler.go")
 	if core.IsFile(handlerFile) {
 		if err := os.Remove(handlerFile); err != nil {
 			errors = append(errors, fmt.Sprintf("handler file: %v", err))

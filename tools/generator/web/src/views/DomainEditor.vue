@@ -185,6 +185,10 @@ async function preview() {
 async function generate() {
   error.value = ''
   loading.value = true
+  tidying.value = false
+  tidyOutput.value = ''
+  tidyError.value = ''
+  
   try {
     const validFields = config.value.fields.filter(f => f.name && f.type)
     result.value = await api.generateDomain({
@@ -198,11 +202,57 @@ async function generate() {
     // 显示成功提示
     if (result.value.success) {
       showSuccess(result.value.message || '生成成功！')
+      
+      // 自动运行 go mod tidy 下载依赖
+      await runGoModTidy()
     }
   } catch (e: any) {
     error.value = e.message
   } finally {
     loading.value = false
+  }
+}
+
+// go mod tidy 状态
+const tidying = ref(false)
+const tidyOutput = ref('')
+const tidyError = ref('')
+
+async function runGoModTidy() {
+  tidying.value = true
+  tidyOutput.value = ''
+  tidyError.value = ''
+  
+  try {
+    // 获取当前项目路径
+    const layoutRes = await fetch('/api/layout')
+    const layoutData = await layoutRes.json()
+    const projectPath = layoutData.module_dir || '.'
+    
+    console.log('Running go mod tidy for:', projectPath)
+    
+    const response = await fetch('/api/projects/tidy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ project_path: projectPath }),
+    })
+    
+    const tidyResult = await response.json()
+    console.log('Tidy result:', tidyResult)
+    
+    if (tidyResult.success) {
+      tidyOutput.value = tidyResult.message || '依赖下载成功'
+    } else {
+      tidyError.value = tidyResult.error || '依赖下载失败'
+      if (tidyResult.output) {
+        tidyOutput.value = tidyResult.output
+      }
+    }
+  } catch (e: any) {
+    console.error('Tidy error:', e)
+    tidyError.value = `依赖下载失败: ${e.message}`
+  } finally {
+    tidying.value = false
   }
 }
 
@@ -332,7 +382,13 @@ function getStatusText(status: string): string {
               <li><code>time</code> - 时间戳，<code>time?</code> - 可选时间</li>
               <li><code>enum</code> - 枚举类型，需填写枚举值（用 | 分隔）</li>
             </ul>
-            <p><strong>提示：</strong>勾选"自动注入到 main.go"可自动完成模块注册，无需手动修改代码</p>
+            <p><strong>注意：</strong></p>
+            <ul>
+              <li>ID、CreatedAt、UpdatedAt 字段自动生成，无需手动添加</li>
+              <li>使用 ↑↓ 按钮可调整字段顺序</li>
+              <li>勾选"强制覆盖"会完全替换现有代码，请谨慎使用</li>
+              <li>生成后会自动运行 go mod tidy 下载依赖</li>
+            </ul>
           </div>
         </details>
 
@@ -395,10 +451,15 @@ function getStatusText(status: string): string {
               <input type="checkbox" v-model="config.force" />
               强制覆盖 Force
             </label>
-            <div v-if="config.force" class="force-warning">
-              ⚠️ <strong>警告：</strong>强制覆盖将<strong>永久删除</strong>所有手动修改的代码！<br>
-              只在首次生成后立即修改字段时使用。一旦开始写业务逻辑，请勿勾选此选项。
-            </div>
+          </div>
+        </div>
+
+        <!-- Force Warning -->
+        <div v-if="config.force" class="force-warning">
+          <div class="warning-icon">⚠️</div>
+          <div class="warning-content">
+            <strong>警告：强制覆盖将永久删除所有手动修改的代码！</strong>
+            <p>只在首次生成后立即修改字段时使用。一旦开始写业务逻辑，请勿勾选此选项。</p>
           </div>
         </div>
 
@@ -934,6 +995,40 @@ h1 {
 .btn-remove:disabled {
   opacity: 0.3;
   cursor: not-allowed;
+}
+
+.force-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 16px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  animation: fadeIn 0.2s ease;
+}
+
+.force-warning .warning-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.force-warning .warning-content {
+  flex: 1;
+}
+
+.force-warning .warning-content strong {
+  color: #ef4444;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.force-warning .warning-content p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  line-height: 1.4;
 }
 
 .options {

@@ -53,6 +53,46 @@ async function switchProject(projectPath: string) {
     switching.value = false
   }
 }
+
+// go mod tidy 状态
+const tidying = ref(false)
+const tidyResult = ref<{ success: boolean; message: string } | null>(null)
+
+async function runGoModTidy() {
+  if (!layout.value?.module_dir) {
+    alert('未检测到项目')
+    return
+  }
+  
+  tidying.value = true
+  tidyResult.value = null
+  
+  try {
+    const response = await fetch('/api/projects/tidy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ project_path: layout.value.module_dir }),
+    })
+    
+    const data = await response.json()
+    tidyResult.value = {
+      success: data.success,
+      message: data.success ? (data.message || '依赖更新成功') : (data.error || '依赖更新失败'),
+    }
+    
+    // 3秒后清除提示
+    setTimeout(() => {
+      tidyResult.value = null
+    }, 3000)
+  } catch (e: any) {
+    tidyResult.value = {
+      success: false,
+      message: `依赖更新失败: ${e.message}`,
+    }
+  } finally {
+    tidying.value = false
+  }
+}
 </script>
 
 <template>
@@ -69,18 +109,27 @@ async function switchProject(projectPath: string) {
         <div class="guide-section">
           <h4>🚀 快速开始</h4>
           <ol>
-            <li><strong>新项目：</strong>在空目录运行 <code>soliton-gen serve</code>，点击 <strong>初始化项目</strong> 创建项目骨架</li>
-            <li><strong>现有项目：</strong>在项目根目录（包含 go.mod）运行 <code>soliton-gen serve</code></li>
-            <li>使用 <strong>生成领域</strong> 创建业务实体和相关代码</li>
-            <li>使用 <strong>生成服务</strong> 创建应用服务层</li>
+            <li><strong>新项目：</strong>点击 <strong>初始化项目</strong> 创建完整的 DDD 项目结构</li>
+            <li><strong>生成领域：</strong>定义实体名称和字段，自动生成 Entity、Repository、Handler 等</li>
+            <li><strong>生成服务：</strong>创建跨领域业务逻辑的应用服务层</li>
+            <li><strong>更新依赖：</strong>点击 <strong>更新依赖</strong> 卡片运行 go mod tidy</li>
           </ol>
+        </div>
+        <div class="guide-section">
+          <h4>✨ 新功能</h4>
+          <ul>
+            <li>✅ 生成领域/服务后 <strong>自动运行 go mod tidy</strong> 下载依赖</li>
+            <li>✅ 字段支持 <strong>上下移动</strong> 调整顺序</li>
+            <li>✅ 删除领域时 <strong>自动清理</strong> 所有相关文件和注入代码</li>
+            <li>✅ 使用 <strong>强制覆盖</strong> 可完全替换现有领域定义</li>
+          </ul>
         </div>
         <div class="guide-section">
           <h4>💡 提示</h4>
           <ul>
             <li>所有生成操作都支持 <strong>预览</strong>，可以在实际创建前查看将生成的文件</li>
             <li>勾选 <strong>自动注入到 main.go</strong> 可以自动完成模块注册</li>
-            <li>使用 <strong>强制覆盖</strong> 选项可以更新已存在的文件</li>
+            <li>ID、CreatedAt、UpdatedAt 等系统字段会自动生成，无需手动添加</li>
           </ul>
         </div>
       </div>
@@ -141,6 +190,15 @@ async function switchProject(projectPath: string) {
         <h3>生成服务 Service</h3>
         <p>创建跨领域业务逻辑的应用服务层</p>
       </RouterLink>
+
+      <div class="card action-card" :class="{ disabled: !layout?.found }" @click="runGoModTidy">
+        <div class="card-icon">📦</div>
+        <h3>更新依赖 Dependencies</h3>
+        <p v-if="!tidying && !tidyResult">运行 go mod tidy 下载和整理项目依赖</p>
+        <p v-else-if="tidying" class="loading">⏳ 正在更新依赖...</p>
+        <p v-else-if="tidyResult?.success" class="success">✅ {{ tidyResult.message }}</p>
+        <p v-else class="error">❌ {{ tidyResult?.message }}</p>
+      </div>
     </div>
 
     <div class="features">

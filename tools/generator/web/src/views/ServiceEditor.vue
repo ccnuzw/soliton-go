@@ -274,7 +274,12 @@ function getStatusText(status: string): string {
             <p><strong>服务名称：</strong>使用 PascalCase 格式，如 <code>OrderService</code>、<code>PaymentService</code></p>
             <p><strong>方法定义：</strong>每行一个方法名，如 <code>CreateOrder</code>、<code>ProcessPayment</code></p>
             <p><strong>默认方法：</strong>如果不填写方法，将自动生成 Create、Get、List 三个基础方法</p>
-            <p><strong>提示：</strong>Service 用于编排跨领域的业务逻辑，可以调用多个 Repository</p>
+            <p><strong>注意：</strong></p>
+            <ul>
+              <li>Service 用于编排跨领域的业务逻辑，可以调用多个 Repository</li>
+              <li>生成后会自动运行 go mod tidy 下载依赖</li>
+              <li>勾选"自动注入到 main.go"可自动完成模块注册</li>
+            </ul>
           </div>
         </details>
 
