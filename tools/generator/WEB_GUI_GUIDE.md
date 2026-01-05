@@ -53,7 +53,8 @@ cd /path/to/existing/project
 **功能特性：**
 - 自动检测当前目录是否为有效的 Go 项目
 - 显示项目模块路径
-- 提供三个主要功能入口
+- 提供四个主要功能入口
+- 新增 DDD 组件入口（Value Object / Spec / Policy / Event / Handler）
 - **使用指南**：点击展开查看快速开始步骤和使用提示
 
 **项目检测：**
@@ -233,7 +234,41 @@ internal/
 
 ---
 
-### 4. Service Editor（服务编辑器）
+### 4. DDD Enhancer（领域增强）
+
+生成 Value Object（值对象）、Specification（领域规格）、Policy（领域策略）、Event 和 Handler。
+
+#### 功能说明
+
+- **Value Object**：用于表达不可变的业务概念，如金额、邮箱、地址
+- **Specification**：用于封装业务规则判断，便于复用与组合
+- **Policy**：用于表达业务策略或决策逻辑
+- **Event**：领域事件，描述领域中已发生的业务事实
+- **Handler**：事件处理器，订阅并处理领域事件
+
+#### 使用流程
+
+1. 选择已有领域（Domain）
+2. 选择需要生成的组件：
+   - **Value Object**：定义值对象字段
+   - **Specification**：定义规格，Target 可留空表示 any
+   - **Policy**：定义策略，Target 可留空表示 any
+   - **Event & Handler**：支持组合生成（Event + Handler）
+3. 设置可选参数：
+   - Topic（留空自动生成）
+   - Force（可选，覆盖已有文件）
+4. 点击"预览"确认生成结果
+5. 点击"生成"执行生成
+
+#### 组合生成说明
+
+- 可以仅生成 Event 或仅生成 Handler
+- 同时勾选时会依次生成 Event 与 Handler
+- Handler Topic 留空时会复用 Event Topic
+
+---
+
+### 5. Service Editor（服务编辑器）
 
 生成应用服务层，用于编排跨领域的业务逻辑。
 
@@ -338,6 +373,12 @@ internal/application/<name>/
 - 查看将要创建的文件列表
 - 确认配置信息
 - 避免误操作
+
+### 领域增强组件
+
+DDD 增强页面支持：
+- Value Object / Specification / Policy / Event / Handler
+- Event 与 Handler 组合生成
 
 ### 状态反馈
 

@@ -17,13 +17,13 @@ type CreateUserCommand struct {
 	Phone string
 	Avatar string
 	Bio string
-	BirthDate *time.Time
+	BirthDate time.Time
 	Gender user.UserGender
 	Role user.UserRole
 	Status user.UserStatus
 	EmailVerified bool
 	PhoneVerified bool
-	LastLoginAt *time.Time
+	LastLoginAt time.Time
 	LoginCount int
 	FailedLoginCount int
 	Balance int64

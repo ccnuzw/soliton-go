@@ -88,6 +88,11 @@ cd /path/to/your/project
 - 默认方法生成
 - 代码预览功能
 
+### 5. DDD Enhancer（领域增强）
+- 以中文说明为主，专业术语保留英文
+- 支持 Value Object / Specification / Policy / Event / Handler 可视化生成
+- 支持 Event + Handler 组合生成
+
 ## 🔌 命令列表
 
 | 命令 | 说明 | 示例 |
@@ -99,6 +104,11 @@ cd /path/to/your/project
 | `service <name>` | 生成应用服务 | `soliton-gen service Order --methods "CreateOrder"` |
 | `service list` | 🆕 列出所有服务 | `soliton-gen service list` |
 | `service delete <name>` | 🆕 删除应用服务 | `soliton-gen service delete OrderService` |
+| `valueobject <domain> <name>` | 生成领域值对象 | `soliton-gen valueobject user EmailAddress` |
+| `spec <domain> <name>` | 生成领域规格 | `soliton-gen spec user ActiveUserSpec` |
+| `policy <domain> <name>` | 生成领域策略 | `soliton-gen policy user PasswordPolicy` |
+| `event <domain> <name>` | 生成领域事件 | `soliton-gen event user UserActivated` |
+| `event-handler <domain> <event>` | 生成事件处理器 | `soliton-gen event-handler user UserActivated` |
 | `tidy` | 🆕 更新依赖 | `soliton-gen tidy` |
 | `serve` | 启动 Web GUI | `soliton-gen serve --port 3000` |
 

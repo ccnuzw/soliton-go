@@ -30,6 +30,42 @@ export interface ServiceConfig {
   force: boolean
 }
 
+export interface ValueObjectConfig {
+  domain: string
+  name: string
+  fields: FieldConfig[]
+  force: boolean
+}
+
+export interface SpecificationConfig {
+  domain: string
+  name: string
+  target?: string
+  force: boolean
+}
+
+export interface PolicyConfig {
+  domain: string
+  name: string
+  target?: string
+  force: boolean
+}
+
+export interface EventConfig {
+  domain: string
+  name: string
+  fields: FieldConfig[]
+  topic?: string
+  force: boolean
+}
+
+export interface EventHandlerConfig {
+  domain: string
+  event_name: string
+  topic?: string
+  force: boolean
+}
+
 export interface GeneratedFile {
   path: string
   status: string
@@ -41,6 +77,24 @@ export interface GenerationResult {
   files: GeneratedFile[]
   errors?: string[]
   message?: string
+}
+
+export interface MigrationLogEntry {
+  time: string
+  level: string
+  step: string
+  message: string
+}
+
+export interface MigrationResult {
+  success: boolean
+  message?: string
+  logs: MigrationLogEntry[]
+  duration_ms: number
+  exit_code: number
+  command: string
+  started_at: string
+  finished_at: string
 }
 
 export interface FieldType {
@@ -202,4 +256,75 @@ export const api = {
   // Layout
   getLayout: () =>
     request<ProjectLayout>('/layout'),
+
+  runMigration: (projectPath: string, autoTidy: boolean, timeoutSeconds: number) =>
+    request<MigrationResult>('/projects/migrate', {
+      method: 'POST',
+      body: JSON.stringify({
+        project_path: projectPath,
+        auto_tidy: autoTidy,
+        timeout_seconds: timeoutSeconds,
+      }),
+    }),
+
+  // DDD
+  generateValueObject: (config: ValueObjectConfig) =>
+    request<GenerationResult>('/ddd/valueobjects', {
+      method: 'POST',
+      body: JSON.stringify(config),
+    }),
+
+  previewValueObject: (config: ValueObjectConfig) =>
+    request<GenerationResult>('/ddd/valueobjects/preview', {
+      method: 'POST',
+      body: JSON.stringify(config),
+    }),
+
+  generateSpecification: (config: SpecificationConfig) =>
+    request<GenerationResult>('/ddd/specs', {
+      method: 'POST',
+      body: JSON.stringify(config),
+    }),
+
+  previewSpecification: (config: SpecificationConfig) =>
+    request<GenerationResult>('/ddd/specs/preview', {
+      method: 'POST',
+      body: JSON.stringify(config),
+    }),
+
+  generatePolicy: (config: PolicyConfig) =>
+    request<GenerationResult>('/ddd/policies', {
+      method: 'POST',
+      body: JSON.stringify(config),
+    }),
+
+  previewPolicy: (config: PolicyConfig) =>
+    request<GenerationResult>('/ddd/policies/preview', {
+      method: 'POST',
+      body: JSON.stringify(config),
+    }),
+
+  generateEvent: (config: EventConfig) =>
+    request<GenerationResult>('/ddd/events', {
+      method: 'POST',
+      body: JSON.stringify(config),
+    }),
+
+  previewEvent: (config: EventConfig) =>
+    request<GenerationResult>('/ddd/events/preview', {
+      method: 'POST',
+      body: JSON.stringify(config),
+    }),
+
+  generateEventHandler: (config: EventHandlerConfig) =>
+    request<GenerationResult>('/ddd/event-handlers', {
+      method: 'POST',
+      body: JSON.stringify(config),
+    }),
+
+  previewEventHandler: (config: EventHandlerConfig) =>
+    request<GenerationResult>('/ddd/event-handlers/preview', {
+      method: 'POST',
+      body: JSON.stringify(config),
+    }),
 }

@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/soliton-go/framework/ddd"
+	"gorm.io/gorm"
 )
 
 // UserID 是强类型的实体标识符。
@@ -52,22 +53,23 @@ type User struct {
 	FullName string `gorm:"size:255"`
 	Phone string `gorm:"size:255"`
 	Avatar string `gorm:"size:255"`
-	Bio string `gorm:"type:text"`
-	BirthDate *time.Time 
+	Bio string `gorm:"size:255"`
+	BirthDate time.Time `gorm:"type:timestamp"`
 	Gender UserGender `gorm:"size:50;default:'male'"`
 	Role UserRole `gorm:"size:50;default:'admin'"`
 	Status UserStatus `gorm:"size:50;default:'active'"`
 	EmailVerified bool `gorm:"default:false"`
 	PhoneVerified bool `gorm:"default:false"`
-	LastLoginAt *time.Time 
+	LastLoginAt time.Time `gorm:"type:timestamp"`
 	LoginCount int `gorm:"not null;default:0"`
 	FailedLoginCount int `gorm:"not null;default:0"`
 	Balance int64 `gorm:"not null;default:0"`
 	Points int `gorm:"not null;default:0"`
 	VipLevel int `gorm:"not null;default:0"`
-	Preferences string `gorm:"type:text"`
+	Preferences string `gorm:"size:255"`
 	CreatedAt time.Time `gorm:"autoCreateTime"`
 	UpdatedAt time.Time `gorm:"autoUpdateTime"`
+	DeletedAt gorm.DeletedAt `gorm:"index"`
 }
 
 // TableName 返回 GORM 映射的数据库表名。
@@ -76,7 +78,7 @@ func (User) TableName() string {
 }
 
 // NewUser 创建一个新的 User 实体。
-func NewUser(id string, username string, email string, password string, fullName string, phone string, avatar string, bio string, birthDate *time.Time, gender UserGender, role UserRole, status UserStatus, emailVerified bool, phoneVerified bool, lastLoginAt *time.Time, loginCount int, failedLoginCount int, balance int64, points int, vipLevel int, preferences string) *User {
+func NewUser(id string, username string, email string, password string, fullName string, phone string, avatar string, bio string, birthDate time.Time, gender UserGender, role UserRole, status UserStatus, emailVerified bool, phoneVerified bool, lastLoginAt time.Time, loginCount int, failedLoginCount int, balance int64, points int, vipLevel int, preferences string) *User {
 	e := &User{
 		ID: UserID(id),
 		Username: username,
@@ -128,7 +130,7 @@ func (e *User) Update(username *string, email *string, password *string, fullNam
 		e.Bio = *bio
 	}
 	if birthDate != nil {
-		e.BirthDate = birthDate
+		e.BirthDate = *birthDate
 	}
 	if gender != nil {
 		e.Gender = *gender
@@ -146,7 +148,7 @@ func (e *User) Update(username *string, email *string, password *string, fullNam
 		e.PhoneVerified = *phoneVerified
 	}
 	if lastLoginAt != nil {
-		e.LastLoginAt = lastLoginAt
+		e.LastLoginAt = *lastLoginAt
 	}
 	if loginCount != nil {
 		e.LoginCount = *loginCount

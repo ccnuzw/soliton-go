@@ -49,8 +49,8 @@ type CreateProductRequest struct {
 	Tags string `json:"tags" binding:"required"`
 	Images string `json:"images" binding:"required"`
 	VideoUrl string `json:"video_url" binding:"required"`
-	PublishedAt *time.Time `json:"published_at"`
-	DiscontinuedAt *time.Time `json:"discontinued_at"`
+	PublishedAt time.Time `json:"published_at"`
+	DiscontinuedAt time.Time `json:"discontinued_at"`
 }
 
 // UpdateProductRequest 是更新 Product 的请求体。
@@ -144,8 +144,8 @@ type ProductResponse struct {
 	Tags string `json:"tags"`
 	Images string `json:"images"`
 	VideoUrl string `json:"video_url"`
-	PublishedAt *time.Time `json:"published_at"`
-	DiscontinuedAt *time.Time `json:"discontinued_at"`
+	PublishedAt time.Time `json:"published_at"`
+	DiscontinuedAt time.Time `json:"discontinued_at"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }

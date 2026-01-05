@@ -51,8 +51,8 @@ type CreateProductCommand struct {
 	Tags string
 	Images string
 	VideoUrl string
-	PublishedAt *time.Time
-	DiscontinuedAt *time.Time
+	PublishedAt time.Time
+	DiscontinuedAt time.Time
 }
 
 // CreateProductHandler 处理 CreateProductCommand。

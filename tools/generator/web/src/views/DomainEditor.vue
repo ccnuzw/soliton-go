@@ -388,6 +388,7 @@ function getStatusText(status: string): string {
                 <li>勾选"强制覆盖"会完全替换现有代码，请谨慎使用</li>
                 <li>勾选"自动注入"会将模块注入到 main.go</li>
                 <li>生成后会自动运行 <code>go mod tidy</code> 下载依赖</li>
+                <li>Value Object / Specification / Policy / Event 相关功能请前往「领域增强」</li>
               </ul>
             </div>
           </details>

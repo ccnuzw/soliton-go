@@ -28,8 +28,6 @@ var Module = fx.Options(
 	fx.Provide(NewListUsersHandler),
 	
 	// soliton-gen:services
-	fx.Provide(NewUserActivatedHandler),
-	fx.Invoke(RegisterUserActivatedHandler),
 	// soliton-gen:event-handlers
 
 	// 可选：注册到 CQRS 总线

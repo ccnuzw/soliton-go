@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/soliton-go/framework/ddd"
+	"gorm.io/gorm"
 )
 
 // ProductID 是强类型的实体标识符。
@@ -31,8 +32,8 @@ type Product struct {
 	Sku string `gorm:"size:255"`
 	Name string `gorm:"size:255"`
 	Slug string `gorm:"size:255"`
-	Description string `gorm:"type:text"`
-	ShortDescription string `gorm:"type:text"`
+	Description string `gorm:"size:255"`
+	ShortDescription string `gorm:"size:255"`
 	Brand string `gorm:"size:255"`
 	Category string `gorm:"size:255"`
 	Subcategory string `gorm:"size:255"`
@@ -66,13 +67,14 @@ type Product struct {
 	TaxRate float64 `gorm:"default:0"`
 	MinOrderQuantity int `gorm:"not null;default:0"`
 	MaxOrderQuantity int `gorm:"not null;default:0"`
-	Tags string `gorm:"type:text"`
-	Images string `gorm:"type:text"`
+	Tags string `gorm:"size:255"`
+	Images string `gorm:"size:255"`
 	VideoUrl string `gorm:"size:255"`
-	PublishedAt *time.Time 
-	DiscontinuedAt *time.Time 
+	PublishedAt time.Time `gorm:"type:timestamp"`
+	DiscontinuedAt time.Time `gorm:"type:timestamp"`
 	CreatedAt time.Time `gorm:"autoCreateTime"`
 	UpdatedAt time.Time `gorm:"autoUpdateTime"`
+	DeletedAt gorm.DeletedAt `gorm:"index"`
 }
 
 // TableName 返回 GORM 映射的数据库表名。
@@ -81,7 +83,7 @@ func (Product) TableName() string {
 }
 
 // NewProduct 创建一个新的 Product 实体。
-func NewProduct(id string, sku string, name string, slug string, description string, shortDescription string, brand string, category string, subcategory string, price int64, originalPrice int64, costPrice int64, discountPercentage int, stock int, reservedStock int, soldCount int, viewCount int, rating float64, reviewCount int, weight float64, length float64, width float64, height float64, color string, size string, material string, manufacturer string, countryOfOrigin string, barcode string, status ProductStatus, isFeatured bool, isNew bool, isOnSale bool, isDigital bool, requiresShipping bool, isTaxable bool, taxRate float64, minOrderQuantity int, maxOrderQuantity int, tags string, images string, videoUrl string, publishedAt *time.Time, discontinuedAt *time.Time) *Product {
+func NewProduct(id string, sku string, name string, slug string, description string, shortDescription string, brand string, category string, subcategory string, price int64, originalPrice int64, costPrice int64, discountPercentage int, stock int, reservedStock int, soldCount int, viewCount int, rating float64, reviewCount int, weight float64, length float64, width float64, height float64, color string, size string, material string, manufacturer string, countryOfOrigin string, barcode string, status ProductStatus, isFeatured bool, isNew bool, isOnSale bool, isDigital bool, requiresShipping bool, isTaxable bool, taxRate float64, minOrderQuantity int, maxOrderQuantity int, tags string, images string, videoUrl string, publishedAt time.Time, discontinuedAt time.Time) *Product {
 	e := &Product{
 		ID: ProductID(id),
 		Sku: sku,
@@ -258,10 +260,10 @@ func (e *Product) Update(sku *string, name *string, slug *string, description *s
 		e.VideoUrl = *videoUrl
 	}
 	if publishedAt != nil {
-		e.PublishedAt = publishedAt
+		e.PublishedAt = *publishedAt
 	}
 	if discontinuedAt != nil {
-		e.DiscontinuedAt = discontinuedAt
+		e.DiscontinuedAt = *discontinuedAt
 	}
 	e.AddDomainEvent(NewProductUpdatedEvent(string(e.ID)))
 }

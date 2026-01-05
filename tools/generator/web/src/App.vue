@@ -8,6 +8,7 @@ const navItems = [
   { path: '/init', name: '初始化项目', icon: '🚀' },
   { path: '/domain', name: '领域模块', icon: '📦' },
   { path: '/service', name: '应用服务', icon: '⚙️' },
+  { path: '/ddd', name: '领域增强', icon: '🧩' },
 ]
 </script>
 

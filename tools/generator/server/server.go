@@ -40,6 +40,7 @@ func Start(host string, port int) {
 		api.POST("/projects/switch", handlers.SwitchProject)
 		api.GET("/projects/list", handlers.ListProjects)
 		api.POST("/projects/tidy", handlers.RunGoModTidy)
+		api.POST("/projects/migrate", handlers.RunMigration)
 
 		// Domain endpoints
 		api.POST("/domains", handlers.GenerateDomain)
@@ -56,6 +57,18 @@ func Start(host string, port int) {
 		api.GET("/services/detect/:name", handlers.DetectServiceType)
 		api.GET("/services/:name", handlers.GetServiceDetail)
 		api.DELETE("/services/:name", handlers.DeleteService)
+
+		// DDD endpoints
+		api.POST("/ddd/valueobjects", handlers.GenerateValueObject)
+		api.POST("/ddd/valueobjects/preview", handlers.PreviewValueObject)
+		api.POST("/ddd/specs", handlers.GenerateSpecification)
+		api.POST("/ddd/specs/preview", handlers.PreviewSpecification)
+		api.POST("/ddd/policies", handlers.GeneratePolicy)
+		api.POST("/ddd/policies/preview", handlers.PreviewPolicy)
+		api.POST("/ddd/events", handlers.GenerateEvent)
+		api.POST("/ddd/events/preview", handlers.PreviewEvent)
+		api.POST("/ddd/event-handlers", handlers.GenerateEventHandler)
+		api.POST("/ddd/event-handlers/preview", handlers.PreviewEventHandler)
 
 		// Utility endpoints
 		api.GET("/layout", handlers.GetProjectLayout)
@@ -192,11 +205,17 @@ func createStaticHandler() gin.HandlerFunc {
         <ul>
             <li><code>POST /api/projects/init</code> - Initialize a new project</li>
             <li><code>POST /api/projects/init/preview</code> - Preview project initialization</li>
+            <li><code>POST /api/projects/migrate</code> - Run migrations with logs</li>
             <li><code>POST /api/domains</code> - Generate a domain module</li>
             <li><code>POST /api/domains/preview</code> - Preview domain generation</li>
             <li><code>GET /api/field-types</code> - Get available field types</li>
             <li><code>POST /api/services</code> - Generate a service</li>
             <li><code>POST /api/services/preview</code> - Preview service generation</li>
+            <li><code>POST /api/ddd/valueobjects</code> - Generate a value object</li>
+            <li><code>POST /api/ddd/specs</code> - Generate a specification</li>
+            <li><code>POST /api/ddd/policies</code> - Generate a policy</li>
+            <li><code>POST /api/ddd/events</code> - Generate a domain event</li>
+            <li><code>POST /api/ddd/event-handlers</code> - Generate an event handler</li>
             <li><code>GET /api/layout</code> - Get current project layout</li>
         </ul>
     </div>

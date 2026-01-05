@@ -23,6 +23,11 @@ const router = createRouter({
             name: 'service',
             component: () => import('./views/ServiceEditor.vue'),
         },
+        {
+            path: '/ddd',
+            name: 'ddd',
+            component: () => import('./views/DddEditor.vue'),
+        },
     ],
 })
 

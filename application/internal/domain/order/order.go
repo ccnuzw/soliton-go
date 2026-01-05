@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/soliton-go/framework/ddd"
+	"gorm.io/gorm"
 )
 
 // OrderID 是强类型的实体标识符。
@@ -61,7 +62,7 @@ const (
 type Order struct {
 	ddd.BaseAggregateRoot
 	ID OrderID `gorm:"primaryKey"`
-	UserId string `gorm:"size:36;index"`
+	UserId string `gorm:"size:255"`
 	OrderNo string `gorm:"size:255"`
 	TotalAmount int64 `gorm:"not null;default:0"`
 	DiscountAmount int64 `gorm:"not null;default:0"`
@@ -82,19 +83,20 @@ type Order struct {
 	ReceiverState string `gorm:"size:255"`
 	ReceiverCountry string `gorm:"size:255"`
 	ReceiverPostalCode string `gorm:"size:255"`
-	Notes string `gorm:"type:text"`
-	PaidAt *time.Time 
-	ShippedAt *time.Time 
-	DeliveredAt *time.Time 
-	CancelledAt *time.Time 
+	Notes string `gorm:"size:255"`
+	PaidAt time.Time `gorm:"type:timestamp"`
+	ShippedAt time.Time `gorm:"type:timestamp"`
+	DeliveredAt time.Time `gorm:"type:timestamp"`
+	CancelledAt time.Time `gorm:"type:timestamp"`
 	RefundAmount int64 `gorm:"not null;default:0"`
-	RefundReason string `gorm:"type:text"`
+	RefundReason string `gorm:"size:255"`
 	ItemCount int `gorm:"not null;default:0"`
 	Weight float64 `gorm:"default:0"`
 	IsGift bool `gorm:"default:false"`
-	GiftMessage string `gorm:"type:text"`
+	GiftMessage string `gorm:"size:255"`
 	CreatedAt time.Time `gorm:"autoCreateTime"`
 	UpdatedAt time.Time `gorm:"autoUpdateTime"`
+	DeletedAt gorm.DeletedAt `gorm:"index"`
 }
 
 // TableName 返回 GORM 映射的数据库表名。
@@ -103,7 +105,7 @@ func (Order) TableName() string {
 }
 
 // NewOrder 创建一个新的 Order 实体。
-func NewOrder(id string, userId string, orderNo string, totalAmount int64, discountAmount int64, taxAmount int64, shippingFee int64, finalAmount int64, currency string, paymentMethod OrderPaymentMethod, paymentStatus OrderPaymentStatus, orderStatus OrderOrderStatus, shippingMethod OrderShippingMethod, trackingNumber string, receiverName string, receiverPhone string, receiverEmail string, receiverAddress string, receiverCity string, receiverState string, receiverCountry string, receiverPostalCode string, notes string, paidAt *time.Time, shippedAt *time.Time, deliveredAt *time.Time, cancelledAt *time.Time, refundAmount int64, refundReason string, itemCount int, weight float64, isGift bool, giftMessage string) *Order {
+func NewOrder(id string, userId string, orderNo string, totalAmount int64, discountAmount int64, taxAmount int64, shippingFee int64, finalAmount int64, currency string, paymentMethod OrderPaymentMethod, paymentStatus OrderPaymentStatus, orderStatus OrderOrderStatus, shippingMethod OrderShippingMethod, trackingNumber string, receiverName string, receiverPhone string, receiverEmail string, receiverAddress string, receiverCity string, receiverState string, receiverCountry string, receiverPostalCode string, notes string, paidAt time.Time, shippedAt time.Time, deliveredAt time.Time, cancelledAt time.Time, refundAmount int64, refundReason string, itemCount int, weight float64, isGift bool, giftMessage string) *Order {
 	e := &Order{
 		ID: OrderID(id),
 		UserId: userId,
@@ -212,16 +214,16 @@ func (e *Order) Update(userId *string, orderNo *string, totalAmount *int64, disc
 		e.Notes = *notes
 	}
 	if paidAt != nil {
-		e.PaidAt = paidAt
+		e.PaidAt = *paidAt
 	}
 	if shippedAt != nil {
-		e.ShippedAt = shippedAt
+		e.ShippedAt = *shippedAt
 	}
 	if deliveredAt != nil {
-		e.DeliveredAt = deliveredAt
+		e.DeliveredAt = *deliveredAt
 	}
 	if cancelledAt != nil {
-		e.CancelledAt = cancelledAt
+		e.CancelledAt = *cancelledAt
 	}
 	if refundAmount != nil {
 		e.RefundAmount = *refundAmount

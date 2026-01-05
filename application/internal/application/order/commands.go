@@ -32,10 +32,10 @@ type CreateOrderCommand struct {
 	ReceiverCountry string
 	ReceiverPostalCode string
 	Notes string
-	PaidAt *time.Time
-	ShippedAt *time.Time
-	DeliveredAt *time.Time
-	CancelledAt *time.Time
+	PaidAt time.Time
+	ShippedAt time.Time
+	DeliveredAt time.Time
+	CancelledAt time.Time
 	RefundAmount int64
 	RefundReason string
 	ItemCount int

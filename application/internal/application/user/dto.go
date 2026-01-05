@@ -15,13 +15,13 @@ type CreateUserRequest struct {
 	Phone string `json:"phone" binding:"required"`
 	Avatar string `json:"avatar" binding:"required"`
 	Bio string `json:"bio" binding:"required"`
-	BirthDate *time.Time `json:"birth_date"`
+	BirthDate time.Time `json:"birth_date"`
 	Gender string `json:"gender" binding:"required,oneof=male female other"`
 	Role string `json:"role" binding:"required,oneof=admin manager user guest"`
 	Status string `json:"status" binding:"required,oneof=active inactive suspended banned"`
 	EmailVerified bool `json:"email_verified"`
 	PhoneVerified bool `json:"phone_verified"`
-	LastLoginAt *time.Time `json:"last_login_at"`
+	LastLoginAt time.Time `json:"last_login_at"`
 	LoginCount int `json:"login_count"`
 	FailedLoginCount int `json:"failed_login_count"`
 	Balance int64 `json:"balance"`
@@ -64,13 +64,13 @@ type UserResponse struct {
 	Phone string `json:"phone"`
 	Avatar string `json:"avatar"`
 	Bio string `json:"bio"`
-	BirthDate *time.Time `json:"birth_date"`
+	BirthDate time.Time `json:"birth_date"`
 	Gender string `json:"gender"`
 	Role string `json:"role"`
 	Status string `json:"status"`
 	EmailVerified bool `json:"email_verified"`
 	PhoneVerified bool `json:"phone_verified"`
-	LastLoginAt *time.Time `json:"last_login_at"`
+	LastLoginAt time.Time `json:"last_login_at"`
 	LoginCount int `json:"login_count"`
 	FailedLoginCount int `json:"failed_login_count"`
 	Balance int64 `json:"balance"`
