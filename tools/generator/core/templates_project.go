@@ -45,6 +45,7 @@ func main() {
 			config.NewConfig,
 			logger.NewLogger,
 			orm.NewGormDB,
+			// soliton-gen:providers
 			NewRouter,
 		),
 
@@ -88,6 +89,54 @@ func StartServer(lc fx.Lifecycle, cfg *config.Config, logger *zap.Logger, r *gin
 			return nil
 		},
 	})
+}
+`
+
+const MigrateTemplate = `package main
+
+import (
+	"fmt"
+	"os"
+
+	"gorm.io/gorm"
+
+	"github.com/soliton-go/framework/core/config"
+	"github.com/soliton-go/framework/core/logger"
+	"github.com/soliton-go/framework/orm"
+
+	// soliton-gen:imports
+)
+
+func main() {
+	cfg, err := config.NewConfig()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "failed to load config:", err)
+		os.Exit(1)
+	}
+
+	log, err := logger.NewLogger(cfg)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "failed to create logger:", err)
+		os.Exit(1)
+	}
+
+	db, err := orm.NewGormDB(cfg, log)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "failed to connect db:", err)
+		os.Exit(1)
+	}
+
+	if err := migrateAll(db); err != nil {
+		fmt.Fprintln(os.Stderr, "migration failed:", err)
+		os.Exit(1)
+	}
+
+	fmt.Println("migration completed")
+}
+
+func migrateAll(db *gorm.DB) error {
+	// soliton-gen:migrations
+	return nil
 }
 `
 
@@ -305,7 +354,7 @@ Response:
 > **Note**: If running in a monorepo with go.work, use ` + "`GOWORK=off`" + ` prefix for go commands.
 `
 
-const MakefileTemplate = `.PHONY: run build test clean gen tidy
+const MakefileTemplate = `.PHONY: run build test clean gen tidy migrate
 
 # Disable go.work by default for monorepo compatibility (override with GOWORK=on).
 GOWORK ?= off
@@ -330,6 +379,10 @@ clean:
 # Usage: make gen NAME=User FIELDS="username,email,status:enum(active|inactive)"
 gen:
 	soliton-gen domain $(NAME) --fields "$(FIELDS)"
+
+# Run database migrations
+migrate:
+	GOWORK=$(GOWORK) go run ./cmd/migrate.go
 
 # Tidy dependencies
 tidy:

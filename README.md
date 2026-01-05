@@ -5,10 +5,11 @@
 ## 🚀 核心特性
 
 - **一键生成可用代码**: `--fields` 参数直接生成带完整字段的领域模型
-- **领域驱动设计**: AggregateRoot、Entity、ValueObject、Repository
+- **领域驱动设计**: AggregateRoot、Entity、ValueObject、Specification、Policy、Repository
 - **分布式能力**: 分布式锁、事件驱动、Saga 分布式事务
 - **CQRS 模式**: 内置 Command/Query 处理器
 - **依赖注入**: 全项目集成 Uber Fx
+- **迁移入口**: 自动生成 `cmd/migrate.go`，支持一键建表
 - **默认可用配置**: 未提供 `config.yaml` 也可启动（默认 sqlite + log.level=info）
 
 ## ⚡ 30 秒快速体验
@@ -32,7 +33,7 @@ GOWORK=off go mod tidy && GOWORK=off go run ./cmd/main.go
 **生成结果：**
 | 层 | 文件 |
 |---|------|
-| Domain | `user.go` (含 UserRole、UserStatus 枚举), `repository.go`, `events.go` |
+| Domain | `user.go` (含 UserRole、UserStatus 枚举), `repository.go`, `events.go`, `service.go` |
 | Application | `commands.go`, `queries.go`, `dto.go`, `module.go` |
 | Infrastructure | `user_repo.go` |
 | Interfaces | `user_handler.go` |
@@ -69,6 +70,11 @@ GOWORK=off go mod tidy && GOWORK=off go run ./cmd/main.go
 | `init <name>` | 初始化新项目（含 DDD 目录结构） |
 | `domain <name>` | 生成领域模块（Entity/Repo/Handler 等） |
 | `service <name>` | 生成应用服务（跨领域业务逻辑） |
+| `valueobject <domain> <name>` | 生成领域值对象 |
+| `spec <domain> <name>` | 生成领域规格（Specification） |
+| `policy <domain> <name>` | 生成领域策略（Policy） |
+| `event <domain> <name>` | 生成领域事件（含注册） |
+| `event-handler <domain> <event>` | 生成事件处理器并注入 |
 | `serve` | 🆕 启动 Web GUI（可视化代码生成器） |
 
 ### 🎨 Web GUI - 可视化代码生成
@@ -138,6 +144,18 @@ curl "http://localhost:8080/api/users?page=1&page_size=20"
     "total_pages": 5
   }
 }
+```
+
+### 排序参数
+List API 支持排序参数：
+```bash
+curl "http://localhost:8080/api/users?page=1&page_size=20&sort_by=created_at&sort_order=desc"
+```
+
+### 数据库迁移入口
+生成项目包含 `cmd/migrate.go`，可单独执行迁移：
+```bash
+GOWORK=off go run ./cmd/migrate.go
 ```
 
 ### 软删除

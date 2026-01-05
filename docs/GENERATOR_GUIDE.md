@@ -20,6 +20,11 @@ go build -o soliton-gen .
 | `service` | 生成应用服务 (跨领域业务逻辑) |
 | `service list` | 🆕 列出所有应用服务 |
 | `service delete` | 🆕 删除应用服务 |
+| `valueobject` | 🆕 生成领域值对象 |
+| `spec` | 🆕 生成领域规格（Specification） |
+| `policy` | 🆕 生成领域策略（Policy） |
+| `event` | 🆕 生成领域事件（含注册） |
+| `event-handler` | 🆕 生成事件处理器（含模块注入） |
 | `tidy` | 🆕 运行 go mod tidy 更新依赖 |
 | `serve` | 启动 Web GUI |
 
@@ -32,7 +37,7 @@ go build -o soliton-gen .
 ./soliton-gen init my-project --module github.com/myorg/my-project
 ```
 
-**生成内容：** `cmd/main.go`, `configs/`, `internal/`, `go.mod`, `Makefile`, `README.md`
+**生成内容：** `cmd/main.go`, `cmd/migrate.go`, `configs/`, `internal/`, `go.mod`, `Makefile`, `README.md`
 
 > **提示**: 生成的 `configs/config.example.yaml` 默认支持 sqlite/postgres，如需 MySQL 请扩展 `framework/orm/db.go`。
 
@@ -59,13 +64,16 @@ go build -o soliton-gen .
 - 添加 Module 注册
 - 添加 Handler Provider
 - 添加路由和迁移注册
+同时会更新 `cmd/migrate.go`：
+- 注入对应的迁移调用
 
 **多模块支持**: 模板使用标记行 (`// soliton-gen:xxx`)，支持追加多个模块：
 ```go
-// soliton-gen:imports    <- 自动插入 import
-// soliton-gen:modules    <- 自动插入模块
-// soliton-gen:handlers   <- 自动插入 Handler
-// soliton-gen:routes     <- 自动插入路由注册
+// soliton-gen:imports     <- 自动插入 import
+// soliton-gen:modules     <- 自动插入模块
+// soliton-gen:handlers    <- 自动插入 Handler
+// soliton-gen:routes      <- 自动插入路由注册
+// soliton-gen:providers   <- 自动插入 Provider（如事件总线）
 ```
 
 ### 全部参数
@@ -142,6 +150,22 @@ GET /api/users?page=1&page_size=20
 }
 ```
 
+#### 排序参数
+List API 支持排序参数：
+```bash
+GET /api/users?page=1&page_size=20&sort_by=created_at&sort_order=desc
+```
+
+#### 数据库迁移入口
+初始化项目会生成 `cmd/migrate.go`，用于执行迁移：
+```bash
+GOWORK=off go run ./cmd/migrate.go
+```
+Makefile 已内置 `migrate` 目标：
+```bash
+make migrate
+```
+
 #### 软删除
 使用 `--soft-delete` 标志启用软删除：
 ```bash
@@ -173,8 +197,8 @@ const (
 )
 ```
 
-### 生成文件 (9个)
-- `domain/{name}/` - 实体 + Repository + Events
+### 生成文件 (10个)
+- `domain/{name}/` - 实体 + Repository + Events + Domain Service
 - `application/{name}/` - Commands + Queries + DTO + Module
 - `infrastructure/persistence/{name}_repo.go`
 - `interfaces/http/{name}_handler.go`
@@ -205,25 +229,84 @@ const (
 ━━━━━━━━━━━━━━━
 ✅ 类型：领域服务 (Domain Service)
 📁 目标路径：application/order
-🔄 DTO 复用：是
+📝 DTO：service_dto.go
 
 正在生成 Service OrderService...
 ```
 
-### 🆕 DTO 复用逻辑
+### 🆕 Service DTO 生成逻辑
 
 | 场景 | 行为 |
 |------|------|
-| 领域服务 + 已有 DTO | 跳过 DTO 生成，复用现有 DTO |
-| 领域服务 + 无 DTO | 生成新的 DTO |
-| 跨域服务 | 始终生成新的 DTO |
+| 领域服务/跨域服务 | 生成 `service_dto.go` |
+| `service_dto.go` 已存在且未 `--force` | 跳过生成 |
+| 使用 `--force` | 覆盖生成 |
 
 ### 生成文件 (3个)
 - `application/{name}/service.go` - 服务结构和方法
-- `application/{name}/dto.go` - 请求/响应 DTO（可能复用）
+- `application/{name}/service_dto.go` - 请求/响应 DTO
 - `application/{name}/module.go` - Fx 模块注册
 
 📖 **详细文档**: [Service 应用服务使用指南](./SERVICE_GUIDE.md)
+
+---
+
+## 🆕 valueobject - 生成领域值对象
+
+```bash
+./soliton-gen valueobject user EmailAddress --fields "value:string"
+./soliton-gen valueobject order Money --fields "amount:decimal,currency:string"
+```
+
+**生成文件：** `internal/domain/<domain>/value_object_<name>.go`
+
+---
+
+## 🆕 spec - 生成领域规格（Specification）
+
+```bash
+./soliton-gen spec user ActiveUserSpec --target User
+./soliton-gen spec order PaidOrderSpec --target Order
+```
+
+**生成文件：** `internal/domain/<domain>/spec_<name>.go`
+
+---
+
+## 🆕 policy - 生成领域策略（Policy）
+
+```bash
+./soliton-gen policy user PasswordPolicy --target User
+./soliton-gen policy order RefundPolicy --target Order
+```
+
+**生成文件：** `internal/domain/<domain>/policy_<name>.go`
+
+---
+
+## 🆕 event - 生成领域事件（含注册）
+
+```bash
+./soliton-gen event user UserActivated --fields "user_id:uuid"
+./soliton-gen event order OrderPaid --fields "order_id:uuid,amount:decimal" --topic "order.paid"
+```
+
+**生成文件：** `internal/domain/<domain>/event_<name>.go`（自动注册到事件注册表）
+
+---
+
+## 🆕 event-handler - 生成事件处理器
+
+```bash
+./soliton-gen event-handler user UserCreatedEvent
+./soliton-gen event-handler order OrderPaid --topic "order.paid"
+```
+
+**生成文件：** `internal/application/<domain>/event_handler_<name>.go`
+
+**自动更新：**
+- `internal/application/<domain>/module.go` 注入 `fx.Provide`/`fx.Invoke`
+- `cmd/main.go` 注入事件总线 Provider（`event.NewLocalEventBus`）
 
 ---
 

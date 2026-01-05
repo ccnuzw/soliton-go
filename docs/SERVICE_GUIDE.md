@@ -62,7 +62,7 @@ $ ./soliton-gen service OrderService
 ━━━━━━━━━━━━━━━
 ✅ 类型：领域服务 (Domain Service)
 📁 目标路径：application/order
-🔄 DTO 复用：是（使用现有 DTO）
+📝 DTO：service_dto.go
 
 正在生成 Service OrderService...
 ```
@@ -73,7 +73,7 @@ $ ./soliton-gen service PaymentService
 ━━━━━━━━━━━━━━━
 ℹ️  类型：跨领域服务 (Cross-domain Service)
 📁 目标路径：application/payment
-📝 DTO 生成：是（新建 DTO）
+📝 DTO：service_dto.go
 
 正在生成 Service PaymentService...
 ```
@@ -85,13 +85,13 @@ $ ./soliton-gen service PaymentService
 - 🟢 **绿色左边框 + "领域" 徽章**：表示此服务有对应的 Domain
 - 🟣 **紫色左边框 + "跨域" 徽章**：表示此服务是独立的跨域编排服务
 
-### DTO 复用逻辑
+### Service DTO 生成逻辑
 
 | 场景 | 行为 |
 |------|------|
-| 领域服务 + 已有 DTO | 跳过 DTO 生成，复用现有 DTO |
-| 领域服务 + 无 DTO | 生成新的 DTO |
-| 跨域服务 | 始终生成新的 DTO |
+| 领域服务/跨域服务 | 生成 `service_dto.go` |
+| `service_dto.go` 已存在且未 `--force` | 跳过生成 |
+| 使用 `--force` | 覆盖生成 |
 
 ---
 
@@ -100,7 +100,7 @@ $ ./soliton-gen service PaymentService
 ```
 application/{servicename}/
 ├── service.go    # 服务结构和方法
-├── dto.go        # 请求/响应 DTO
+├── service_dto.go # 请求/响应 DTO
 └── module.go     # Fx 模块注册
 ```
 
@@ -150,10 +150,10 @@ func NewOrderService(
 
 ### 3. 定义 DTO
 
-编辑 `order_dto.go`：
+编辑 `service_dto.go`：
 
 ```go
-type CreateOrderRequest struct {
+type CreateOrderServiceRequest struct {
     UserID     string           `json:"user_id"`
     Items      []OrderItemInput `json:"items"`
     Address    string           `json:"address"`
@@ -164,7 +164,7 @@ type OrderItemInput struct {
     Quantity  int    `json:"quantity"`
 }
 
-type CreateOrderResponse struct {
+type CreateOrderServiceResponse struct {
     OrderID     string `json:"order_id"`
     OrderNo     string `json:"order_no"`
     TotalAmount int64  `json:"total_amount"`
@@ -174,7 +174,7 @@ type CreateOrderResponse struct {
 ### 4. 实现业务逻辑
 
 ```go
-func (s *OrderService) CreateOrder(ctx context.Context, req CreateOrderRequest) (*CreateOrderResponse, error) {
+func (s *OrderService) CreateOrder(ctx context.Context, req CreateOrderServiceRequest) (*CreateOrderServiceResponse, error) {
     // 1. 验证用户
     user, err := s.userRepo.Find(ctx, user.UserID(req.UserID))
     if err != nil {
@@ -211,7 +211,7 @@ func (s *OrderService) CreateOrder(ctx context.Context, req CreateOrderRequest) 
         s.productRepo.DeductStock(ctx, product.ProductID(item.ProductID), item.Quantity)
     }
 
-    return &CreateOrderResponse{
+    return &CreateOrderServiceResponse{
         OrderID:     orderID,
         OrderNo:     orderNo,
         TotalAmount: totalAmount,
@@ -244,7 +244,7 @@ type OrderServiceHandler struct {
 }
 
 func (h *OrderServiceHandler) CreateOrder(c *gin.Context) {
-    var req services.CreateOrderRequest
+    var req services.CreateOrderServiceRequest
     if err := c.ShouldBindJSON(&req); err != nil {
         BadRequest(c, err.Error())
         return

@@ -1,4 +1,4 @@
-# 项目重新初始化与测试领域模型生成
+# 项目初始化与完整生成流程测试
 
 ## 执行步骤
 
@@ -16,12 +16,26 @@ soliton-gen init application
 - ✅ 项目结构（cmd, configs, internal/...）
 - ✅ go.mod
 - ✅ main.go
+- ✅ migrate.go
 - ✅ config.yaml
 - ✅ Makefile
 - ✅ README.md
 - ✅ .gitignore
 
 ### 3. 生成三个领域模型
+
+### 3.1 生成命令（带 --wire）
+
+```bash
+# User
+soliton-gen domain User --wire --fields "username,email,password,full_name,phone,avatar,bio:text,birth_date:time?,gender:enum(male|female|other),role:enum(admin|manager|user|guest),status:enum(active|inactive|suspended|banned),email_verified:bool,phone_verified:bool,last_login_at:time?,login_count:int,failed_login_count:int,balance:int64,points:int,vip_level:int,preferences:text"
+
+# Order
+soliton-gen domain Order --wire --fields "user_id:uuid,order_no,total_amount:int64,discount_amount:int64,tax_amount:int64,shipping_fee:int64,final_amount:int64,currency,payment_method:enum(credit_card|debit_card|paypal|alipay|wechat|cash),payment_status:enum(pending|paid|failed|refunded),order_status:enum(pending|confirmed|processing|shipped|delivered|cancelled|returned),shipping_method:enum(standard|express|overnight),tracking_number,receiver_name,receiver_phone,receiver_email,receiver_address,receiver_city,receiver_state,receiver_country,receiver_postal_code,notes:text,paid_at:time?,shipped_at:time?,delivered_at:time?,cancelled_at:time?,refund_amount:int64,refund_reason:text,item_count:int,weight:float64,is_gift:bool,gift_message:text"
+
+# Product
+soliton-gen domain Product --wire --fields "sku,name,slug,description:text,short_description:text,brand,category,subcategory,price:int64,original_price:int64,cost_price:int64,discount_percentage:int,stock:int,reserved_stock:int,sold_count:int,view_count:int,rating:float64,review_count:int,weight:float64,length:float64,width:float64,height:float64,color,size,material,manufacturer,country_of_origin,barcode,status:enum(draft|active|inactive|out_of_stock|discontinued),is_featured:bool,is_new:bool,is_on_sale:bool,is_digital:bool,requires_shipping:bool,is_taxable:bool,tax_rate:float64,min_order_quantity:int,max_order_quantity:int,tags:text,images:text,video_url,published_at:time?,discontinued_at:time?"
+```
 
 ## User 领域（用户管理）
 
@@ -175,6 +189,36 @@ soliton-gen init application
 
 ---
 
+## DDD 领域增强组件生成
+
+### 生成命令
+
+```bash
+# 领域值对象
+soliton-gen valueobject user EmailAddress --fields "value:string"
+
+# 领域规格
+soliton-gen spec user ActiveUserSpec --target User
+
+# 领域策略
+soliton-gen policy user PasswordPolicy --target User
+
+# 自定义领域事件（含注册）
+soliton-gen event user UserActivated --fields "user_id:uuid"
+
+# 事件处理器（自动注入 module.go / main.go）
+soliton-gen event-handler user UserActivatedEvent
+```
+
+### 生成结果
+- `internal/domain/user/value_object_email_address.go`
+- `internal/domain/user/spec_active_user_spec.go`
+- `internal/domain/user/policy_password_policy.go`
+- `internal/domain/user/event_user_activated.go`
+- `internal/application/user/event_handler_user_activated.go`
+
+---
+
 ## 类型覆盖总结
 
 ### 所有支持的字段类型都已测试
@@ -194,6 +238,27 @@ soliton-gen init application
 
 ---
 
+## 迁移与运行验证
+
+### 迁移
+```bash
+cd /Users/mac/Progame/soliton-go/application
+GOWORK=off go run ./cmd/migrate.go
+```
+
+### 启动服务
+```bash
+GOWORK=off go run ./cmd/main.go
+```
+
+### CRUD + 排序参数验证
+```bash
+# 分页 + 排序
+curl "http://localhost:8080/api/users?page=1&page_size=20&sort_by=created_at&sort_order=desc"
+```
+
+---
+
 ## 编译验证
 
 ```bash
@@ -210,7 +275,8 @@ go build ./...
 ```
 application/
 ├── cmd/
-│   └── main.go (已自动注入所有模块)
+│   ├── main.go (已自动注入所有模块)
+│   └── migrate.go
 ├── configs/
 │   ├── config.yaml
 │   └── config.example.yaml
@@ -219,21 +285,29 @@ application/
 │   │   ├── user/
 │   │   │   ├── user.go (20个字段)
 │   │   │   ├── repository.go
-│   │   │   └── events.go
+│   │   │   ├── events.go
+│   │   │   ├── service.go
+│   │   │   ├── value_object_email_address.go
+│   │   │   ├── spec_active_user_spec.go
+│   │   │   ├── policy_password_policy.go
+│   │   │   └── event_user_activated.go
 │   │   ├── order/
 │   │   │   ├── order.go (32个字段)
 │   │   │   ├── repository.go
-│   │   │   └── events.go
+│   │   │   ├── events.go
+│   │   │   └── service.go
 │   │   └── product/
 │   │       ├── product.go (44个字段)
 │   │       ├── repository.go
-│   │       └── events.go
+│   │       ├── events.go
+│   │       └── service.go
 │   ├── application/
 │   │   ├── user/
 │   │   │   ├── commands.go
 │   │   │   ├── queries.go
 │   │   │   ├── dto.go
-│   │   │   └── module.go
+│   │   │   ├── module.go
+│   │   │   └── event_handler_user_activated.go
 │   │   ├── order/
 │   │   │   ├── commands.go
 │   │   │   ├── queries.go
@@ -287,8 +361,12 @@ application/
    - DTO (Request/Response)
    - HTTP Handlers
    - Repository 实现
+   - Domain Service（领域服务）
    - Fx Module 注入
    - main.go 自动注入
+   - migrate.go 迁移入口
+   - List API 排序参数 (sort_by / sort_order)
+   - 领域增强组件（ValueObject/Spec/Policy/Event/Handler）
 
 5. **代码质量**
    - ✅ 编译通过

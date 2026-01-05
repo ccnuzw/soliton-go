@@ -90,6 +90,27 @@ func (e *{{.EntityName}}) GetID() ddd.ID {
 }
 `
 
+const DomainServiceTemplate = `package {{.PackageName}}
+
+import "context"
+
+// {{.EntityName}}DomainService 提供领域内的复杂业务逻辑封装。
+type {{.EntityName}}DomainService struct {
+	repo {{.EntityName}}Repository
+}
+
+// New{{.EntityName}}DomainService 创建 {{.EntityName}}DomainService 实例。
+func New{{.EntityName}}DomainService(repo {{.EntityName}}Repository) *{{.EntityName}}DomainService {
+	return &{{.EntityName}}DomainService{repo: repo}
+}
+
+// TODO: 在此添加领域服务方法，例如复杂校验、跨实体规则等。
+func (s *{{.EntityName}}DomainService) Validate(ctx context.Context) error {
+	_ = ctx
+	return nil
+}
+`
+
 const RepoTemplate = `package {{.PackageName}}
 
 import (
@@ -102,7 +123,7 @@ import (
 type {{.EntityName}}Repository interface {
 	orm.Repository[*{{.EntityName}}, {{.EntityName}}ID]
 	// FindPaginated 返回分页数据和总数。
-	FindPaginated(ctx context.Context, page, pageSize int) ([]*{{.EntityName}}, int64, error)
+	FindPaginated(ctx context.Context, page, pageSize int, sortBy, sortOrder string) ([]*{{.EntityName}}, int64, error)
 }
 `
 
@@ -186,6 +207,7 @@ const RepoImplTemplate = `package persistence
 
 import (
 	"context"
+	"fmt"
 
 	"{{.ModulePath}}/internal/domain/{{.PackageName}}"
 	"github.com/soliton-go/framework/orm"
@@ -205,18 +227,23 @@ func New{{.EntityName}}Repository(db *gorm.DB) {{.PackageName}}.{{.EntityName}}R
 }
 
 // FindPaginated 返回分页数据和总数。
-func (r *{{.EntityName}}RepoImpl) FindPaginated(ctx context.Context, page, pageSize int) ([]*{{.PackageName}}.{{.EntityName}}, int64, error) {
+func (r *{{.EntityName}}RepoImpl) FindPaginated(ctx context.Context, page, pageSize int, sortBy, sortOrder string) ([]*{{.PackageName}}.{{.EntityName}}, int64, error) {
 	var entities []*{{.PackageName}}.{{.EntityName}}
 	var total int64
 
 	// 查询总数
-	if err := r.db.WithContext(ctx).Model(&{{.PackageName}}.{{.EntityName}}{}).Count(&total).Error; err != nil {
+	baseQuery := r.db.WithContext(ctx).Model(&{{.PackageName}}.{{.EntityName}}{})
+	if err := baseQuery.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
 	// 获取分页数据
 	offset := (page - 1) * pageSize
-	if err := r.db.WithContext(ctx).Offset(offset).Limit(pageSize).Find(&entities).Error; err != nil {
+	query := r.db.WithContext(ctx).Offset(offset).Limit(pageSize)
+	if sortBy != "" {
+		query = query.Order(fmt.Sprintf("%s %s", sortBy, sortOrder))
+	}
+	if err := query.Find(&entities).Error; err != nil {
 		return nil, 0, err
 	}
 
@@ -251,12 +278,13 @@ type Create{{.EntityName}}Command struct {
 // Create{{.EntityName}}Handler 处理 Create{{.EntityName}}Command。
 type Create{{.EntityName}}Handler struct {
 	repo {{.PackageName}}.{{.EntityName}}Repository
+	service *{{.PackageName}}.{{.EntityName}}DomainService
 	// 可选：添加事件总线用于发布领域事件
 	// eventBus event.EventBus
 }
 
-func NewCreate{{.EntityName}}Handler(repo {{.PackageName}}.{{.EntityName}}Repository) *Create{{.EntityName}}Handler {
-	return &Create{{.EntityName}}Handler{repo: repo}
+func NewCreate{{.EntityName}}Handler(repo {{.PackageName}}.{{.EntityName}}Repository, service *{{.PackageName}}.{{.EntityName}}DomainService) *Create{{.EntityName}}Handler {
+	return &Create{{.EntityName}}Handler{repo: repo, service: service}
 }
 
 func (h *Create{{.EntityName}}Handler) Handle(ctx context.Context, cmd Create{{.EntityName}}Command) (*{{.PackageName}}.{{.EntityName}}, error) {
@@ -288,10 +316,11 @@ type Update{{.EntityName}}Command struct {
 // Update{{.EntityName}}Handler 处理 Update{{.EntityName}}Command。
 type Update{{.EntityName}}Handler struct {
 	repo {{.PackageName}}.{{.EntityName}}Repository
+	service *{{.PackageName}}.{{.EntityName}}DomainService
 }
 
-func NewUpdate{{.EntityName}}Handler(repo {{.PackageName}}.{{.EntityName}}Repository) *Update{{.EntityName}}Handler {
-	return &Update{{.EntityName}}Handler{repo: repo}
+func NewUpdate{{.EntityName}}Handler(repo {{.PackageName}}.{{.EntityName}}Repository, service *{{.PackageName}}.{{.EntityName}}DomainService) *Update{{.EntityName}}Handler {
+	return &Update{{.EntityName}}Handler{repo: repo, service: service}
 }
 
 func (h *Update{{.EntityName}}Handler) Handle(ctx context.Context, cmd Update{{.EntityName}}Command) (*{{.PackageName}}.{{.EntityName}}, error) {
@@ -314,10 +343,11 @@ type Delete{{.EntityName}}Command struct {
 // Delete{{.EntityName}}Handler 处理 Delete{{.EntityName}}Command。
 type Delete{{.EntityName}}Handler struct {
 	repo {{.PackageName}}.{{.EntityName}}Repository
+	service *{{.PackageName}}.{{.EntityName}}DomainService
 }
 
-func NewDelete{{.EntityName}}Handler(repo {{.PackageName}}.{{.EntityName}}Repository) *Delete{{.EntityName}}Handler {
-	return &Delete{{.EntityName}}Handler{repo: repo}
+func NewDelete{{.EntityName}}Handler(repo {{.PackageName}}.{{.EntityName}}Repository, service *{{.PackageName}}.{{.EntityName}}DomainService) *Delete{{.EntityName}}Handler {
+	return &Delete{{.EntityName}}Handler{repo: repo, service: service}
 }
 
 func (h *Delete{{.EntityName}}Handler) Handle(ctx context.Context, cmd Delete{{.EntityName}}Command) error {
@@ -329,6 +359,7 @@ const QueriesTemplate = `package {{.PackageName}}app
 
 import (
 	"context"
+	"strings"
 
 	"{{.ModulePath}}/internal/domain/{{.PackageName}}"
 )
@@ -355,6 +386,8 @@ func (h *Get{{.EntityName}}Handler) Handle(ctx context.Context, query Get{{.Enti
 type List{{.EntityName}}sQuery struct {
 	Page     int // 页码（从 1 开始）
 	PageSize int // 每页数量（默认: 20, 最大: 100）
+	SortBy   string // 排序字段（默认: id）
+	SortOrder string // 排序方式（asc/desc）
 }
 
 // List{{.EntityName}}sResult 是分页查询结果。
@@ -389,8 +422,26 @@ func (h *List{{.EntityName}}sHandler) Handle(ctx context.Context, query List{{.E
 		pageSize = 100
 	}
 
+	// 排序字段白名单
+	sortBy := strings.ToLower(strings.TrimSpace(query.SortBy))
+	sortOrder := strings.ToLower(strings.TrimSpace(query.SortOrder))
+	if sortOrder != "asc" && sortOrder != "desc" {
+		sortOrder = "desc"
+	}
+	allowedSorts := map[string]struct{}{
+		"id":         {},
+		"created_at": {},
+		"updated_at": {},
+{{- range .Fields}}
+		"{{.SnakeName}}": {},
+{{- end}}
+	}
+	if _, ok := allowedSorts[sortBy]; !ok {
+		sortBy = "id"
+	}
+
 	// 获取总数和分页数据
-	items, total, err := h.repo.FindPaginated(ctx, page, pageSize)
+	items, total, err := h.repo.FindPaginated(ctx, page, pageSize, sortBy, sortOrder)
 	if err != nil {
 		return nil, err
 	}
@@ -567,14 +618,18 @@ func (h *{{.EntityName}}Handler) Get(c *gin.Context) {
 	Success(c, {{.PackageName}}app.To{{.EntityName}}Response(entity))
 }
 
-// List 处理 GET /api/{{.PackageName}}s?page=1&page_size=20
+// List 处理 GET /api/{{.PackageName}}s?page=1&page_size=20&sort_by=id&sort_order=desc
 func (h *{{.EntityName}}Handler) List(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+	sortBy := c.DefaultQuery("sort_by", "id")
+	sortOrder := c.DefaultQuery("sort_order", "desc")
 
 	result, err := h.listHandler.Handle(c.Request.Context(), {{.PackageName}}app.List{{.EntityName}}sQuery{
 		Page:     page,
 		PageSize: pageSize,
+		SortBy:   sortBy,
+		SortOrder: sortOrder,
 	})
 	if err != nil {
 		InternalError(c, err.Error())
@@ -651,6 +706,9 @@ var Module = fx.Options(
 		return persistence.New{{.EntityName}}Repository(db)
 	}),
 
+	// Domain Services
+	fx.Provide({{.PackageName}}.New{{.EntityName}}DomainService),
+
 	// Command Handlers
 	fx.Provide(NewCreate{{.EntityName}}Handler),
 	fx.Provide(NewUpdate{{.EntityName}}Handler),
@@ -661,6 +719,7 @@ var Module = fx.Options(
 	fx.Provide(NewList{{.EntityName}}sHandler),
 	
 	// soliton-gen:services
+	// soliton-gen:event-handlers
 
 	// 可选：注册到 CQRS 总线
 	// 取消注释以启用 CQRS 模式：

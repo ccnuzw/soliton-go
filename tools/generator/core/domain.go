@@ -85,6 +85,7 @@ func generateDomainInternal(cfg DomainConfig, previewOnly bool) (*GenerationResu
 		{filepath.Join(domainDir, packageName+".go"), EntityTemplate},
 		{filepath.Join(domainDir, "repository.go"), RepoTemplate},
 		{filepath.Join(domainDir, "events.go"), EventsTemplate},
+		{filepath.Join(domainDir, "service.go"), DomainServiceTemplate},
 	}
 
 	for _, f := range domainFiles {
@@ -150,7 +151,10 @@ func generateDomainInternal(cfg DomainConfig, previewOnly bool) (*GenerationResu
 	// Wire main.go if requested
 	if cfg.Wire && !previewOnly {
 		mainGoPath := filepath.Join(filepath.Dir(layout.InternalDir), "cmd", "main.go")
-		if WireMainGo(mainGoPath, entityName, packageName, layout.ModulePath) {
+		wiredMain := WireMainGo(mainGoPath, entityName, packageName, layout.ModulePath)
+		migrateGoPath := filepath.Join(filepath.Dir(layout.InternalDir), "cmd", "migrate.go")
+		_ = WireMigrateGo(migrateGoPath, entityName, packageName, layout.ModulePath)
+		if wiredMain {
 			result.Message = fmt.Sprintf("Domain %s 生成成功，已自动注入到 main.go", entityName)
 		} else {
 			result.Message = fmt.Sprintf("Domain %s 生成成功（需手动注入到 main.go）", entityName)
@@ -336,6 +340,45 @@ func wireMainGoNew(mainGoPath, entityName, packageName, modulePath, original str
 	}
 
 	return os.WriteFile(mainGoPath, []byte(result), 0644) == nil
+}
+
+// WireMigrateGo attempts to inject migration calls into cmd/migrate.go using marker comments.
+func WireMigrateGo(migrateGoPath, entityName, packageName, modulePath string) bool {
+	content, err := os.ReadFile(migrateGoPath)
+	if err != nil {
+		return false
+	}
+
+	result := string(content)
+	modified := false
+
+	appImport := fmt.Sprintf("%sapp \"%s/internal/application/%s\"", packageName, modulePath, packageName)
+	if !strings.Contains(result, appImport) {
+		if strings.Contains(result, "// soliton-gen:imports") {
+			result = strings.Replace(result,
+				"\t// soliton-gen:imports",
+				"\t"+appImport+"\n\t// soliton-gen:imports",
+				1)
+			modified = true
+		}
+	}
+
+	migrationCall := fmt.Sprintf("if err := %sapp.RegisterMigration(db); err != nil {\n\t\treturn err\n\t}\n", packageName)
+	if !strings.Contains(result, fmt.Sprintf("%sapp.RegisterMigration", packageName)) {
+		if strings.Contains(result, "// soliton-gen:migrations") {
+			result = strings.Replace(result,
+				"\t// soliton-gen:migrations",
+				"\t"+migrationCall+"\t// soliton-gen:migrations",
+				1)
+			modified = true
+		}
+	}
+
+	if !modified {
+		return true
+	}
+
+	return os.WriteFile(migrateGoPath, []byte(result), 0644) == nil
 }
 
 func wireMainGoLegacy(mainGoPath, entityName, packageName, modulePath, original string) bool {

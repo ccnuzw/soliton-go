@@ -149,6 +149,7 @@ func initProjectInternal(cfg ProjectConfig, previewOnly bool) (*GenerationResult
 	}{
 		{"go.mod", GoModTemplate},
 		{"cmd/main.go", MainTemplate},
+		{"cmd/migrate.go", MigrateTemplate},
 		{"configs/config.yaml", ConfigTemplate},
 		{"configs/config.example.yaml", ConfigExampleTemplate},
 		{"internal/interfaces/http/response.go", ResponseTemplate},

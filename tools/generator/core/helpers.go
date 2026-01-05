@@ -85,8 +85,17 @@ func EnumConst(value string) string {
 // Field Parsing Helpers
 // ============================================================================
 
-// ParseFields parses a field string into FieldConfig slice.
+// ParseFields parses a field string into FieldConfig slice, skipping reserved fields.
 func ParseFields(fieldsStr string) []FieldConfig {
+	return parseFieldsInternal(fieldsStr, false)
+}
+
+// ParseFieldsAllowReserved parses fields and keeps reserved names (e.g. id).
+func ParseFieldsAllowReserved(fieldsStr string) []FieldConfig {
+	return parseFieldsInternal(fieldsStr, true)
+}
+
+func parseFieldsInternal(fieldsStr string, allowReserved bool) []FieldConfig {
 	if fieldsStr == "" {
 		return nil
 	}
@@ -103,7 +112,7 @@ func ParseFields(fieldsStr string) []FieldConfig {
 
 		field := parseFieldDefinition(part)
 		snakeName := ToSnakeCase(field.Name)
-		if isReservedField(snakeName) {
+		if !allowReserved && isReservedField(snakeName) {
 			continue
 		}
 		if _, exists := seen[snakeName]; exists {
@@ -170,6 +179,15 @@ func isReservedField(snakeName string) bool {
 
 // ConvertToFields converts FieldConfig slice to Field slice for templates.
 func ConvertToFields(configs []FieldConfig, entityName, packageName string) []Field {
+	return convertToFieldsInternal(configs, entityName, packageName, true)
+}
+
+// ConvertToFieldsAllowReserved converts fields without skipping built-ins (e.g. id).
+func ConvertToFieldsAllowReserved(configs []FieldConfig, entityName, packageName string) []Field {
+	return convertToFieldsInternal(configs, entityName, packageName, false)
+}
+
+func convertToFieldsInternal(configs []FieldConfig, entityName, packageName string, skipBuiltins bool) []Field {
 	if len(configs) == 0 {
 		// Default field if none specified
 		return []Field{
@@ -195,9 +213,8 @@ func ConvertToFields(configs []FieldConfig, entityName, packageName string) []Fi
 
 	fields := make([]Field, 0, len(configs))
 	for _, cfg := range configs {
-		// Skip built-in fields to avoid duplication
 		fieldNameLower := strings.ToLower(cfg.Name)
-		if builtinFields[fieldNameLower] {
+		if skipBuiltins && builtinFields[fieldNameLower] {
 			continue
 		}
 		field := convertFieldConfig(cfg, entityName, packageName)

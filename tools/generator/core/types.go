@@ -46,6 +46,47 @@ type ServiceConfig struct {
 	Force   bool     `json:"force"`
 }
 
+// ValueObjectConfig holds configuration for value object generation.
+type ValueObjectConfig struct {
+	Domain string        `json:"domain"`
+	Name   string        `json:"name"`
+	Fields []FieldConfig `json:"fields,omitempty"`
+	Force  bool          `json:"force"`
+}
+
+// SpecificationConfig holds configuration for specification generation.
+type SpecificationConfig struct {
+	Domain string `json:"domain"`
+	Name   string `json:"name"`
+	Target string `json:"target,omitempty"`
+	Force  bool   `json:"force"`
+}
+
+// PolicyConfig holds configuration for policy generation.
+type PolicyConfig struct {
+	Domain string `json:"domain"`
+	Name   string `json:"name"`
+	Target string `json:"target,omitempty"`
+	Force  bool   `json:"force"`
+}
+
+// EventConfig holds configuration for domain event generation.
+type EventConfig struct {
+	Domain string        `json:"domain"`
+	Name   string        `json:"name"`
+	Topic  string        `json:"topic,omitempty"`
+	Fields []FieldConfig `json:"fields,omitempty"`
+	Force  bool          `json:"force"`
+}
+
+// EventHandlerConfig holds configuration for event handler generation.
+type EventHandlerConfig struct {
+	Domain    string `json:"domain"`
+	EventName string `json:"event_name"`
+	Topic     string `json:"topic,omitempty"`
+	Force     bool   `json:"force"`
+}
+
 // ============================================================================
 // Generation Result Types
 // ============================================================================
@@ -128,4 +169,49 @@ type ProjectData struct {
 	FrameworkReplace string
 	GoVersion        string
 	FxVersion        string
+}
+
+// ValueObjectData holds template data for value object generation.
+type ValueObjectData struct {
+	PackageName     string
+	ValueObjectName string
+	Fields          []Field
+	HasTime         bool
+	HasEnums        bool
+}
+
+// SpecificationData holds template data for specification generation.
+type SpecificationData struct {
+	PackageName       string
+	SpecificationName string
+	TargetType        string
+	TargetIsAny       bool
+}
+
+// PolicyData holds template data for policy generation.
+type PolicyData struct {
+	PackageName string
+	PolicyName  string
+	TargetType  string
+	TargetIsAny bool
+}
+
+// EventData holds template data for domain event generation.
+type EventData struct {
+	PackageName     string
+	EventStructName string
+	EventTopic      string
+	Fields          []Field
+	HasTime         bool
+	HasEnums        bool
+}
+
+// EventHandlerData holds template data for event handler generation.
+type EventHandlerData struct {
+	PackageName     string
+	DomainPackage   string
+	EventStructName string
+	HandlerName     string
+	EventTopic      string
+	ModulePath      string
 }
