@@ -27,6 +27,23 @@ Examples:
 		name := args[0]
 		fmt.Printf("🚀 Generating service: %s\n\n", name)
 
+		// Smart detection: show service type info
+		detection, err := core.DetectServiceType(name)
+		if err == nil {
+			if detection.DomainExists {
+				fmt.Printf("📌 %s\n", detection.Message)
+				fmt.Printf("   类型: 领域服务 (Domain Service)\n")
+			} else {
+				fmt.Printf("📌 %s\n", detection.Message)
+				fmt.Printf("   类型: 跨领域服务 (Cross-domain Service)\n")
+			}
+			fmt.Printf("   目标: %s/service.go\n", detection.TargetDir)
+			if detection.ShouldReuseDTO {
+				fmt.Println("   ✓ 复用现有 DTO")
+			}
+			fmt.Println()
+		}
+
 		// Parse methods from comma-separated string
 		var methods []string
 		if serviceMethods != "" {

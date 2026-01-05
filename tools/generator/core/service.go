@@ -19,6 +19,62 @@ func PreviewService(cfg ServiceConfig) (*GenerationResult, error) {
 	return generateServiceInternal(cfg, true)
 }
 
+// ServiceDetectionResult represents the result of service type detection.
+type ServiceDetectionResult struct {
+	ServiceName    string
+	DomainName     string
+	DomainExists   bool
+	ServiceType    string // "domain_service" | "cross_domain_service"
+	TargetDir      string
+	ShouldReuseDTO bool
+	Message        string
+}
+
+// DetectServiceType detects the service type based on domain existence.
+func DetectServiceType(serviceName string) (*ServiceDetectionResult, error) {
+	// Normalize service name
+	if !strings.HasSuffix(serviceName, "Service") {
+		serviceName = serviceName + "Service"
+	}
+	domainName := strings.ToLower(strings.TrimSuffix(serviceName, "Service"))
+
+	layout, err := ResolveProjectLayout()
+	if err != nil {
+		return nil, fmt.Errorf("could not resolve project layout: %w", err)
+	}
+
+	// Check if domain exists
+	domainPath := filepath.Join(layout.DomainDir, domainName)
+	domainExists := IsDir(domainPath)
+
+	// Check if DTO exists
+	dtoPath := filepath.Join(layout.InternalDir, "application", domainName, "dto.go")
+	dtoExists := IsFile(dtoPath)
+
+	result := &ServiceDetectionResult{
+		ServiceName:  serviceName,
+		DomainName:   domainName,
+		DomainExists: domainExists,
+		TargetDir:    filepath.Join("internal/application", domainName),
+	}
+
+	if domainExists {
+		result.ServiceType = "domain_service"
+		result.ShouldReuseDTO = dtoExists
+		if dtoExists {
+			result.Message = fmt.Sprintf("检测到已有 %s 领域，将生成领域服务并复用现有 DTO", domainName)
+		} else {
+			result.Message = fmt.Sprintf("检测到已有 %s 领域，将生成领域服务", domainName)
+		}
+	} else {
+		result.ServiceType = "cross_domain_service"
+		result.ShouldReuseDTO = false
+		result.Message = fmt.Sprintf("未检测到 %s 领域，将生成跨领域服务", domainName)
+	}
+
+	return result, nil
+}
+
 func generateServiceInternal(cfg ServiceConfig, previewOnly bool) (*GenerationResult, error) {
 	result := &GenerationResult{
 		Success: true,

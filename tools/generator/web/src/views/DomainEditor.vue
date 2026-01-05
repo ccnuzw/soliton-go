@@ -156,14 +156,16 @@ function removeField(index: number) {
 function moveFieldUp(index: number) {
   if (index > 0) {
     const fields = config.value.fields
-      ;[fields[index - 1], fields[index]] = [fields[index], fields[index - 1]]
+    const item = fields.splice(index, 1)[0]!
+    fields.splice(index - 1, 0, item)
   }
 }
 
 function moveFieldDown(index: number) {
   const fields = config.value.fields
   if (index < fields.length - 1) {
-    ;[fields[index], fields[index + 1]] = [fields[index + 1], fields[index]]
+    const item = fields.splice(index, 1)[0]!
+    fields.splice(index + 1, 0, item)
   }
 }
 
