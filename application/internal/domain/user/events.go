@@ -7,7 +7,7 @@ import (
 	"github.com/soliton-go/framework/event"
 )
 
-// UserCreatedEvent is published when a new User is created.
+// UserCreatedEvent 在创建 User 时发布。
 type UserCreatedEvent struct {
 	ddd.BaseDomainEvent
 	UserID string `json:"user_id"`
@@ -24,7 +24,7 @@ func NewUserCreatedEvent(id string) UserCreatedEvent {
 	}
 }
 
-// UserUpdatedEvent is published when a User is updated.
+// UserUpdatedEvent 在更新 User 时发布。
 type UserUpdatedEvent struct {
 	ddd.BaseDomainEvent
 	UserID string `json:"user_id"`
@@ -41,7 +41,7 @@ func NewUserUpdatedEvent(id string) UserUpdatedEvent {
 	}
 }
 
-// UserDeletedEvent is published when a User is deleted.
+// UserDeletedEvent 在删除 User 时发布。
 type UserDeletedEvent struct {
 	ddd.BaseDomainEvent
 	UserID string    `json:"user_id"`
@@ -60,7 +60,7 @@ func NewUserDeletedEvent(id string) UserDeletedEvent {
 	}
 }
 
-// init registers events with the global registry.
+// init 将事件注册到全局注册表。
 func init() {
 	event.RegisterEvent("user.created", func() ddd.DomainEvent {
 		return &UserCreatedEvent{}

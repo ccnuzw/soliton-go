@@ -10,7 +10,7 @@ import (
 	"github.com/soliton-go/application/internal/domain/user"
 )
 
-// UserHandler handles HTTP requests for User operations.
+// UserHandler 处理 User 相关的 HTTP 请求。
 type UserHandler struct {
 	createHandler *userapp.CreateUserHandler
 	updateHandler *userapp.UpdateUserHandler
@@ -19,7 +19,7 @@ type UserHandler struct {
 	listHandler   *userapp.ListUsersHandler
 }
 
-// NewUserHandler creates a new UserHandler.
+// NewUserHandler 创建 UserHandler 实例。
 func NewUserHandler(
 	createHandler *userapp.CreateUserHandler,
 	updateHandler *userapp.UpdateUserHandler,
@@ -36,7 +36,7 @@ func NewUserHandler(
 	}
 }
 
-// RegisterRoutes registers User routes.
+// RegisterRoutes 注册 User 相关路由。
 func (h *UserHandler) RegisterRoutes(r *gin.Engine) {
 	api := r.Group("/api/users")
 	{
@@ -49,7 +49,7 @@ func (h *UserHandler) RegisterRoutes(r *gin.Engine) {
 	}
 }
 
-// Create handles POST /api/users
+// Create 处理 POST /api/users
 func (h *UserHandler) Create(c *gin.Context) {
 	var req userapp.CreateUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -90,7 +90,7 @@ func (h *UserHandler) Create(c *gin.Context) {
 	Success(c, userapp.ToUserResponse(entity))
 }
 
-// Get handles GET /api/users/:id
+// Get 处理 GET /api/users/:id
 func (h *UserHandler) Get(c *gin.Context) {
 	id := c.Param("id")
 
@@ -103,7 +103,7 @@ func (h *UserHandler) Get(c *gin.Context) {
 	Success(c, userapp.ToUserResponse(entity))
 }
 
-// List handles GET /api/users?page=1&page_size=20
+// List 处理 GET /api/users?page=1&page_size=20
 func (h *UserHandler) List(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
@@ -126,7 +126,7 @@ func (h *UserHandler) List(c *gin.Context) {
 	})
 }
 
-// Update handles PUT /api/users/:id
+// Update 处理 PUT /api/users/:id
 func (h *UserHandler) Update(c *gin.Context) {
 	id := c.Param("id")
 
@@ -169,7 +169,7 @@ func (h *UserHandler) Update(c *gin.Context) {
 	Success(c, userapp.ToUserResponse(entity))
 }
 
-// Delete handles DELETE /api/users/:id
+// Delete 处理 DELETE /api/users/:id
 func (h *UserHandler) Delete(c *gin.Context) {
 	id := c.Param("id")
 

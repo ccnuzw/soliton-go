@@ -10,7 +10,7 @@ import (
 	"github.com/soliton-go/application/internal/domain/product"
 )
 
-// ProductHandler handles HTTP requests for Product operations.
+// ProductHandler 处理 Product 相关的 HTTP 请求。
 type ProductHandler struct {
 	createHandler *productapp.CreateProductHandler
 	updateHandler *productapp.UpdateProductHandler
@@ -19,7 +19,7 @@ type ProductHandler struct {
 	listHandler   *productapp.ListProductsHandler
 }
 
-// NewProductHandler creates a new ProductHandler.
+// NewProductHandler 创建 ProductHandler 实例。
 func NewProductHandler(
 	createHandler *productapp.CreateProductHandler,
 	updateHandler *productapp.UpdateProductHandler,
@@ -36,7 +36,7 @@ func NewProductHandler(
 	}
 }
 
-// RegisterRoutes registers Product routes.
+// RegisterRoutes 注册 Product 相关路由。
 func (h *ProductHandler) RegisterRoutes(r *gin.Engine) {
 	api := r.Group("/api/products")
 	{
@@ -49,7 +49,7 @@ func (h *ProductHandler) RegisterRoutes(r *gin.Engine) {
 	}
 }
 
-// Create handles POST /api/products
+// Create 处理 POST /api/products
 func (h *ProductHandler) Create(c *gin.Context) {
 	var req productapp.CreateProductRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -113,7 +113,7 @@ func (h *ProductHandler) Create(c *gin.Context) {
 	Success(c, productapp.ToProductResponse(entity))
 }
 
-// Get handles GET /api/products/:id
+// Get 处理 GET /api/products/:id
 func (h *ProductHandler) Get(c *gin.Context) {
 	id := c.Param("id")
 
@@ -126,7 +126,7 @@ func (h *ProductHandler) Get(c *gin.Context) {
 	Success(c, productapp.ToProductResponse(entity))
 }
 
-// List handles GET /api/products?page=1&page_size=20
+// List 处理 GET /api/products?page=1&page_size=20
 func (h *ProductHandler) List(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
@@ -149,7 +149,7 @@ func (h *ProductHandler) List(c *gin.Context) {
 	})
 }
 
-// Update handles PUT /api/products/:id
+// Update 处理 PUT /api/products/:id
 func (h *ProductHandler) Update(c *gin.Context) {
 	id := c.Param("id")
 
@@ -215,7 +215,7 @@ func (h *ProductHandler) Update(c *gin.Context) {
 	Success(c, productapp.ToProductResponse(entity))
 }
 
-// Delete handles DELETE /api/products/:id
+// Delete 处理 DELETE /api/products/:id
 func (h *ProductHandler) Delete(c *gin.Context) {
 	id := c.Param("id")
 

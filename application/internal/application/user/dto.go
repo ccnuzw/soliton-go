@@ -6,7 +6,7 @@ import (
 	"github.com/soliton-go/application/internal/domain/user"
 )
 
-// CreateUserRequest is the request body for creating a User.
+// CreateUserRequest 是创建 User 的请求体。
 type CreateUserRequest struct {
 	Username string `json:"username" binding:"required"`
 	Email string `json:"email" binding:"required"`
@@ -15,13 +15,13 @@ type CreateUserRequest struct {
 	Phone string `json:"phone" binding:"required"`
 	Avatar string `json:"avatar" binding:"required"`
 	Bio string `json:"bio" binding:"required"`
-	BirthDate *time.Time `json:"birth_date"`
+	BirthDate time.Time `json:"birth_date"`
 	Gender string `json:"gender" binding:"required,oneof=male female other"`
 	Role string `json:"role" binding:"required,oneof=admin manager user guest"`
 	Status string `json:"status" binding:"required,oneof=active inactive suspended banned"`
 	EmailVerified bool `json:"email_verified"`
 	PhoneVerified bool `json:"phone_verified"`
-	LastLoginAt *time.Time `json:"last_login_at"`
+	LastLoginAt time.Time `json:"last_login_at"`
 	LoginCount int `json:"login_count"`
 	FailedLoginCount int `json:"failed_login_count"`
 	Balance int64 `json:"balance"`
@@ -30,7 +30,7 @@ type CreateUserRequest struct {
 	Preferences string `json:"preferences" binding:"required"`
 }
 
-// UpdateUserRequest is the request body for updating a User.
+// UpdateUserRequest 是更新 User 的请求体。
 type UpdateUserRequest struct {
 	Username *string `json:"username,omitempty"`
 	Email *string `json:"email,omitempty"`
@@ -54,7 +54,7 @@ type UpdateUserRequest struct {
 	Preferences *string `json:"preferences,omitempty"`
 }
 
-// UserResponse is the response body for User data.
+// UserResponse 是 User 的响应体。
 type UserResponse struct {
 	ID        string    `json:"id"`
 	Username string `json:"username"`
@@ -64,13 +64,13 @@ type UserResponse struct {
 	Phone string `json:"phone"`
 	Avatar string `json:"avatar"`
 	Bio string `json:"bio"`
-	BirthDate *time.Time `json:"birth_date"`
+	BirthDate time.Time `json:"birth_date"`
 	Gender string `json:"gender"`
 	Role string `json:"role"`
 	Status string `json:"status"`
 	EmailVerified bool `json:"email_verified"`
 	PhoneVerified bool `json:"phone_verified"`
-	LastLoginAt *time.Time `json:"last_login_at"`
+	LastLoginAt time.Time `json:"last_login_at"`
 	LoginCount int `json:"login_count"`
 	FailedLoginCount int `json:"failed_login_count"`
 	Balance int64 `json:"balance"`
@@ -81,7 +81,7 @@ type UserResponse struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// ToUserResponse converts entity to response.
+// ToUserResponse 将实体转换为响应体。
 func ToUserResponse(e *user.User) UserResponse {
 	return UserResponse{
 		ID:        string(e.ID),
@@ -110,7 +110,7 @@ func ToUserResponse(e *user.User) UserResponse {
 	}
 }
 
-// ToUserResponseList converts entities to response list.
+// ToUserResponseList 将实体列表转换为响应体列表。
 func ToUserResponseList(entities []*user.User) []UserResponse {
 	result := make([]UserResponse, len(entities))
 	for i, e := range entities {

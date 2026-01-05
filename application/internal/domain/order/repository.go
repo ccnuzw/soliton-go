@@ -6,9 +6,9 @@ import (
 	"github.com/soliton-go/framework/orm"
 )
 
-// OrderRepository is the interface for Order persistence.
+// OrderRepository 定义 Order 的持久化接口。
 type OrderRepository interface {
 	orm.Repository[*Order, OrderID]
-	// FindPaginated returns a page of entities with total count.
+	// FindPaginated 返回分页数据和总数。
 	FindPaginated(ctx context.Context, page, pageSize int) ([]*Order, int64, error)
 }

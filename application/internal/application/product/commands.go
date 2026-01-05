@@ -7,7 +7,7 @@ import (
 	"github.com/soliton-go/application/internal/domain/product"
 )
 
-// CreateProductCommand is the command for creating a Product.
+// CreateProductCommand 是创建 Product 的命令。
 type CreateProductCommand struct {
 	ID string
 	Sku string
@@ -51,14 +51,14 @@ type CreateProductCommand struct {
 	Tags string
 	Images string
 	VideoUrl string
-	PublishedAt *time.Time
-	DiscontinuedAt *time.Time
+	PublishedAt time.Time
+	DiscontinuedAt time.Time
 }
 
-// CreateProductHandler handles CreateProductCommand.
+// CreateProductHandler 处理 CreateProductCommand。
 type CreateProductHandler struct {
 	repo product.ProductRepository
-	// Optional: Add event bus for domain event publishing
+	// 可选：添加事件总线用于发布领域事件
 	// eventBus event.EventBus
 }
 
@@ -72,8 +72,8 @@ func (h *CreateProductHandler) Handle(ctx context.Context, cmd CreateProductComm
 		return nil, err
 	}
 
-	// Optional: Publish domain events
-	// Uncomment to enable event publishing:
+	// 可选：发布领域事件
+	// 取消注释以启用事件发布：
 	// events := entity.PullDomainEvents()
 	// if len(events) > 0 {
 	//     if err := h.eventBus.Publish(ctx, events...); err != nil {
@@ -84,7 +84,7 @@ func (h *CreateProductHandler) Handle(ctx context.Context, cmd CreateProductComm
 	return entity, nil
 }
 
-// UpdateProductCommand is the command for updating a Product.
+// UpdateProductCommand 是更新 Product 的命令。
 type UpdateProductCommand struct {
 	ID string
 	Sku *string
@@ -132,7 +132,7 @@ type UpdateProductCommand struct {
 	DiscontinuedAt *time.Time
 }
 
-// UpdateProductHandler handles UpdateProductCommand.
+// UpdateProductHandler 处理 UpdateProductCommand。
 type UpdateProductHandler struct {
 	repo product.ProductRepository
 }
@@ -153,12 +153,12 @@ func (h *UpdateProductHandler) Handle(ctx context.Context, cmd UpdateProductComm
 	return entity, nil
 }
 
-// DeleteProductCommand is the command for deleting a Product.
+// DeleteProductCommand 是删除 Product 的命令。
 type DeleteProductCommand struct {
 	ID string
 }
 
-// DeleteProductHandler handles DeleteProductCommand.
+// DeleteProductHandler 处理 DeleteProductCommand。
 type DeleteProductHandler struct {
 	repo product.ProductRepository
 }

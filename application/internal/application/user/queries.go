@@ -6,12 +6,12 @@ import (
 	"github.com/soliton-go/application/internal/domain/user"
 )
 
-// GetUserQuery is the query for getting a single User.
+// GetUserQuery 是获取单个 User 的查询。
 type GetUserQuery struct {
 	ID string
 }
 
-// GetUserHandler handles GetUserQuery.
+// GetUserHandler 处理 GetUserQuery。
 type GetUserHandler struct {
 	repo user.UserRepository
 }
@@ -24,13 +24,13 @@ func (h *GetUserHandler) Handle(ctx context.Context, query GetUserQuery) (*user.
 	return h.repo.Find(ctx, user.UserID(query.ID))
 }
 
-// ListUsersQuery is the query for listing Users with pagination.
+// ListUsersQuery 是分页列表查询。
 type ListUsersQuery struct {
-	Page     int // Page number (1-based)
-	PageSize int // Items per page (default: 20, max: 100)
+	Page     int // 页码（从 1 开始）
+	PageSize int // 每页数量（默认: 20, 最大: 100）
 }
 
-// ListUsersResult is the paginated result for ListUsersQuery.
+// ListUsersResult 是分页查询结果。
 type ListUsersResult struct {
 	Items      []*user.User
 	Total      int64
@@ -39,7 +39,7 @@ type ListUsersResult struct {
 	TotalPages int
 }
 
-// ListUsersHandler handles ListUsersQuery.
+// ListUsersHandler 处理 ListUsersQuery。
 type ListUsersHandler struct {
 	repo user.UserRepository
 }
@@ -49,7 +49,7 @@ func NewListUsersHandler(repo user.UserRepository) *ListUsersHandler {
 }
 
 func (h *ListUsersHandler) Handle(ctx context.Context, query ListUsersQuery) (*ListUsersResult, error) {
-	// Normalize pagination parameters
+	// 规范化分页参数
 	page := query.Page
 	if page < 1 {
 		page = 1
@@ -62,7 +62,7 @@ func (h *ListUsersHandler) Handle(ctx context.Context, query ListUsersQuery) (*L
 		pageSize = 100
 	}
 
-	// Get total count and items
+	// 获取总数和分页数据
 	items, total, err := h.repo.FindPaginated(ctx, page, pageSize)
 	if err != nil {
 		return nil, err

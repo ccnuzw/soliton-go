@@ -8,7 +8,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// Module provides all Product dependencies for Fx.
+// Module 提供 Product 的所有 Fx 依赖。
 var Module = fx.Options(
 	// Repository
 	fx.Provide(func(db *gorm.DB) product.ProductRepository {
@@ -23,9 +23,12 @@ var Module = fx.Options(
 	// Query Handlers
 	fx.Provide(NewGetProductHandler),
 	fx.Provide(NewListProductsHandler),
+	
+	fx.Provide(NewProductService),
+	// soliton-gen:services
 
-	// Optional: Register with CQRS bus
-	// Uncomment to enable CQRS pattern:
+	// 可选：注册到 CQRS 总线
+	// 取消注释以启用 CQRS 模式：
 	// fx.Invoke(func(cmdBus *cqrs.InMemoryCommandBus, queryBus *cqrs.InMemoryQueryBus,
 	//     createHandler *CreateProductHandler,
 	//     updateHandler *UpdateProductHandler,
@@ -40,8 +43,7 @@ var Module = fx.Options(
 	// }),
 )
 
-// RegisterMigration registers the Product table migration.
+// RegisterMigration 注册 Product 表的数据库迁移。
 func RegisterMigration(db *gorm.DB) error {
-	return persistence.MigrateProduct(db	fx.Provide(NewProductService),
-)
+	return persistence.MigrateProduct(db)
 }

@@ -70,11 +70,20 @@ func initProjectInternal(cfg ProjectConfig, previewOnly bool) (*GenerationResult
 		}
 	}
 
+	// Detect Go version
+	// User requested to standardize on v1.22.0 to avoid 1.24+ issues
+	goVersion := "1.22"
+
+	// Optional: We could still check runtime if it's strictly older than 1.22,
+	// but for now we enforce 1.22 as the safe baseline.
+
 	data := ProjectData{
 		ProjectName:      projectName,
 		ModuleName:       moduleName,
 		FrameworkVersion: frameworkVersion,
 		FrameworkReplace: frameworkReplace,
+		GoVersion:        goVersion,
+		FxVersion:        "v1.22.0",
 	}
 
 	// projectRoot was already determined above

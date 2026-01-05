@@ -7,14 +7,14 @@ import (
 	"gorm.io/gorm"
 )
 
-// OrderID is a strong typed ID.
+// OrderID 是强类型的实体标识符。
 type OrderID string
 
 func (id OrderID) String() string {
 	return string(id)
 }
 
-// OrderPaymentMethod represents the PaymentMethod enum.
+// OrderPaymentMethod 表示 PaymentMethod 字段的枚举类型。
 type OrderPaymentMethod string
 
 const (
@@ -26,7 +26,7 @@ const (
 	OrderPaymentMethodCash OrderPaymentMethod = "cash"
 )
 
-// OrderPaymentStatus represents the PaymentStatus enum.
+// OrderPaymentStatus 表示 PaymentStatus 字段的枚举类型。
 type OrderPaymentStatus string
 
 const (
@@ -36,7 +36,7 @@ const (
 	OrderPaymentStatusRefunded OrderPaymentStatus = "refunded"
 )
 
-// OrderOrderStatus represents the OrderStatus enum.
+// OrderOrderStatus 表示 OrderStatus 字段的枚举类型。
 type OrderOrderStatus string
 
 const (
@@ -49,7 +49,7 @@ const (
 	OrderOrderStatusReturned OrderOrderStatus = "returned"
 )
 
-// OrderShippingMethod represents the ShippingMethod enum.
+// OrderShippingMethod 表示 ShippingMethod 字段的枚举类型。
 type OrderShippingMethod string
 
 const (
@@ -58,7 +58,7 @@ const (
 	OrderShippingMethodOvernight OrderShippingMethod = "overnight"
 )
 
-// Order is the aggregate root.
+// Order 是聚合根实体。
 type Order struct {
 	ddd.BaseAggregateRoot
 	ID OrderID `gorm:"primaryKey"`
@@ -99,12 +99,12 @@ type Order struct {
 	DeletedAt gorm.DeletedAt `gorm:"index"`
 }
 
-// TableName returns the table name for GORM.
+// TableName 返回 GORM 映射的数据库表名。
 func (Order) TableName() string {
 	return "orders"
 }
 
-// NewOrder creates a new Order.
+// NewOrder 创建一个新的 Order 实体。
 func NewOrder(id string, userId string, orderNo string, totalAmount int64, discountAmount int64, taxAmount int64, shippingFee int64, finalAmount int64, currency string, paymentMethod OrderPaymentMethod, paymentStatus OrderPaymentStatus, orderStatus OrderOrderStatus, shippingMethod OrderShippingMethod, trackingNumber string, receiverName string, receiverPhone string, receiverEmail string, receiverAddress string, receiverCity string, receiverState string, receiverCountry string, receiverPostalCode string, notes string, paidAt time.Time, shippedAt time.Time, deliveredAt time.Time, cancelledAt time.Time, refundAmount int64, refundReason string, itemCount int, weight float64, isGift bool, giftMessage string) *Order {
 	e := &Order{
 		ID: OrderID(id),
@@ -145,7 +145,7 @@ func NewOrder(id string, userId string, orderNo string, totalAmount int64, disco
 	return e
 }
 
-// Update updates the entity fields.
+// Update 更新实体字段。
 func (e *Order) Update(userId *string, orderNo *string, totalAmount *int64, discountAmount *int64, taxAmount *int64, shippingFee *int64, finalAmount *int64, currency *string, paymentMethod *OrderPaymentMethod, paymentStatus *OrderPaymentStatus, orderStatus *OrderOrderStatus, shippingMethod *OrderShippingMethod, trackingNumber *string, receiverName *string, receiverPhone *string, receiverEmail *string, receiverAddress *string, receiverCity *string, receiverState *string, receiverCountry *string, receiverPostalCode *string, notes *string, paidAt *time.Time, shippedAt *time.Time, deliveredAt *time.Time, cancelledAt *time.Time, refundAmount *int64, refundReason *string, itemCount *int, weight *float64, isGift *bool, giftMessage *string) {
 	if userId != nil {
 		e.UserId = *userId
@@ -246,7 +246,7 @@ func (e *Order) Update(userId *string, orderNo *string, totalAmount *int64, disc
 	e.AddDomainEvent(NewOrderUpdatedEvent(string(e.ID)))
 }
 
-// GetID returns the entity ID.
+// GetID 返回实体 ID。
 func (e *Order) GetID() ddd.ID {
 	return e.ID
 }

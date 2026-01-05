@@ -10,7 +10,7 @@ import (
 	"github.com/soliton-go/application/internal/domain/order"
 )
 
-// OrderHandler handles HTTP requests for Order operations.
+// OrderHandler 处理 Order 相关的 HTTP 请求。
 type OrderHandler struct {
 	createHandler *orderapp.CreateOrderHandler
 	updateHandler *orderapp.UpdateOrderHandler
@@ -19,7 +19,7 @@ type OrderHandler struct {
 	listHandler   *orderapp.ListOrdersHandler
 }
 
-// NewOrderHandler creates a new OrderHandler.
+// NewOrderHandler 创建 OrderHandler 实例。
 func NewOrderHandler(
 	createHandler *orderapp.CreateOrderHandler,
 	updateHandler *orderapp.UpdateOrderHandler,
@@ -36,7 +36,7 @@ func NewOrderHandler(
 	}
 }
 
-// RegisterRoutes registers Order routes.
+// RegisterRoutes 注册 Order 相关路由。
 func (h *OrderHandler) RegisterRoutes(r *gin.Engine) {
 	api := r.Group("/api/orders")
 	{
@@ -49,7 +49,7 @@ func (h *OrderHandler) RegisterRoutes(r *gin.Engine) {
 	}
 }
 
-// Create handles POST /api/orders
+// Create 处理 POST /api/orders
 func (h *OrderHandler) Create(c *gin.Context) {
 	var req orderapp.CreateOrderRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -102,7 +102,7 @@ func (h *OrderHandler) Create(c *gin.Context) {
 	Success(c, orderapp.ToOrderResponse(entity))
 }
 
-// Get handles GET /api/orders/:id
+// Get 处理 GET /api/orders/:id
 func (h *OrderHandler) Get(c *gin.Context) {
 	id := c.Param("id")
 
@@ -115,7 +115,7 @@ func (h *OrderHandler) Get(c *gin.Context) {
 	Success(c, orderapp.ToOrderResponse(entity))
 }
 
-// List handles GET /api/orders?page=1&page_size=20
+// List 处理 GET /api/orders?page=1&page_size=20
 func (h *OrderHandler) List(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
@@ -138,7 +138,7 @@ func (h *OrderHandler) List(c *gin.Context) {
 	})
 }
 
-// Update handles PUT /api/orders/:id
+// Update 处理 PUT /api/orders/:id
 func (h *OrderHandler) Update(c *gin.Context) {
 	id := c.Param("id")
 
@@ -193,7 +193,7 @@ func (h *OrderHandler) Update(c *gin.Context) {
 	Success(c, orderapp.ToOrderResponse(entity))
 }
 
-// Delete handles DELETE /api/orders/:id
+// Delete 处理 DELETE /api/orders/:id
 func (h *OrderHandler) Delete(c *gin.Context) {
 	id := c.Param("id")
 

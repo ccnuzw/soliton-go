@@ -7,7 +7,7 @@ import (
 	"github.com/soliton-go/application/internal/domain/user"
 )
 
-// CreateUserCommand is the command for creating a User.
+// CreateUserCommand 是创建 User 的命令。
 type CreateUserCommand struct {
 	ID string
 	Username string
@@ -17,13 +17,13 @@ type CreateUserCommand struct {
 	Phone string
 	Avatar string
 	Bio string
-	BirthDate *time.Time
+	BirthDate time.Time
 	Gender user.UserGender
 	Role user.UserRole
 	Status user.UserStatus
 	EmailVerified bool
 	PhoneVerified bool
-	LastLoginAt *time.Time
+	LastLoginAt time.Time
 	LoginCount int
 	FailedLoginCount int
 	Balance int64
@@ -32,10 +32,10 @@ type CreateUserCommand struct {
 	Preferences string
 }
 
-// CreateUserHandler handles CreateUserCommand.
+// CreateUserHandler 处理 CreateUserCommand。
 type CreateUserHandler struct {
 	repo user.UserRepository
-	// Optional: Add event bus for domain event publishing
+	// 可选：添加事件总线用于发布领域事件
 	// eventBus event.EventBus
 }
 
@@ -49,8 +49,8 @@ func (h *CreateUserHandler) Handle(ctx context.Context, cmd CreateUserCommand) (
 		return nil, err
 	}
 
-	// Optional: Publish domain events
-	// Uncomment to enable event publishing:
+	// 可选：发布领域事件
+	// 取消注释以启用事件发布：
 	// events := entity.PullDomainEvents()
 	// if len(events) > 0 {
 	//     if err := h.eventBus.Publish(ctx, events...); err != nil {
@@ -61,7 +61,7 @@ func (h *CreateUserHandler) Handle(ctx context.Context, cmd CreateUserCommand) (
 	return entity, nil
 }
 
-// UpdateUserCommand is the command for updating a User.
+// UpdateUserCommand 是更新 User 的命令。
 type UpdateUserCommand struct {
 	ID string
 	Username *string
@@ -86,7 +86,7 @@ type UpdateUserCommand struct {
 	Preferences *string
 }
 
-// UpdateUserHandler handles UpdateUserCommand.
+// UpdateUserHandler 处理 UpdateUserCommand。
 type UpdateUserHandler struct {
 	repo user.UserRepository
 }
@@ -107,12 +107,12 @@ func (h *UpdateUserHandler) Handle(ctx context.Context, cmd UpdateUserCommand) (
 	return entity, nil
 }
 
-// DeleteUserCommand is the command for deleting a User.
+// DeleteUserCommand 是删除 User 的命令。
 type DeleteUserCommand struct {
 	ID string
 }
 
-// DeleteUserHandler handles DeleteUserCommand.
+// DeleteUserHandler 处理 DeleteUserCommand。
 type DeleteUserHandler struct {
 	repo user.UserRepository
 }

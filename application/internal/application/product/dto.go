@@ -6,7 +6,7 @@ import (
 	"github.com/soliton-go/application/internal/domain/product"
 )
 
-// CreateProductRequest is the request body for creating a Product.
+// CreateProductRequest 是创建 Product 的请求体。
 type CreateProductRequest struct {
 	Sku string `json:"sku" binding:"required"`
 	Name string `json:"name" binding:"required"`
@@ -49,11 +49,11 @@ type CreateProductRequest struct {
 	Tags string `json:"tags" binding:"required"`
 	Images string `json:"images" binding:"required"`
 	VideoUrl string `json:"video_url" binding:"required"`
-	PublishedAt *time.Time `json:"published_at"`
-	DiscontinuedAt *time.Time `json:"discontinued_at"`
+	PublishedAt time.Time `json:"published_at"`
+	DiscontinuedAt time.Time `json:"discontinued_at"`
 }
 
-// UpdateProductRequest is the request body for updating a Product.
+// UpdateProductRequest 是更新 Product 的请求体。
 type UpdateProductRequest struct {
 	Sku *string `json:"sku,omitempty"`
 	Name *string `json:"name,omitempty"`
@@ -100,7 +100,7 @@ type UpdateProductRequest struct {
 	DiscontinuedAt *time.Time `json:"discontinued_at,omitempty"`
 }
 
-// ProductResponse is the response body for Product data.
+// ProductResponse 是 Product 的响应体。
 type ProductResponse struct {
 	ID        string    `json:"id"`
 	Sku string `json:"sku"`
@@ -144,13 +144,13 @@ type ProductResponse struct {
 	Tags string `json:"tags"`
 	Images string `json:"images"`
 	VideoUrl string `json:"video_url"`
-	PublishedAt *time.Time `json:"published_at"`
-	DiscontinuedAt *time.Time `json:"discontinued_at"`
+	PublishedAt time.Time `json:"published_at"`
+	DiscontinuedAt time.Time `json:"discontinued_at"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// ToProductResponse converts entity to response.
+// ToProductResponse 将实体转换为响应体。
 func ToProductResponse(e *product.Product) ProductResponse {
 	return ProductResponse{
 		ID:        string(e.ID),
@@ -202,7 +202,7 @@ func ToProductResponse(e *product.Product) ProductResponse {
 	}
 }
 
-// ToProductResponseList converts entities to response list.
+// ToProductResponseList 将实体列表转换为响应体列表。
 func ToProductResponseList(entities []*product.Product) []ProductResponse {
 	result := make([]ProductResponse, len(entities))
 	for i, e := range entities {

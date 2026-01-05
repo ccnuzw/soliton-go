@@ -659,6 +659,8 @@ var Module = fx.Options(
 	// Query Handlers
 	fx.Provide(NewGet{{.EntityName}}Handler),
 	fx.Provide(NewList{{.EntityName}}sHandler),
+	
+	// soliton-gen:services
 
 	// 可选：注册到 CQRS 总线
 	// 取消注释以启用 CQRS 模式：

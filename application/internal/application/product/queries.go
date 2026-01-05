@@ -6,12 +6,12 @@ import (
 	"github.com/soliton-go/application/internal/domain/product"
 )
 
-// GetProductQuery is the query for getting a single Product.
+// GetProductQuery 是获取单个 Product 的查询。
 type GetProductQuery struct {
 	ID string
 }
 
-// GetProductHandler handles GetProductQuery.
+// GetProductHandler 处理 GetProductQuery。
 type GetProductHandler struct {
 	repo product.ProductRepository
 }
@@ -24,13 +24,13 @@ func (h *GetProductHandler) Handle(ctx context.Context, query GetProductQuery) (
 	return h.repo.Find(ctx, product.ProductID(query.ID))
 }
 
-// ListProductsQuery is the query for listing Products with pagination.
+// ListProductsQuery 是分页列表查询。
 type ListProductsQuery struct {
-	Page     int // Page number (1-based)
-	PageSize int // Items per page (default: 20, max: 100)
+	Page     int // 页码（从 1 开始）
+	PageSize int // 每页数量（默认: 20, 最大: 100）
 }
 
-// ListProductsResult is the paginated result for ListProductsQuery.
+// ListProductsResult 是分页查询结果。
 type ListProductsResult struct {
 	Items      []*product.Product
 	Total      int64
@@ -39,7 +39,7 @@ type ListProductsResult struct {
 	TotalPages int
 }
 
-// ListProductsHandler handles ListProductsQuery.
+// ListProductsHandler 处理 ListProductsQuery。
 type ListProductsHandler struct {
 	repo product.ProductRepository
 }
@@ -49,7 +49,7 @@ func NewListProductsHandler(repo product.ProductRepository) *ListProductsHandler
 }
 
 func (h *ListProductsHandler) Handle(ctx context.Context, query ListProductsQuery) (*ListProductsResult, error) {
-	// Normalize pagination parameters
+	// 规范化分页参数
 	page := query.Page
 	if page < 1 {
 		page = 1
@@ -62,7 +62,7 @@ func (h *ListProductsHandler) Handle(ctx context.Context, query ListProductsQuer
 		pageSize = 100
 	}
 
-	// Get total count and items
+	// 获取总数和分页数据
 	items, total, err := h.repo.FindPaginated(ctx, page, pageSize)
 	if err != nil {
 		return nil, err

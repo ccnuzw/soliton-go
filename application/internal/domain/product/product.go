@@ -4,16 +4,17 @@ import (
 	"time"
 
 	"github.com/soliton-go/framework/ddd"
+	"gorm.io/gorm"
 )
 
-// ProductID is a strong typed ID.
+// ProductID 是强类型的实体标识符。
 type ProductID string
 
 func (id ProductID) String() string {
 	return string(id)
 }
 
-// ProductStatus represents the Status enum.
+// ProductStatus 表示 Status 字段的枚举类型。
 type ProductStatus string
 
 const (
@@ -24,15 +25,15 @@ const (
 	ProductStatusDiscontinued ProductStatus = "discontinued"
 )
 
-// Product is the aggregate root.
+// Product 是聚合根实体。
 type Product struct {
 	ddd.BaseAggregateRoot
 	ID ProductID `gorm:"primaryKey"`
 	Sku string `gorm:"size:255"` // SKU编号
 	Name string `gorm:"size:255"` // 商品名称
 	Slug string `gorm:"size:255"` // URL别名
-	Description string `gorm:"type:text"` // 详细描述
-	ShortDescription string `gorm:"type:text"` // 简短描述
+	Description string `gorm:"size:255"` // 详细描述
+	ShortDescription string `gorm:"size:255"` // 简短描述
 	Brand string `gorm:"size:255"` // 品牌
 	Category string `gorm:"size:255"` // 分类
 	Subcategory string `gorm:"size:255"` // 子分类
@@ -66,22 +67,23 @@ type Product struct {
 	TaxRate float64 `gorm:"default:0"` // 税率
 	MinOrderQuantity int `gorm:"not null;default:0"` // 最小订购量
 	MaxOrderQuantity int `gorm:"not null;default:0"` // 最大订购量
-	Tags string `gorm:"type:text"` // 标签
-	Images string `gorm:"type:text"` // 图片列表
+	Tags string `gorm:"size:255"` // 标签
+	Images string `gorm:"size:255"` // 图片列表
 	VideoUrl string `gorm:"size:255"` // 视频URL
-	PublishedAt *time.Time  // 发布时间
-	DiscontinuedAt *time.Time  // 停产时间
+	PublishedAt time.Time `gorm:"type:timestamp"` // 发布时间
+	DiscontinuedAt time.Time `gorm:"type:timestamp"` // 停产时间
 	CreatedAt time.Time `gorm:"autoCreateTime"`
 	UpdatedAt time.Time `gorm:"autoUpdateTime"`
+	DeletedAt gorm.DeletedAt `gorm:"index"`
 }
 
-// TableName returns the table name for GORM.
+// TableName 返回 GORM 映射的数据库表名。
 func (Product) TableName() string {
 	return "products"
 }
 
-// NewProduct creates a new Product.
-func NewProduct(id string, sku string, name string, slug string, description string, shortDescription string, brand string, category string, subcategory string, price int64, originalPrice int64, costPrice int64, discountPercentage int, stock int, reservedStock int, soldCount int, viewCount int, rating float64, reviewCount int, weight float64, length float64, width float64, height float64, color string, size string, material string, manufacturer string, countryOfOrigin string, barcode string, status ProductStatus, isFeatured bool, isNew bool, isOnSale bool, isDigital bool, requiresShipping bool, isTaxable bool, taxRate float64, minOrderQuantity int, maxOrderQuantity int, tags string, images string, videoUrl string, publishedAt *time.Time, discontinuedAt *time.Time) *Product {
+// NewProduct 创建一个新的 Product 实体。
+func NewProduct(id string, sku string, name string, slug string, description string, shortDescription string, brand string, category string, subcategory string, price int64, originalPrice int64, costPrice int64, discountPercentage int, stock int, reservedStock int, soldCount int, viewCount int, rating float64, reviewCount int, weight float64, length float64, width float64, height float64, color string, size string, material string, manufacturer string, countryOfOrigin string, barcode string, status ProductStatus, isFeatured bool, isNew bool, isOnSale bool, isDigital bool, requiresShipping bool, isTaxable bool, taxRate float64, minOrderQuantity int, maxOrderQuantity int, tags string, images string, videoUrl string, publishedAt time.Time, discontinuedAt time.Time) *Product {
 	e := &Product{
 		ID: ProductID(id),
 		Sku: sku,
@@ -132,7 +134,7 @@ func NewProduct(id string, sku string, name string, slug string, description str
 	return e
 }
 
-// Update updates the entity fields.
+// Update 更新实体字段。
 func (e *Product) Update(sku *string, name *string, slug *string, description *string, shortDescription *string, brand *string, category *string, subcategory *string, price *int64, originalPrice *int64, costPrice *int64, discountPercentage *int, stock *int, reservedStock *int, soldCount *int, viewCount *int, rating *float64, reviewCount *int, weight *float64, length *float64, width *float64, height *float64, color *string, size *string, material *string, manufacturer *string, countryOfOrigin *string, barcode *string, status *ProductStatus, isFeatured *bool, isNew *bool, isOnSale *bool, isDigital *bool, requiresShipping *bool, isTaxable *bool, taxRate *float64, minOrderQuantity *int, maxOrderQuantity *int, tags *string, images *string, videoUrl *string, publishedAt *time.Time, discontinuedAt *time.Time) {
 	if sku != nil {
 		e.Sku = *sku
@@ -258,15 +260,15 @@ func (e *Product) Update(sku *string, name *string, slug *string, description *s
 		e.VideoUrl = *videoUrl
 	}
 	if publishedAt != nil {
-		e.PublishedAt = publishedAt
+		e.PublishedAt = *publishedAt
 	}
 	if discontinuedAt != nil {
-		e.DiscontinuedAt = discontinuedAt
+		e.DiscontinuedAt = *discontinuedAt
 	}
 	e.AddDomainEvent(NewProductUpdatedEvent(string(e.ID)))
 }
 
-// GetID returns the entity ID.
+// GetID 返回实体 ID。
 func (e *Product) GetID() ddd.ID {
 	return e.ID
 }

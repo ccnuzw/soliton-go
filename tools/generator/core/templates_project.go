@@ -6,13 +6,13 @@ package core
 
 const GoModTemplate = `module {{.ModuleName}}
 
-go 1.22
+go {{.GoVersion}}
 
 require (
 	github.com/soliton-go/framework {{.FrameworkVersion}}
 	github.com/gin-gonic/gin v1.11.0
 	github.com/google/uuid v1.6.0
-	go.uber.org/fx v1.24.0
+	go.uber.org/fx {{.FxVersion}}
 	gorm.io/gorm v1.31.1
 )
 {{ if .FrameworkReplace }}
@@ -280,12 +280,8 @@ After generating domains, the following endpoints are available:
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | /health | Health check |
-| POST | /api/users | Create user |
-| GET | /api/users | List users (with pagination) |
-| GET | /api/users/:id | Get user |
-| PUT | /api/users/:id | Update user |
-| PATCH | /api/users/:id | Partial update user |
-| DELETE | /api/users/:id | Delete user |
+
+Domain specific endpoints will be available after generating domains using ` + "`soliton-gen domain`" + `.
 
 ### Pagination
 

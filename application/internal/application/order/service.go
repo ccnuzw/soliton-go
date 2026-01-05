@@ -4,21 +4,21 @@ import (
 	"context"
 	"errors"
 
-	// Import your domain repositories here:
+	// 在此导入领域层的 Repository：
 	// "github.com/soliton-go/application/internal/domain/user"
 	// "github.com/soliton-go/application/internal/domain/order"
 )
 
-// OrderService handles cross-domain business logic.
+// OrderService 处理跨领域的业务逻辑编排。
 type OrderService struct {
-	// Add your repositories here:
+	// 在此添加依赖的 Repository：
 	// userRepo  user.UserRepository
 	// orderRepo order.OrderRepository
 }
 
-// NewOrderService creates a new OrderService.
+// NewOrderService 创建 OrderService 实例。
 func NewOrderService(
-	// Add your repository parameters here:
+	// 在此添加 Repository 参数：
 	// userRepo user.UserRepository,
 	// orderRepo order.OrderRepository,
 ) *OrderService {
@@ -29,44 +29,44 @@ func NewOrderService(
 }
 
 
-// CreateOrder implements the CreateOrder use case.
-func (s *OrderService) CreateOrder(ctx context.Context, req CreateOrderRequest) (*CreateOrderResponse, error) {
-	// TODO: Implement business logic
-	// Example:
-	// 1. Validate request
-	// 2. Load entities from repositories
-	// 3. Execute domain logic
-	// 4. Save changes
-	// 5. Publish domain events
-	// 6. Return response
+// CreateOrder 实现 CreateOrder 用例。
+func (s *OrderService) CreateOrder(ctx context.Context, req CreateOrderServiceRequest) (*CreateOrderServiceResponse, error) {
+	// TODO: 实现业务逻辑
+	// 示例步骤：
+	// 1. 校验请求参数
+	// 2. 从 Repository 加载实体
+	// 3. 执行领域逻辑
+	// 4. 保存变更
+	// 5. 发布领域事件
+	// 6. 返回响应
 
 	return nil, errors.New("not implemented")
 }
 
-// GetOrder implements the GetOrder use case.
-func (s *OrderService) GetOrder(ctx context.Context, req GetOrderRequest) (*GetOrderResponse, error) {
-	// TODO: Implement business logic
-	// Example:
-	// 1. Validate request
-	// 2. Load entities from repositories
-	// 3. Execute domain logic
-	// 4. Save changes
-	// 5. Publish domain events
-	// 6. Return response
+// GetOrder 实现 GetOrder 用例。
+func (s *OrderService) GetOrder(ctx context.Context, req GetOrderServiceRequest) (*GetOrderServiceResponse, error) {
+	// TODO: 实现业务逻辑
+	// 示例步骤：
+	// 1. 校验请求参数
+	// 2. 从 Repository 加载实体
+	// 3. 执行领域逻辑
+	// 4. 保存变更
+	// 5. 发布领域事件
+	// 6. 返回响应
 
 	return nil, errors.New("not implemented")
 }
 
-// ListOrders implements the ListOrders use case.
-func (s *OrderService) ListOrders(ctx context.Context, req ListOrdersRequest) (*ListOrdersResponse, error) {
-	// TODO: Implement business logic
-	// Example:
-	// 1. Validate request
-	// 2. Load entities from repositories
-	// 3. Execute domain logic
-	// 4. Save changes
-	// 5. Publish domain events
-	// 6. Return response
+// ListOrders 实现 ListOrders 用例。
+func (s *OrderService) ListOrders(ctx context.Context, req ListOrdersServiceRequest) (*ListOrdersServiceResponse, error) {
+	// TODO: 实现业务逻辑
+	// 示例步骤：
+	// 1. 校验请求参数
+	// 2. 从 Repository 加载实体
+	// 3. 执行领域逻辑
+	// 4. 保存变更
+	// 5. 发布领域事件
+	// 6. 返回响应
 
 	return nil, errors.New("not implemented")
 }

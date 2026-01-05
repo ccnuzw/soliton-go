@@ -4,16 +4,17 @@ import (
 	"time"
 
 	"github.com/soliton-go/framework/ddd"
+	"gorm.io/gorm"
 )
 
-// UserID is a strong typed ID.
+// UserID 是强类型的实体标识符。
 type UserID string
 
 func (id UserID) String() string {
 	return string(id)
 }
 
-// UserGender represents the Gender enum.
+// UserGender 表示 Gender 字段的枚举类型。
 type UserGender string
 
 const (
@@ -22,7 +23,7 @@ const (
 	UserGenderOther UserGender = "other"
 )
 
-// UserRole represents the Role enum.
+// UserRole 表示 Role 字段的枚举类型。
 type UserRole string
 
 const (
@@ -32,7 +33,7 @@ const (
 	UserRoleGuest UserRole = "guest"
 )
 
-// UserStatus represents the Status enum.
+// UserStatus 表示 Status 字段的枚举类型。
 type UserStatus string
 
 const (
@@ -42,7 +43,7 @@ const (
 	UserStatusBanned UserStatus = "banned"
 )
 
-// User is the aggregate root.
+// User 是聚合根实体。
 type User struct {
 	ddd.BaseAggregateRoot
 	ID UserID `gorm:"primaryKey"`
@@ -52,31 +53,32 @@ type User struct {
 	FullName string `gorm:"size:255"` // 全名
 	Phone string `gorm:"size:255"` // 电话
 	Avatar string `gorm:"size:255"` // 头像URL
-	Bio string `gorm:"type:text"` // 个人简介
-	BirthDate *time.Time  // 生日
+	Bio string `gorm:"size:255"` // 个人简介
+	BirthDate time.Time `gorm:"type:timestamp"` // 生日
 	Gender UserGender `gorm:"size:50;default:'male'"` // 性别
 	Role UserRole `gorm:"size:50;default:'admin'"` // 角色
 	Status UserStatus `gorm:"size:50;default:'active'"` // 状态
 	EmailVerified bool `gorm:"default:false"` // 邮箱已验证
 	PhoneVerified bool `gorm:"default:false"` // 电话已验证
-	LastLoginAt *time.Time  // 最后登录时间
+	LastLoginAt time.Time `gorm:"type:timestamp"` // 最后登录时间
 	LoginCount int `gorm:"not null;default:0"` // 登录次数
 	FailedLoginCount int `gorm:"not null;default:0"` // 失败登录次数
 	Balance int64 `gorm:"not null;default:0"` // 账户余额
 	Points int `gorm:"not null;default:0"` // 积分
 	VipLevel int `gorm:"not null;default:0"` // VIP等级
-	Preferences string `gorm:"type:text"` // 用户偏好设置
+	Preferences string `gorm:"size:255"` // 用户偏好设置
 	CreatedAt time.Time `gorm:"autoCreateTime"`
 	UpdatedAt time.Time `gorm:"autoUpdateTime"`
+	DeletedAt gorm.DeletedAt `gorm:"index"`
 }
 
-// TableName returns the table name for GORM.
+// TableName 返回 GORM 映射的数据库表名。
 func (User) TableName() string {
 	return "users"
 }
 
-// NewUser creates a new User.
-func NewUser(id string, username string, email string, password string, fullName string, phone string, avatar string, bio string, birthDate *time.Time, gender UserGender, role UserRole, status UserStatus, emailVerified bool, phoneVerified bool, lastLoginAt *time.Time, loginCount int, failedLoginCount int, balance int64, points int, vipLevel int, preferences string) *User {
+// NewUser 创建一个新的 User 实体。
+func NewUser(id string, username string, email string, password string, fullName string, phone string, avatar string, bio string, birthDate time.Time, gender UserGender, role UserRole, status UserStatus, emailVerified bool, phoneVerified bool, lastLoginAt time.Time, loginCount int, failedLoginCount int, balance int64, points int, vipLevel int, preferences string) *User {
 	e := &User{
 		ID: UserID(id),
 		Username: username,
@@ -104,7 +106,7 @@ func NewUser(id string, username string, email string, password string, fullName
 	return e
 }
 
-// Update updates the entity fields.
+// Update 更新实体字段。
 func (e *User) Update(username *string, email *string, password *string, fullName *string, phone *string, avatar *string, bio *string, birthDate *time.Time, gender *UserGender, role *UserRole, status *UserStatus, emailVerified *bool, phoneVerified *bool, lastLoginAt *time.Time, loginCount *int, failedLoginCount *int, balance *int64, points *int, vipLevel *int, preferences *string) {
 	if username != nil {
 		e.Username = *username
@@ -128,7 +130,7 @@ func (e *User) Update(username *string, email *string, password *string, fullNam
 		e.Bio = *bio
 	}
 	if birthDate != nil {
-		e.BirthDate = birthDate
+		e.BirthDate = *birthDate
 	}
 	if gender != nil {
 		e.Gender = *gender
@@ -146,7 +148,7 @@ func (e *User) Update(username *string, email *string, password *string, fullNam
 		e.PhoneVerified = *phoneVerified
 	}
 	if lastLoginAt != nil {
-		e.LastLoginAt = lastLoginAt
+		e.LastLoginAt = *lastLoginAt
 	}
 	if loginCount != nil {
 		e.LoginCount = *loginCount
@@ -169,7 +171,7 @@ func (e *User) Update(username *string, email *string, password *string, fullNam
 	e.AddDomainEvent(NewUserUpdatedEvent(string(e.ID)))
 }
 
-// GetID returns the entity ID.
+// GetID 返回实体 ID。
 func (e *User) GetID() ddd.ID {
 	return e.ID
 }

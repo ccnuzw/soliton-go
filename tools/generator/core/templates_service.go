@@ -37,7 +37,7 @@ func New{{.ServiceName}}(
 
 {{range .Methods}}
 // {{.Name}} 实现 {{.Name}} 用例。
-func (s *{{$.ServiceName}}) {{.Name}}(ctx context.Context, req {{.Name}}Request) (*{{.Name}}Response, error) {
+func (s *{{$.ServiceName}}) {{.Name}}(ctx context.Context, req {{.Name}}ServiceRequest) (*{{.Name}}ServiceResponse, error) {
 	// TODO: 实现业务逻辑
 	// 示例步骤：
 	// 1. 校验请求参数
@@ -55,15 +55,15 @@ func (s *{{$.ServiceName}}) {{.Name}}(ctx context.Context, req {{.Name}}Request)
 const ServiceDTOTemplate = `package {{.PackageName}}
 
 {{range .Methods}}
-// {{.Name}}Request 是 {{.Name}} 方法的请求参数。
-type {{.Name}}Request struct {
+// {{.Name}}ServiceRequest 是 {{.Name}} 方法的请求参数。
+type {{.Name}}ServiceRequest struct {
 	// 在此添加请求字段：
 	ID string ` + "`json:\"id,omitempty\"`" + ` // 实体 ID（用于 Get/Update/Delete 操作）
 	// Data   any    ` + "`json:\"data,omitempty\"`" + ` // 请求数据（用于 Create/Update 操作）
 }
 
-// {{.Name}}Response 是 {{.Name}} 方法的响应结果。
-type {{.Name}}Response struct {
+// {{.Name}}ServiceResponse 是 {{.Name}} 方法的响应结果。
+type {{.Name}}ServiceResponse struct {
 	Success bool   ` + "`json:\"success\"`" + `           // 操作是否成功
 	Message string ` + "`json:\"message,omitempty\"`" + ` // 提示消息
 	Data    any    ` + "`json:\"data,omitempty\"`" + `    // 响应数据

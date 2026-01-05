@@ -6,7 +6,7 @@ import (
 	"github.com/soliton-go/application/internal/domain/order"
 )
 
-// CreateOrderRequest is the request body for creating a Order.
+// CreateOrderRequest 是创建 Order 的请求体。
 type CreateOrderRequest struct {
 	UserId string `json:"user_id" binding:"required"`
 	OrderNo string `json:"order_no" binding:"required"`
@@ -42,7 +42,7 @@ type CreateOrderRequest struct {
 	GiftMessage string `json:"gift_message" binding:"required"`
 }
 
-// UpdateOrderRequest is the request body for updating a Order.
+// UpdateOrderRequest 是更新 Order 的请求体。
 type UpdateOrderRequest struct {
 	UserId *string `json:"user_id,omitempty"`
 	OrderNo *string `json:"order_no,omitempty"`
@@ -78,7 +78,7 @@ type UpdateOrderRequest struct {
 	GiftMessage *string `json:"gift_message,omitempty"`
 }
 
-// OrderResponse is the response body for Order data.
+// OrderResponse 是 Order 的响应体。
 type OrderResponse struct {
 	ID        string    `json:"id"`
 	UserId string `json:"user_id"`
@@ -117,7 +117,7 @@ type OrderResponse struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// ToOrderResponse converts entity to response.
+// ToOrderResponse 将实体转换为响应体。
 func ToOrderResponse(e *order.Order) OrderResponse {
 	return OrderResponse{
 		ID:        string(e.ID),
@@ -158,7 +158,7 @@ func ToOrderResponse(e *order.Order) OrderResponse {
 	}
 }
 
-// ToOrderResponseList converts entities to response list.
+// ToOrderResponseList 将实体列表转换为响应体列表。
 func ToOrderResponseList(entities []*order.Order) []OrderResponse {
 	result := make([]OrderResponse, len(entities))
 	for i, e := range entities {

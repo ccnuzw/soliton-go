@@ -7,7 +7,7 @@ import (
 	"github.com/soliton-go/application/internal/domain/order"
 )
 
-// CreateOrderCommand is the command for creating a Order.
+// CreateOrderCommand 是创建 Order 的命令。
 type CreateOrderCommand struct {
 	ID string
 	UserId string
@@ -44,10 +44,10 @@ type CreateOrderCommand struct {
 	GiftMessage string
 }
 
-// CreateOrderHandler handles CreateOrderCommand.
+// CreateOrderHandler 处理 CreateOrderCommand。
 type CreateOrderHandler struct {
 	repo order.OrderRepository
-	// Optional: Add event bus for domain event publishing
+	// 可选：添加事件总线用于发布领域事件
 	// eventBus event.EventBus
 }
 
@@ -61,8 +61,8 @@ func (h *CreateOrderHandler) Handle(ctx context.Context, cmd CreateOrderCommand)
 		return nil, err
 	}
 
-	// Optional: Publish domain events
-	// Uncomment to enable event publishing:
+	// 可选：发布领域事件
+	// 取消注释以启用事件发布：
 	// events := entity.PullDomainEvents()
 	// if len(events) > 0 {
 	//     if err := h.eventBus.Publish(ctx, events...); err != nil {
@@ -73,7 +73,7 @@ func (h *CreateOrderHandler) Handle(ctx context.Context, cmd CreateOrderCommand)
 	return entity, nil
 }
 
-// UpdateOrderCommand is the command for updating a Order.
+// UpdateOrderCommand 是更新 Order 的命令。
 type UpdateOrderCommand struct {
 	ID string
 	UserId *string
@@ -110,7 +110,7 @@ type UpdateOrderCommand struct {
 	GiftMessage *string
 }
 
-// UpdateOrderHandler handles UpdateOrderCommand.
+// UpdateOrderHandler 处理 UpdateOrderCommand。
 type UpdateOrderHandler struct {
 	repo order.OrderRepository
 }
@@ -131,12 +131,12 @@ func (h *UpdateOrderHandler) Handle(ctx context.Context, cmd UpdateOrderCommand)
 	return entity, nil
 }
 
-// DeleteOrderCommand is the command for deleting a Order.
+// DeleteOrderCommand 是删除 Order 的命令。
 type DeleteOrderCommand struct {
 	ID string
 }
 
-// DeleteOrderHandler handles DeleteOrderCommand.
+// DeleteOrderHandler 处理 DeleteOrderCommand。
 type DeleteOrderHandler struct {
 	repo order.OrderRepository
 }

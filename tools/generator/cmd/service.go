@@ -38,9 +38,7 @@ Examples:
 				fmt.Printf("   类型: 跨领域服务 (Cross-domain Service)\n")
 			}
 			fmt.Printf("   目标: %s/service.go\n", detection.TargetDir)
-			if detection.ShouldReuseDTO {
-				fmt.Println("   ✓ 复用现有 DTO")
-			}
+
 			fmt.Println()
 		}
 

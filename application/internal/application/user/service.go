@@ -4,21 +4,21 @@ import (
 	"context"
 	"errors"
 
-	// Import your domain repositories here:
+	// 在此导入领域层的 Repository：
 	// "github.com/soliton-go/application/internal/domain/user"
 	// "github.com/soliton-go/application/internal/domain/order"
 )
 
-// UserService handles cross-domain business logic.
+// UserService 处理跨领域的业务逻辑编排。
 type UserService struct {
-	// Add your repositories here:
+	// 在此添加依赖的 Repository：
 	// userRepo  user.UserRepository
 	// orderRepo order.OrderRepository
 }
 
-// NewUserService creates a new UserService.
+// NewUserService 创建 UserService 实例。
 func NewUserService(
-	// Add your repository parameters here:
+	// 在此添加 Repository 参数：
 	// userRepo user.UserRepository,
 	// orderRepo order.OrderRepository,
 ) *UserService {
@@ -29,44 +29,44 @@ func NewUserService(
 }
 
 
-// CreateUser implements the CreateUser use case.
-func (s *UserService) CreateUser(ctx context.Context, req CreateUserRequest) (*CreateUserResponse, error) {
-	// TODO: Implement business logic
-	// Example:
-	// 1. Validate request
-	// 2. Load entities from repositories
-	// 3. Execute domain logic
-	// 4. Save changes
-	// 5. Publish domain events
-	// 6. Return response
+// CreateUser 实现 CreateUser 用例。
+func (s *UserService) CreateUser(ctx context.Context, req CreateUserServiceRequest) (*CreateUserServiceResponse, error) {
+	// TODO: 实现业务逻辑
+	// 示例步骤：
+	// 1. 校验请求参数
+	// 2. 从 Repository 加载实体
+	// 3. 执行领域逻辑
+	// 4. 保存变更
+	// 5. 发布领域事件
+	// 6. 返回响应
 
 	return nil, errors.New("not implemented")
 }
 
-// GetUser implements the GetUser use case.
-func (s *UserService) GetUser(ctx context.Context, req GetUserRequest) (*GetUserResponse, error) {
-	// TODO: Implement business logic
-	// Example:
-	// 1. Validate request
-	// 2. Load entities from repositories
-	// 3. Execute domain logic
-	// 4. Save changes
-	// 5. Publish domain events
-	// 6. Return response
+// GetUser 实现 GetUser 用例。
+func (s *UserService) GetUser(ctx context.Context, req GetUserServiceRequest) (*GetUserServiceResponse, error) {
+	// TODO: 实现业务逻辑
+	// 示例步骤：
+	// 1. 校验请求参数
+	// 2. 从 Repository 加载实体
+	// 3. 执行领域逻辑
+	// 4. 保存变更
+	// 5. 发布领域事件
+	// 6. 返回响应
 
 	return nil, errors.New("not implemented")
 }
 
-// ListUsers implements the ListUsers use case.
-func (s *UserService) ListUsers(ctx context.Context, req ListUsersRequest) (*ListUsersResponse, error) {
-	// TODO: Implement business logic
-	// Example:
-	// 1. Validate request
-	// 2. Load entities from repositories
-	// 3. Execute domain logic
-	// 4. Save changes
-	// 5. Publish domain events
-	// 6. Return response
+// ListUsers 实现 ListUsers 用例。
+func (s *UserService) ListUsers(ctx context.Context, req ListUsersServiceRequest) (*ListUsersServiceResponse, error) {
+	// TODO: 实现业务逻辑
+	// 示例步骤：
+	// 1. 校验请求参数
+	// 2. 从 Repository 加载实体
+	// 3. 执行领域逻辑
+	// 4. 保存变更
+	// 5. 发布领域事件
+	// 6. 返回响应
 
 	return nil, errors.New("not implemented")
 }

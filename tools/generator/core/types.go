@@ -126,4 +126,6 @@ type ProjectData struct {
 	ModuleName       string
 	FrameworkVersion string
 	FrameworkReplace string
+	GoVersion        string
+	FxVersion        string
 }
