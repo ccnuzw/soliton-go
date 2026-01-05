@@ -355,21 +355,29 @@ function getStatusText(status: string): string {
           <details class="help-tips">
             <summary>📖 使用指南 Usage Guide</summary>
             <div class="tips-content">
-              <p><strong>领域名称：</strong>使用 PascalCase 格式，如 <code>User</code>、<code>Order</code></p>
+              <p><strong>领域名称：</strong>使用 PascalCase 格式，如 <code>User</code>、<code>Order</code>、<code>Product</code></p>
               <p><strong>字段类型：</strong></p>
               <ul>
                 <li><code>string</code> - 字符串 (varchar 255)</li>
-                <li><code>text</code> - 长文本</li>
-                <li><code>int</code> / <code>int64</code> - 整数</li>
-                <li><code>time</code> - 时间戳，<code>time?</code> - 可选时间</li>
-                <li><code>enum</code> - 枚举类型，需填写枚举值（用 | 分隔）</li>
+                <li><code>text</code> - 长文本 (无长度限制)</li>
+                <li><code>int</code> - 32位整数</li>
+                <li><code>int64</code> - 64位整数 (适合金额、大数值)</li>
+                <li><code>float64</code> - 浮点数 (适合评分、重量等)</li>
+                <li><code>bool</code> - 布尔值 (true/false)</li>
+                <li><code>time</code> - 必填时间戳</li>
+                <li><code>time?</code> - 可选时间戳 (可为空)</li>
+                <li><code>uuid</code> - UUID 字符串 (带索引，适合外键)</li>
+                <li><code>enum</code> - 枚举类型，需填写枚举值（用 <code>|</code> 分隔，如 <code>active|inactive|banned</code>）</li>
               </ul>
-              <p><strong>注意：</strong></p>
+              <p><strong>字段备注：</strong>可选，填写后会作为代码注释生成在字段定义行末</p>
+              <p><strong>注意事项：</strong></p>
               <ul>
-                <li>ID、CreatedAt、UpdatedAt 字段自动生成，无需手动添加</li>
+                <li><code>ID</code>、<code>CreatedAt</code>、<code>UpdatedAt</code> 字段自动生成，无需手动添加</li>
+                <li>启用"软删除"会自动添加 <code>DeletedAt</code> 字段</li>
                 <li>使用 ↑↓ 按钮可调整字段顺序</li>
                 <li>勾选"强制覆盖"会完全替换现有代码，请谨慎使用</li>
-                <li>生成后会自动运行 go mod tidy 下载依赖</li>
+                <li>勾选"自动注入"会将模块注入到 main.go</li>
+                <li>生成后会自动运行 <code>go mod tidy</code> 下载依赖</li>
               </ul>
             </div>
           </details>
@@ -1077,7 +1085,7 @@ h1 {
 }
 
 .file-list {
-  max-height: 300px;
+  max-height: 500px;
   overflow-y: auto;
 }
 
