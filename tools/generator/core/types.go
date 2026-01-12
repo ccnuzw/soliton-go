@@ -19,6 +19,7 @@ type ProjectConfig struct {
 // DomainConfig holds configuration for domain generation.
 type DomainConfig struct {
 	Name       string        `json:"name"`
+	Remark     string        `json:"remark,omitempty"`
 	Fields     []FieldConfig `json:"fields"`
 	TableName  string        `json:"table_name,omitempty"`
 	RouteBase  string        `json:"route_base,omitempty"`
@@ -42,6 +43,7 @@ type FieldConfig struct {
 // ServiceConfig holds configuration for service generation.
 type ServiceConfig struct {
 	Name    string   `json:"name"`
+	Remark  string   `json:"remark,omitempty"`
 	Methods []string `json:"methods,omitempty"`
 	Force   bool     `json:"force"`
 }
@@ -136,15 +138,16 @@ type Field struct {
 
 // TemplateData holds all data for domain template generation.
 type TemplateData struct {
-	PackageName string
-	EntityName  string
-	Fields      []Field
-	HasTime     bool
-	HasEnums    bool
-	ModulePath  string
-	TableName   string
-	RouteBase   string
-	SoftDelete  bool
+	PackageName  string
+	EntityName   string
+	DomainRemark string
+	Fields       []Field
+	HasTime      bool
+	HasEnums     bool
+	ModulePath   string
+	TableName    string
+	RouteBase    string
+	SoftDelete   bool
 }
 
 // ServiceMethod represents a service method for template use.
@@ -155,10 +158,11 @@ type ServiceMethod struct {
 
 // ServiceData holds template data for service generation.
 type ServiceData struct {
-	ServiceName string
-	PackageName string
-	Methods     []ServiceMethod
-	ModulePath  string
+	ServiceName   string
+	ServiceRemark string
+	PackageName   string
+	Methods       []ServiceMethod
+	ModulePath    string
 }
 
 // ProjectData holds template data for project initialization.

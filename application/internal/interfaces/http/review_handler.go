@@ -17,7 +17,6 @@ type ReviewHandler struct {
 	deleteHandler *reviewapp.DeleteReviewHandler
 	getHandler    *reviewapp.GetReviewHandler
 	listHandler   *reviewapp.ListReviewsHandler
-	service       *reviewapp.ReviewService
 }
 
 // NewReviewHandler 创建 ReviewHandler 实例。
@@ -27,7 +26,6 @@ func NewReviewHandler(
 	deleteHandler *reviewapp.DeleteReviewHandler,
 	getHandler *reviewapp.GetReviewHandler,
 	listHandler *reviewapp.ListReviewsHandler,
-	service *reviewapp.ReviewService,
 ) *ReviewHandler {
 	return &ReviewHandler{
 		createHandler: createHandler,
@@ -35,7 +33,6 @@ func NewReviewHandler(
 		deleteHandler: deleteHandler,
 		getHandler:    getHandler,
 		listHandler:   listHandler,
-		service:       service,
 	}
 }
 
@@ -44,9 +41,6 @@ func (h *ReviewHandler) RegisterRoutes(r *gin.Engine) {
 	api := r.Group("/api/reviews")
 	{
 		api.POST("", h.Create)
-		api.POST("/submit", h.SubmitReview)
-		api.POST("/:id/moderate", h.ModerateReview)
-		api.POST("/:id/reply", h.ReplyReview)
 		api.GET("", h.List)
 		api.GET("/:id", h.Get)
 		api.PUT("/:id", h.Update)
@@ -64,18 +58,18 @@ func (h *ReviewHandler) Create(c *gin.Context) {
 	}
 
 	cmd := reviewapp.CreateReviewCommand{
-		ID:           uuid.New().String(),
-		ProductId:    req.ProductId,
-		UserId:       req.UserId,
-		OrderId:      req.OrderId,
-		Rating:       req.Rating,
-		Title:        req.Title,
-		Content:      req.Content,
-		Status:       review.ReviewStatus(req.Status),
-		IsAnonymous:  req.IsAnonymous,
+		ID: uuid.New().String(),
+		ProductId: req.ProductId,
+		UserId: req.UserId,
+		OrderId: req.OrderId,
+		Rating: req.Rating,
+		Title: req.Title,
+		Content: req.Content,
+		Status: review.ReviewStatus(req.Status),
+		IsAnonymous: req.IsAnonymous,
 		HelpfulCount: req.HelpfulCount,
-		Reply:        req.Reply,
-		Images:       req.Images,
+		Reply: req.Reply,
+		Images: req.Images,
 	}
 
 	entity, err := h.createHandler.Handle(c.Request.Context(), cmd)
@@ -108,9 +102,9 @@ func (h *ReviewHandler) List(c *gin.Context) {
 	sortOrder := c.DefaultQuery("sort_order", "desc")
 
 	result, err := h.listHandler.Handle(c.Request.Context(), reviewapp.ListReviewsQuery{
-		Page:      page,
-		PageSize:  pageSize,
-		SortBy:    sortBy,
+		Page:     page,
+		PageSize: pageSize,
+		SortBy:   sortBy,
 		SortOrder: sortOrder,
 	})
 	if err != nil {
@@ -138,18 +132,18 @@ func (h *ReviewHandler) Update(c *gin.Context) {
 	}
 
 	cmd := reviewapp.UpdateReviewCommand{
-		ID:           id,
-		ProductId:    req.ProductId,
-		UserId:       req.UserId,
-		OrderId:      req.OrderId,
-		Rating:       req.Rating,
-		Title:        req.Title,
-		Content:      req.Content,
-		Status:       EnumPtr(req.Status, func(v string) review.ReviewStatus { return review.ReviewStatus(v) }),
-		IsAnonymous:  req.IsAnonymous,
+		ID: id,
+		ProductId: req.ProductId,
+		UserId: req.UserId,
+		OrderId: req.OrderId,
+		Rating: req.Rating,
+		Title: req.Title,
+		Content: req.Content,
+		Status: EnumPtr(req.Status, func(v string) review.ReviewStatus { return review.ReviewStatus(v) }),
+		IsAnonymous: req.IsAnonymous,
 		HelpfulCount: req.HelpfulCount,
-		Reply:        req.Reply,
-		Images:       req.Images,
+		Reply: req.Reply,
+		Images: req.Images,
 	}
 
 	entity, err := h.updateHandler.Handle(c.Request.Context(), cmd)
@@ -172,71 +166,4 @@ func (h *ReviewHandler) Delete(c *gin.Context) {
 	}
 
 	Success(c, nil)
-}
-
-// SubmitReview 处理 POST /api/reviews/submit
-func (h *ReviewHandler) SubmitReview(c *gin.Context) {
-	var req reviewapp.CreateReviewServiceRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		BadRequest(c, err.Error())
-		return
-	}
-
-	resp, err := h.service.CreateReview(c.Request.Context(), req)
-	if err != nil {
-		ServiceError(c, err)
-		return
-	}
-
-	Success(c, resp)
-}
-
-// ModerateReview 处理 POST /api/reviews/:id/moderate
-func (h *ReviewHandler) ModerateReview(c *gin.Context) {
-	id := c.Param("id")
-
-	var req reviewapp.ModerateReviewServiceRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		BadRequest(c, err.Error())
-		return
-	}
-	if req.ReviewId == "" {
-		req.ReviewId = id
-	} else if req.ReviewId != id {
-		BadRequest(c, "review_id mismatch")
-		return
-	}
-
-	resp, err := h.service.ModerateReview(c.Request.Context(), req)
-	if err != nil {
-		ServiceError(c, err)
-		return
-	}
-
-	Success(c, resp)
-}
-
-// ReplyReview 处理 POST /api/reviews/:id/reply
-func (h *ReviewHandler) ReplyReview(c *gin.Context) {
-	id := c.Param("id")
-
-	var req reviewapp.ReplyReviewServiceRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		BadRequest(c, err.Error())
-		return
-	}
-	if req.ReviewId == "" {
-		req.ReviewId = id
-	} else if req.ReviewId != id {
-		BadRequest(c, "review_id mismatch")
-		return
-	}
-
-	resp, err := h.service.ReplyReview(c.Request.Context(), req)
-	if err != nil {
-		ServiceError(c, err)
-		return
-	}
-
-	Success(c, resp)
 }

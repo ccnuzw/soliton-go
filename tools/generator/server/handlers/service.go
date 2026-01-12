@@ -10,6 +10,7 @@ import (
 // ServiceRequest is the request body for service generation.
 type ServiceRequest struct {
 	Name    string   `json:"name" binding:"required"`
+	Remark  string   `json:"remark"`
 	Methods []string `json:"methods"`
 	Force   bool     `json:"force"`
 }
@@ -24,6 +25,7 @@ func GenerateService(c *gin.Context) {
 
 	cfg := core.ServiceConfig{
 		Name:    req.Name,
+		Remark:  req.Remark,
 		Methods: req.Methods,
 		Force:   req.Force,
 	}
@@ -52,6 +54,7 @@ func PreviewService(c *gin.Context) {
 
 	cfg := core.ServiceConfig{
 		Name:    req.Name,
+		Remark:  req.Remark,
 		Methods: req.Methods,
 		Force:   req.Force,
 	}

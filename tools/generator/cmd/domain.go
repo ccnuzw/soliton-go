@@ -16,6 +16,7 @@ var tableNameFlag string
 var routeBaseFlag string
 var wireFlag bool
 var softDeleteFlag bool
+var domainRemarkFlag string
 
 var domainCmd = &cobra.Command{
 	Use:   "domain [name]",
@@ -49,6 +50,7 @@ Examples:
 		// Create domain configuration
 		cfg := core.DomainConfig{
 			Name:       name,
+			Remark:     domainRemarkFlag,
 			Fields:     fields,
 			TableName:  tableNameFlag,
 			RouteBase:  routeBaseFlag,
@@ -83,6 +85,7 @@ func init() {
 	domainCmd.Flags().StringVar(&routeBaseFlag, "route", "", "Override route base path (e.g., users)")
 	domainCmd.Flags().BoolVar(&wireFlag, "wire", false, "Auto-wire module into main.go (requires init template structure)")
 	domainCmd.Flags().BoolVar(&softDeleteFlag, "soft-delete", false, "Enable soft delete (adds deleted_at field)")
+	domainCmd.Flags().StringVar(&domainRemarkFlag, "remark", "", "Optional domain remark/description")
 
 	// Add subcommands
 	domainCmd.AddCommand(domainListCmd)

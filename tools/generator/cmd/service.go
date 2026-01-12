@@ -11,6 +11,7 @@ import (
 )
 
 var serviceMethods string
+var serviceRemarkFlag string
 
 var serviceCmd = &cobra.Command{
 	Use:   "service [name]",
@@ -56,6 +57,7 @@ Examples:
 		// Create service configuration
 		cfg := core.ServiceConfig{
 			Name:    name,
+			Remark:  serviceRemarkFlag,
 			Methods: methods,
 			Force:   forceFlag,
 		}
@@ -82,6 +84,7 @@ func init() {
 	rootCmd.AddCommand(serviceCmd)
 	serviceCmd.Flags().StringVar(&serviceMethods, "methods", "", "Comma-separated list of service methods (e.g., 'CreateOrder,CancelOrder')")
 	serviceCmd.Flags().BoolVar(&forceFlag, "force", false, "Force overwrite existing files")
+	serviceCmd.Flags().StringVar(&serviceRemarkFlag, "remark", "", "Optional service remark/description")
 
 	// Add subcommands
 	serviceCmd.AddCommand(serviceListCmd)

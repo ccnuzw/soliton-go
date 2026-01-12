@@ -26,10 +26,8 @@ var Module = fx.Options(
 	// Query Handlers
 	fx.Provide(NewGetReviewHandler),
 	fx.Provide(NewListReviewsHandler),
-
-	// Application Services
+	
 	fx.Provide(NewReviewService),
-
 	// soliton-gen:services
 	// soliton-gen:event-handlers
 

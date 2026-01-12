@@ -17,7 +17,6 @@ type PromotionHandler struct {
 	deleteHandler *promotionapp.DeletePromotionHandler
 	getHandler    *promotionapp.GetPromotionHandler
 	listHandler   *promotionapp.ListPromotionsHandler
-	service       *promotionapp.PromotionService
 }
 
 // NewPromotionHandler 创建 PromotionHandler 实例。
@@ -27,7 +26,6 @@ func NewPromotionHandler(
 	deleteHandler *promotionapp.DeletePromotionHandler,
 	getHandler *promotionapp.GetPromotionHandler,
 	listHandler *promotionapp.ListPromotionsHandler,
-	service *promotionapp.PromotionService,
 ) *PromotionHandler {
 	return &PromotionHandler{
 		createHandler: createHandler,
@@ -35,7 +33,6 @@ func NewPromotionHandler(
 		deleteHandler: deleteHandler,
 		getHandler:    getHandler,
 		listHandler:   listHandler,
-		service:       service,
 	}
 }
 
@@ -44,9 +41,6 @@ func (h *PromotionHandler) RegisterRoutes(r *gin.Engine) {
 	api := r.Group("/api/promotions")
 	{
 		api.POST("", h.Create)
-		api.POST("/validate", h.ValidatePromotion)
-		api.POST("/apply", h.ApplyPromotion)
-		api.POST("/revoke", h.RevokePromotion)
 		api.GET("", h.List)
 		api.GET("/:id", h.Get)
 		api.PUT("/:id", h.Update)
@@ -64,22 +58,22 @@ func (h *PromotionHandler) Create(c *gin.Context) {
 	}
 
 	cmd := promotionapp.CreatePromotionCommand{
-		ID:                uuid.New().String(),
-		Code:              req.Code,
-		Name:              req.Name,
-		Description:       req.Description,
-		DiscountType:      promotion.PromotionDiscountType(req.DiscountType),
-		DiscountValue:     req.DiscountValue,
-		Currency:          req.Currency,
-		MinOrderAmount:    req.MinOrderAmount,
+		ID: uuid.New().String(),
+		Code: req.Code,
+		Name: req.Name,
+		Description: req.Description,
+		DiscountType: promotion.PromotionDiscountType(req.DiscountType),
+		DiscountValue: req.DiscountValue,
+		Currency: req.Currency,
+		MinOrderAmount: req.MinOrderAmount,
 		MaxDiscountAmount: req.MaxDiscountAmount,
-		UsageLimit:        req.UsageLimit,
-		UsedCount:         req.UsedCount,
-		PerUserLimit:      req.PerUserLimit,
-		StartsAt:          req.StartsAt,
-		EndsAt:            req.EndsAt,
-		Status:            promotion.PromotionStatus(req.Status),
-		Metadata:          req.Metadata,
+		UsageLimit: req.UsageLimit,
+		UsedCount: req.UsedCount,
+		PerUserLimit: req.PerUserLimit,
+		StartsAt: req.StartsAt,
+		EndsAt: req.EndsAt,
+		Status: promotion.PromotionStatus(req.Status),
+		Metadata: req.Metadata,
 	}
 
 	entity, err := h.createHandler.Handle(c.Request.Context(), cmd)
@@ -112,9 +106,9 @@ func (h *PromotionHandler) List(c *gin.Context) {
 	sortOrder := c.DefaultQuery("sort_order", "desc")
 
 	result, err := h.listHandler.Handle(c.Request.Context(), promotionapp.ListPromotionsQuery{
-		Page:      page,
-		PageSize:  pageSize,
-		SortBy:    sortBy,
+		Page:     page,
+		PageSize: pageSize,
+		SortBy:   sortBy,
 		SortOrder: sortOrder,
 	})
 	if err != nil {
@@ -142,22 +136,22 @@ func (h *PromotionHandler) Update(c *gin.Context) {
 	}
 
 	cmd := promotionapp.UpdatePromotionCommand{
-		ID:                id,
-		Code:              req.Code,
-		Name:              req.Name,
-		Description:       req.Description,
-		DiscountType:      EnumPtr(req.DiscountType, func(v string) promotion.PromotionDiscountType { return promotion.PromotionDiscountType(v) }),
-		DiscountValue:     req.DiscountValue,
-		Currency:          req.Currency,
-		MinOrderAmount:    req.MinOrderAmount,
+		ID: id,
+		Code: req.Code,
+		Name: req.Name,
+		Description: req.Description,
+		DiscountType: EnumPtr(req.DiscountType, func(v string) promotion.PromotionDiscountType { return promotion.PromotionDiscountType(v) }),
+		DiscountValue: req.DiscountValue,
+		Currency: req.Currency,
+		MinOrderAmount: req.MinOrderAmount,
 		MaxDiscountAmount: req.MaxDiscountAmount,
-		UsageLimit:        req.UsageLimit,
-		UsedCount:         req.UsedCount,
-		PerUserLimit:      req.PerUserLimit,
-		StartsAt:          req.StartsAt,
-		EndsAt:            req.EndsAt,
-		Status:            EnumPtr(req.Status, func(v string) promotion.PromotionStatus { return promotion.PromotionStatus(v) }),
-		Metadata:          req.Metadata,
+		UsageLimit: req.UsageLimit,
+		UsedCount: req.UsedCount,
+		PerUserLimit: req.PerUserLimit,
+		StartsAt: req.StartsAt,
+		EndsAt: req.EndsAt,
+		Status: EnumPtr(req.Status, func(v string) promotion.PromotionStatus { return promotion.PromotionStatus(v) }),
+		Metadata: req.Metadata,
 	}
 
 	entity, err := h.updateHandler.Handle(c.Request.Context(), cmd)
@@ -180,55 +174,4 @@ func (h *PromotionHandler) Delete(c *gin.Context) {
 	}
 
 	Success(c, nil)
-}
-
-// ValidatePromotion 处理 POST /api/promotions/validate
-func (h *PromotionHandler) ValidatePromotion(c *gin.Context) {
-	var req promotionapp.ValidatePromotionServiceRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		BadRequest(c, err.Error())
-		return
-	}
-
-	resp, err := h.service.ValidatePromotion(c.Request.Context(), req)
-	if err != nil {
-		ServiceError(c, err)
-		return
-	}
-
-	Success(c, resp)
-}
-
-// ApplyPromotion 处理 POST /api/promotions/apply
-func (h *PromotionHandler) ApplyPromotion(c *gin.Context) {
-	var req promotionapp.ApplyPromotionServiceRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		BadRequest(c, err.Error())
-		return
-	}
-
-	resp, err := h.service.ApplyPromotion(c.Request.Context(), req)
-	if err != nil {
-		ServiceError(c, err)
-		return
-	}
-
-	Success(c, resp)
-}
-
-// RevokePromotion 处理 POST /api/promotions/revoke
-func (h *PromotionHandler) RevokePromotion(c *gin.Context) {
-	var req promotionapp.RevokePromotionServiceRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		BadRequest(c, err.Error())
-		return
-	}
-
-	resp, err := h.service.RevokePromotion(c.Request.Context(), req)
-	if err != nil {
-		ServiceError(c, err)
-		return
-	}
-
-	Success(c, resp)
 }

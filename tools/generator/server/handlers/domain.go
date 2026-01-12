@@ -10,6 +10,7 @@ import (
 // DomainRequest is the request body for domain generation.
 type DomainRequest struct {
 	Name       string             `json:"name" binding:"required"`
+	Remark     string             `json:"remark"`
 	Fields     []core.FieldConfig `json:"fields"`
 	TableName  string             `json:"table_name"`
 	RouteBase  string             `json:"route_base"`
@@ -28,6 +29,7 @@ func GenerateDomain(c *gin.Context) {
 
 	cfg := core.DomainConfig{
 		Name:       req.Name,
+		Remark:     req.Remark,
 		Fields:     req.Fields,
 		TableName:  req.TableName,
 		RouteBase:  req.RouteBase,
@@ -60,6 +62,7 @@ func PreviewDomain(c *gin.Context) {
 
 	cfg := core.DomainConfig{
 		Name:       req.Name,
+		Remark:     req.Remark,
 		Fields:     req.Fields,
 		TableName:  req.TableName,
 		RouteBase:  req.RouteBase,

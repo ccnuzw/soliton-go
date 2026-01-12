@@ -5,30 +5,29 @@ import (
 	"time"
 
 	"github.com/soliton-go/application/internal/domain/inventory"
-	"gorm.io/datatypes"
 )
 
 // CreateInventoryCommand 是创建 Inventory 的命令。
 type CreateInventoryCommand struct {
-	ID             string
-	ProductId      string
-	WarehouseId    string
-	LocationCode   string
-	Stock          int
-	ReservedStock  int
+	ID string
+	ProductId string
+	WarehouseId string
+	LocationCode string
+	Stock int
+	ReservedStock int
 	AvailableStock int
-	SafetyStock    int
-	RestockLevel   int
-	Status         inventory.InventoryStatus
-	LastStockedAt  *time.Time
-	LastCheckedAt  *time.Time
-	Notes          string
-	Metadata       datatypes.JSON
+	SafetyStock int
+	RestockLevel int
+	Status inventory.InventoryStatus
+	LastStockedAt *time.Time
+	LastCheckedAt *time.Time
+	Notes string
+	Metadata datatypes.JSON
 }
 
 // CreateInventoryHandler 处理 CreateInventoryCommand。
 type CreateInventoryHandler struct {
-	repo    inventory.InventoryRepository
+	repo inventory.InventoryRepository
 	service *inventory.InventoryDomainService
 	// 可选：添加事件总线用于发布领域事件
 	// eventBus event.EventBus
@@ -58,25 +57,25 @@ func (h *CreateInventoryHandler) Handle(ctx context.Context, cmd CreateInventory
 
 // UpdateInventoryCommand 是更新 Inventory 的命令。
 type UpdateInventoryCommand struct {
-	ID             string
-	ProductId      *string
-	WarehouseId    *string
-	LocationCode   *string
-	Stock          *int
-	ReservedStock  *int
+	ID string
+	ProductId *string
+	WarehouseId *string
+	LocationCode *string
+	Stock *int
+	ReservedStock *int
 	AvailableStock *int
-	SafetyStock    *int
-	RestockLevel   *int
-	Status         *inventory.InventoryStatus
-	LastStockedAt  *time.Time
-	LastCheckedAt  *time.Time
-	Notes          *string
-	Metadata       *datatypes.JSON
+	SafetyStock *int
+	RestockLevel *int
+	Status *inventory.InventoryStatus
+	LastStockedAt *time.Time
+	LastCheckedAt *time.Time
+	Notes *string
+	Metadata *datatypes.JSON
 }
 
 // UpdateInventoryHandler 处理 UpdateInventoryCommand。
 type UpdateInventoryHandler struct {
-	repo    inventory.InventoryRepository
+	repo inventory.InventoryRepository
 	service *inventory.InventoryDomainService
 }
 
@@ -103,7 +102,7 @@ type DeleteInventoryCommand struct {
 
 // DeleteInventoryHandler 处理 DeleteInventoryCommand。
 type DeleteInventoryHandler struct {
-	repo    inventory.InventoryRepository
+	repo inventory.InventoryRepository
 	service *inventory.InventoryDomainService
 }
 

@@ -26,10 +26,8 @@ var Module = fx.Options(
 	// Query Handlers
 	fx.Provide(NewGetShippingHandler),
 	fx.Provide(NewListShippingsHandler),
-
-	// Application Services
+	
 	fx.Provide(NewShippingService),
-
 	// soliton-gen:services
 	// soliton-gen:event-handlers
 

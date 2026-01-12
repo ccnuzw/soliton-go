@@ -2,7 +2,6 @@ package userapp
 
 import (
 	"context"
-	"time"
 
 	"github.com/soliton-go/application/internal/domain/user"
 )
@@ -12,24 +11,6 @@ type CreateUserCommand struct {
 	ID string
 	Username string
 	Email string
-	Password string
-	FullName string
-	Phone string
-	Avatar string
-	Bio string
-	BirthDate time.Time
-	Gender user.UserGender
-	Role user.UserRole
-	Status user.UserStatus
-	EmailVerified bool
-	PhoneVerified bool
-	LastLoginAt time.Time
-	LoginCount int
-	FailedLoginCount int
-	Balance int64
-	Points int
-	VipLevel int
-	Preferences string
 }
 
 // CreateUserHandler 处理 CreateUserCommand。
@@ -45,7 +26,7 @@ func NewCreateUserHandler(repo user.UserRepository, service *user.UserDomainServ
 }
 
 func (h *CreateUserHandler) Handle(ctx context.Context, cmd CreateUserCommand) (*user.User, error) {
-	entity := user.NewUser(cmd.ID, cmd.Username, cmd.Email, cmd.Password, cmd.FullName, cmd.Phone, cmd.Avatar, cmd.Bio, cmd.BirthDate, cmd.Gender, cmd.Role, cmd.Status, cmd.EmailVerified, cmd.PhoneVerified, cmd.LastLoginAt, cmd.LoginCount, cmd.FailedLoginCount, cmd.Balance, cmd.Points, cmd.VipLevel, cmd.Preferences)
+	entity := user.NewUser(cmd.ID, cmd.Username, cmd.Email)
 	if err := h.repo.Save(ctx, entity); err != nil {
 		return nil, err
 	}
@@ -67,24 +48,6 @@ type UpdateUserCommand struct {
 	ID string
 	Username *string
 	Email *string
-	Password *string
-	FullName *string
-	Phone *string
-	Avatar *string
-	Bio *string
-	BirthDate *time.Time
-	Gender *user.UserGender
-	Role *user.UserRole
-	Status *user.UserStatus
-	EmailVerified *bool
-	PhoneVerified *bool
-	LastLoginAt *time.Time
-	LoginCount *int
-	FailedLoginCount *int
-	Balance *int64
-	Points *int
-	VipLevel *int
-	Preferences *string
 }
 
 // UpdateUserHandler 处理 UpdateUserCommand。
@@ -102,7 +65,7 @@ func (h *UpdateUserHandler) Handle(ctx context.Context, cmd UpdateUserCommand) (
 	if err != nil {
 		return nil, err
 	}
-	entity.Update(cmd.Username, cmd.Email, cmd.Password, cmd.FullName, cmd.Phone, cmd.Avatar, cmd.Bio, cmd.BirthDate, cmd.Gender, cmd.Role, cmd.Status, cmd.EmailVerified, cmd.PhoneVerified, cmd.LastLoginAt, cmd.LoginCount, cmd.FailedLoginCount, cmd.Balance, cmd.Points, cmd.VipLevel, cmd.Preferences)
+	entity.Update(cmd.Username, cmd.Email)
 	if err := h.repo.Save(ctx, entity); err != nil {
 		return nil, err
 	}

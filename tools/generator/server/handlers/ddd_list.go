@@ -220,8 +220,16 @@ func GetDDDSource(c *gin.Context) {
 	domain := strings.TrimSpace(c.Query("domain"))
 	itemType := strings.TrimSpace(c.Query("type"))
 	name := strings.TrimSpace(c.Query("name"))
-	if domain == "" || itemType == "" || name == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "domain, type, and name are required"})
+	if itemType == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "type is required"})
+		return
+	}
+	if strings.ToLower(itemType) != "main" && domain == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "domain is required"})
+		return
+	}
+	if strings.ToLower(itemType) != "main" && strings.ToLower(itemType) != "module" && name == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "name is required"})
 		return
 	}
 
@@ -231,10 +239,18 @@ func GetDDDSource(c *gin.Context) {
 		return
 	}
 
-	path, err := dddFilePath(layout, domain, itemType, name)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
+	var path string
+	switch strings.ToLower(itemType) {
+	case "module":
+		path = filepath.Join(layout.AppDir, strings.ToLower(domain), "module.go")
+	case "main":
+		path = filepath.Join(filepath.Dir(layout.InternalDir), "cmd", "main.go")
+	default:
+		path, err = dddFilePath(layout, domain, itemType, name)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
 	}
 	content, err := os.ReadFile(path)
 	if err != nil {
@@ -273,10 +289,17 @@ func DeleteDDD(c *gin.Context) {
 		return
 	}
 
-	if strings.ToLower(req.Type) == "event_handler" {
+	itemType := strings.ToLower(req.Type)
+	if itemType == "event_handler" || itemType == "event" {
 		handlerName := strings.TrimSuffix(normalizeEventStructName(core.ToPascalCase(req.Name)), "Event") + "Handler"
 		modulePath := filepath.Join(layout.AppDir, strings.ToLower(req.Domain), "module.go")
 		_ = removeEventHandlerFromModule(modulePath, handlerName)
+	}
+	if itemType == "event" {
+		handlerPath, err := dddFilePath(layout, req.Domain, "event_handler", req.Name)
+		if err == nil && core.IsFile(handlerPath) {
+			_ = os.Remove(handlerPath)
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{"success": true})
@@ -323,14 +346,49 @@ func RenameDDD(c *gin.Context) {
 	updated := string(content)
 	oldName := core.ToPascalCase(req.Name)
 	newName := core.ToPascalCase(req.NewName)
+	itemType := strings.ToLower(req.Type)
+	handlerRename := false
+	handlerOldPath := ""
+	handlerNewPath := ""
+	handlerUpdated := ""
+	oldHandlerName := ""
+	newHandlerName := ""
+	oldStructName := ""
+	newStructName := ""
 
-	switch strings.ToLower(req.Type) {
+	if itemType == "event" {
+		oldStructName = normalizeEventStructName(oldName)
+		newStructName = normalizeEventStructName(newName)
+		handlerPath, err := dddFilePath(layout, req.Domain, "event_handler", req.Name)
+		if err == nil && core.IsFile(handlerPath) {
+			handlerRename = true
+			handlerOldPath = handlerPath
+			handlerNewPath, err = dddFilePath(layout, req.Domain, "event_handler", req.NewName)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				return
+			}
+			if core.IsFile(handlerNewPath) && !req.Force {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "target event handler exists"})
+				return
+			}
+			handlerContent, err := os.ReadFile(handlerOldPath)
+			if err != nil {
+				c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+				return
+			}
+			oldHandlerName = strings.TrimSuffix(oldStructName, "Event") + "Handler"
+			newHandlerName = strings.TrimSuffix(newStructName, "Event") + "Handler"
+			handlerUpdated = strings.ReplaceAll(string(handlerContent), oldHandlerName, newHandlerName)
+			handlerUpdated = strings.ReplaceAll(handlerUpdated, oldStructName, newStructName)
+		}
+	}
+
+	switch itemType {
 	case "valueobject", "spec", "policy":
 		updated = strings.ReplaceAll(updated, oldName, newName)
 	case "event":
-		oldStruct := normalizeEventStructName(oldName)
-		newStruct := normalizeEventStructName(newName)
-		updated = strings.ReplaceAll(updated, oldStruct, newStruct)
+		updated = strings.ReplaceAll(updated, oldStructName, newStructName)
 	case "event_handler":
 		oldStruct := normalizeEventStructName(oldName)
 		newStruct := normalizeEventStructName(newName)
@@ -352,6 +410,18 @@ func RenameDDD(c *gin.Context) {
 	if err := os.Remove(oldPath); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
+	}
+	if handlerRename {
+		if err := os.WriteFile(handlerNewPath, []byte(handlerUpdated), 0644); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		if err := os.Remove(handlerOldPath); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		modulePath := filepath.Join(layout.AppDir, strings.ToLower(req.Domain), "module.go")
+		_ = renameEventHandlerInModule(modulePath, oldHandlerName, newHandlerName)
 	}
 
 	c.JSON(http.StatusOK, gin.H{"success": true})

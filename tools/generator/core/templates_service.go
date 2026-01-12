@@ -16,6 +16,10 @@ import (
 	// "{{.ModulePath}}/internal/domain/order"
 )
 
+{{- if .ServiceRemark}}
+// ServiceRemark: {{.ServiceRemark}}
+{{- end}}
+
 // {{.ServiceName}} 处理跨领域的业务逻辑编排。
 type {{.ServiceName}} struct {
 	// 在此添加依赖的 Repository：

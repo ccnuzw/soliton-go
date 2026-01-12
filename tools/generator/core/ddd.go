@@ -327,10 +327,17 @@ func generateEventHandlerInternal(cfg EventHandlerConfig, previewOnly bool) (*Ge
 	genFile := generateTemplateFile(filepath.Join(appDir, fileName), EventHandlerTemplate, data, cfg.Force, previewOnly)
 	result.Files = append(result.Files, genFile)
 
-	if !previewOnly {
-		modulePath := filepath.Join(appDir, "module.go")
+	modulePath := filepath.Join(appDir, "module.go")
+	mainGoPath := filepath.Join(filepath.Dir(layout.InternalDir), "cmd", "main.go")
+	if previewOnly {
+		if modulePreview := previewModuleForEventHandler(modulePath, handlerName); modulePreview != nil {
+			result.Files = append(result.Files, *modulePreview)
+		}
+		if mainPreview := previewEventBusProvider(mainGoPath); mainPreview != nil {
+			result.Files = append(result.Files, *mainPreview)
+		}
+	} else {
 		_ = updateModuleForEventHandler(modulePath, handlerName)
-		mainGoPath := filepath.Join(filepath.Dir(layout.InternalDir), "cmd", "main.go")
 		_ = ensureEventBusProvider(mainGoPath)
 	}
 
@@ -407,16 +414,11 @@ func detectFieldFlags(fields []Field) (bool, bool) {
 	return hasTime, hasEnums
 }
 
-func updateModuleForEventHandler(path, handlerName string) bool {
-	content, err := os.ReadFile(path)
-	if err != nil {
-		return false
-	}
-
+func updateModuleContentForEventHandler(content string, handlerName string) (string, bool) {
 	provideCode := fmt.Sprintf("fx.Provide(New%s),", handlerName)
 	invokeCode := fmt.Sprintf("fx.Invoke(Register%s),", handlerName)
 
-	result := string(content)
+	result := content
 	modified := false
 
 	marker := "// soliton-gen:event-handlers"
@@ -450,20 +452,11 @@ func updateModuleForEventHandler(path, handlerName string) bool {
 		}
 	}
 
-	if !modified {
-		return true
-	}
-
-	return os.WriteFile(path, []byte(result), 0644) == nil
+	return result, modified
 }
 
-func ensureEventBusProvider(mainGoPath string) bool {
-	content, err := os.ReadFile(mainGoPath)
-	if err != nil {
-		return false
-	}
-
-	result := string(content)
+func ensureEventBusProviderContent(content string) (string, bool) {
+	result := content
 	modified := false
 
 	importPath := "github.com/soliton-go/framework/event"
@@ -500,6 +493,62 @@ func ensureEventBusProvider(mainGoPath string) bool {
 			modified = true
 		}
 	}
+
+	return result, modified
+}
+
+func previewModuleForEventHandler(path, handlerName string) *GeneratedFile {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return nil
+	}
+	updated, modified := updateModuleContentForEventHandler(string(content), handlerName)
+	if !modified {
+		return nil
+	}
+	return &GeneratedFile{
+		Path:    path,
+		Status:  FileStatusOverwrite,
+		Content: updated,
+	}
+}
+
+func previewEventBusProvider(mainGoPath string) *GeneratedFile {
+	content, err := os.ReadFile(mainGoPath)
+	if err != nil {
+		return nil
+	}
+	updated, modified := ensureEventBusProviderContent(string(content))
+	if !modified {
+		return nil
+	}
+	return &GeneratedFile{
+		Path:    mainGoPath,
+		Status:  FileStatusOverwrite,
+		Content: updated,
+	}
+}
+
+func updateModuleForEventHandler(path, handlerName string) bool {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return false
+	}
+	result, modified := updateModuleContentForEventHandler(string(content), handlerName)
+
+	if !modified {
+		return true
+	}
+
+	return os.WriteFile(path, []byte(result), 0644) == nil
+}
+
+func ensureEventBusProvider(mainGoPath string) bool {
+	content, err := os.ReadFile(mainGoPath)
+	if err != nil {
+		return false
+	}
+	result, modified := ensureEventBusProviderContent(string(content))
 
 	if !modified {
 		return true

@@ -2,124 +2,73 @@ package reviewapp
 
 import (
 	"context"
-	"fmt"
-	"time"
+	"errors"
 
-	"github.com/google/uuid"
-
-	"github.com/soliton-go/application/internal/domain/review"
+	// 在此导入领域层的 Repository：
+	// "github.com/soliton-go/application/internal/domain/user"
+	// "github.com/soliton-go/application/internal/domain/order"
 )
+// ServiceRemark: 评价服务
 
 // ReviewService 处理跨领域的业务逻辑编排。
 type ReviewService struct {
-	repo review.ReviewRepository
+	// 在此添加依赖的 Repository：
+	// userRepo  user.UserRepository
+	// orderRepo order.OrderRepository
 }
 
 // NewReviewService 创建 ReviewService 实例。
 func NewReviewService(
-	repo review.ReviewRepository,
+	// 在此添加 Repository 参数：
+	// userRepo user.UserRepository,
+	// orderRepo order.OrderRepository,
 ) *ReviewService {
 	return &ReviewService{
-		repo: repo,
+		// userRepo:  userRepo,
+		// orderRepo: orderRepo,
 	}
 }
 
+
 // CreateReview 实现 CreateReview 用例。
 func (s *ReviewService) CreateReview(ctx context.Context, req CreateReviewServiceRequest) (*CreateReviewServiceResponse, error) {
-	if req.ProductId == "" || req.UserId == "" || req.OrderId == "" {
-		return nil, fmt.Errorf("product_id, user_id, order_id are required")
-	}
-	if req.Rating < 1 || req.Rating > 5 {
-		return nil, fmt.Errorf("rating must be between 1 and 5")
-	}
-	if req.Content == "" {
-		return nil, fmt.Errorf("content is required")
-	}
+	// TODO: 实现业务逻辑
+	// 示例步骤：
+	// 1. 校验请求参数
+	// 2. 从 Repository 加载实体
+	// 3. 执行领域逻辑
+	// 4. 保存变更
+	// 5. 发布领域事件
+	// 6. 返回响应
 
-	entity := review.NewReview(
-		uuid.New().String(),
-		req.ProductId,
-		req.UserId,
-		req.OrderId,
-		req.Rating,
-		req.Title,
-		req.Content,
-		review.ReviewStatusPending,
-		req.IsAnonymous,
-		0,
-		"",
-		req.Images,
-	)
-	if err := s.repo.Save(ctx, entity); err != nil {
-		return nil, err
-	}
-
-	return &CreateReviewServiceResponse{
-		Success:  true,
-		Message:  "created",
-		ReviewId: string(entity.ID),
-		Status:   string(entity.Status),
-	}, nil
+	return nil, errors.New("not implemented")
 }
 
 // ModerateReview 实现 ModerateReview 用例。
 func (s *ReviewService) ModerateReview(ctx context.Context, req ModerateReviewServiceRequest) (*ModerateReviewServiceResponse, error) {
-	if req.ReviewId == "" {
-		return nil, fmt.Errorf("review_id is required")
-	}
-	if req.Status == "" {
-		return nil, fmt.Errorf("status is required")
-	}
+	// TODO: 实现业务逻辑
+	// 示例步骤：
+	// 1. 校验请求参数
+	// 2. 从 Repository 加载实体
+	// 3. 执行领域逻辑
+	// 4. 保存变更
+	// 5. 发布领域事件
+	// 6. 返回响应
 
-	entity, err := s.repo.Find(ctx, review.ReviewID(req.ReviewId))
-	if err != nil {
-		return nil, err
-	}
-
-	status := review.ReviewStatus(req.Status)
-	entity.Update(nil, nil, nil, nil, nil, nil, &status, nil, nil, nil, nil)
-	if err := s.repo.Save(ctx, entity); err != nil {
-		return nil, err
-	}
-
-	return &ModerateReviewServiceResponse{
-		Success:  true,
-		Message:  "moderated",
-		ReviewId: string(entity.ID),
-		Status:   string(entity.Status),
-	}, nil
+	return nil, errors.New("not implemented")
 }
 
 // ReplyReview 实现 ReplyReview 用例。
 func (s *ReviewService) ReplyReview(ctx context.Context, req ReplyReviewServiceRequest) (*ReplyReviewServiceResponse, error) {
-	if req.ReviewId == "" {
-		return nil, fmt.Errorf("review_id is required")
-	}
-	if req.Reply == "" {
-		return nil, fmt.Errorf("reply is required")
-	}
+	// TODO: 实现业务逻辑
+	// 示例步骤：
+	// 1. 校验请求参数
+	// 2. 从 Repository 加载实体
+	// 3. 执行领域逻辑
+	// 4. 保存变更
+	// 5. 发布领域事件
+	// 6. 返回响应
 
-	entity, err := s.repo.Find(ctx, review.ReviewID(req.ReviewId))
-	if err != nil {
-		return nil, err
-	}
-
-	entity.Update(nil, nil, nil, nil, nil, nil, nil, nil, nil, &req.Reply, nil)
-	if err := s.repo.Save(ctx, entity); err != nil {
-		return nil, err
-	}
-
-	repliedAt := req.RepliedAt
-	if repliedAt == nil {
-		now := time.Now()
-		repliedAt = &now
-	}
-
-	return &ReplyReviewServiceResponse{
-		Success:   true,
-		Message:   "replied",
-		ReviewId:  string(entity.ID),
-		Reply:     entity.Reply,
-		RepliedAt: repliedAt,
-	}, nil
+	return nil, errors.New("not implemented")
 }
+

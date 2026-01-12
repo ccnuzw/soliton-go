@@ -20,6 +20,7 @@ const bulkImportError = ref('')
 
 const config = ref<DomainConfig>({
   name: '',
+  remark: '',
   fields: [{ name: '', type: 'string', enum_values: [] }],
   table_name: '',
   route_base: '',
@@ -35,6 +36,7 @@ const filteredDomains = computed(() => {
   const query = searchQuery.value.toLowerCase()
   return domains.value.filter(domain =>
     domain.name.toLowerCase().includes(query) ||
+    (domain.remark || '').toLowerCase().includes(query) ||
     domain.fields.some(field => field.toLowerCase().includes(query))
   )
 })
@@ -107,6 +109,7 @@ async function loadDomain(domainName: string) {
 
     config.value = {
       name: detail.name,
+      remark: detail.remark || '',
       fields: fields.length > 0 ? fields : [{ name: '', type: 'string', enum_values: [] }],
       table_name: '',
       route_base: '',
@@ -345,6 +348,7 @@ async function runGoModTidy() {
 function reset() {
   config.value = {
     name: '',
+    remark: '',
     fields: [{ name: '', type: 'string', enum_values: [] }],
     table_name: '',
     route_base: '',
@@ -402,7 +406,10 @@ function getStatusText(status: string): string {
       <div v-else class="domain-grid">
         <div v-for="domain in filteredDomains" :key="domain.name" class="domain-card" @click="loadDomain(domain.name)">
           <div class="domain-header">
-            <h3>{{ domain.name }}</h3>
+            <div class="domain-title">
+              <h3>{{ domain.name }}</h3>
+              <span v-if="domain.remark" class="domain-remark">{{ domain.remark }}</span>
+            </div>
             <div class="header-actions">
               <span class="badge">{{ domain.fields?.length || 0 }} 字段</span>
               <button class="btn-delete" @click="deleteDomain(domain.name, $event)" title="删除模块">
@@ -477,6 +484,11 @@ function getStatusText(status: string): string {
               <span class="tooltip" data-tooltip="实体名称，将生成对应的 Go 结构体">ⓘ</span>
             </label>
             <input v-model="config.name" placeholder="User / Order / Product" />
+          </div>
+          <div class="form-group">
+            <label>领域备注 Remark（可选）</label>
+            <input v-model="config.remark" placeholder="用于说明该领域用途" />
+            <span class="hint">会显示在已生成模块卡片上</span>
           </div>
 
           <div class="fields-section">
@@ -737,10 +749,22 @@ h1 {
   margin-bottom: 12px;
 }
 
+.domain-title {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
 .domain-header h3 {
   margin: 0;
   font-size: 1.2rem;
   flex: 1;
+}
+
+.domain-remark {
+  color: var(--text-muted);
+  font-size: 0.85rem;
 }
 
 .header-actions {

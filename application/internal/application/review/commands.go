@@ -4,28 +4,27 @@ import (
 	"context"
 
 	"github.com/soliton-go/application/internal/domain/review"
-	"gorm.io/datatypes"
 )
 
 // CreateReviewCommand 是创建 Review 的命令。
 type CreateReviewCommand struct {
-	ID           string
-	ProductId    string
-	UserId       string
-	OrderId      string
-	Rating       int
-	Title        string
-	Content      string
-	Status       review.ReviewStatus
-	IsAnonymous  bool
+	ID string
+	ProductId string
+	UserId string
+	OrderId string
+	Rating int
+	Title string
+	Content string
+	Status review.ReviewStatus
+	IsAnonymous bool
 	HelpfulCount int
-	Reply        string
-	Images       datatypes.JSON
+	Reply string
+	Images datatypes.JSON
 }
 
 // CreateReviewHandler 处理 CreateReviewCommand。
 type CreateReviewHandler struct {
-	repo    review.ReviewRepository
+	repo review.ReviewRepository
 	service *review.ReviewDomainService
 	// 可选：添加事件总线用于发布领域事件
 	// eventBus event.EventBus
@@ -55,23 +54,23 @@ func (h *CreateReviewHandler) Handle(ctx context.Context, cmd CreateReviewComman
 
 // UpdateReviewCommand 是更新 Review 的命令。
 type UpdateReviewCommand struct {
-	ID           string
-	ProductId    *string
-	UserId       *string
-	OrderId      *string
-	Rating       *int
-	Title        *string
-	Content      *string
-	Status       *review.ReviewStatus
-	IsAnonymous  *bool
+	ID string
+	ProductId *string
+	UserId *string
+	OrderId *string
+	Rating *int
+	Title *string
+	Content *string
+	Status *review.ReviewStatus
+	IsAnonymous *bool
 	HelpfulCount *int
-	Reply        *string
-	Images       *datatypes.JSON
+	Reply *string
+	Images *datatypes.JSON
 }
 
 // UpdateReviewHandler 处理 UpdateReviewCommand。
 type UpdateReviewHandler struct {
-	repo    review.ReviewRepository
+	repo review.ReviewRepository
 	service *review.ReviewDomainService
 }
 
@@ -98,7 +97,7 @@ type DeleteReviewCommand struct {
 
 // DeleteReviewHandler 处理 DeleteReviewCommand。
 type DeleteReviewHandler struct {
-	repo    review.ReviewRepository
+	repo review.ReviewRepository
 	service *review.ReviewDomainService
 }
 

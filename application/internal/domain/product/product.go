@@ -6,6 +6,7 @@ import (
 	"github.com/soliton-go/framework/ddd"
 	"gorm.io/gorm"
 )
+// DomainRemark: 商品领域
 
 // ProductID 是强类型的实体标识符。
 type ProductID string

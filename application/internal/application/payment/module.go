@@ -26,10 +26,8 @@ var Module = fx.Options(
 	// Query Handlers
 	fx.Provide(NewGetPaymentHandler),
 	fx.Provide(NewListPaymentsHandler),
-
-	// Application Services
+	
 	fx.Provide(NewPaymentService),
-
 	// soliton-gen:services
 	// soliton-gen:event-handlers
 

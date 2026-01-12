@@ -15,6 +15,10 @@ import (
 {{- end}}
 )
 
+{{- if .DomainRemark}}
+// DomainRemark: {{.DomainRemark}}
+{{- end}}
+
 // {{.EntityName}}ID 是强类型的实体标识符。
 type {{.EntityName}}ID string
 

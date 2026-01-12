@@ -16,6 +16,7 @@ export interface ProjectConfig {
 
 export interface DomainConfig {
   name: string
+  remark?: string
   fields: FieldConfig[]
   table_name?: string
   route_base?: string
@@ -26,6 +27,7 @@ export interface DomainConfig {
 
 export interface ServiceConfig {
   name: string
+  remark?: string
   methods: string[]
   force: boolean
 }
@@ -159,6 +161,7 @@ export interface ProjectLayout {
 
 export interface DomainListItem {
   name: string
+  remark?: string
   module_path: string
   fields: string[]
   has_files: boolean
@@ -177,6 +180,7 @@ export interface FieldDetail {
 
 export interface DomainDetail {
   name: string
+  remark?: string
   fields: FieldDetail[]
   files: {
     entity: boolean
@@ -187,6 +191,7 @@ export interface DomainDetail {
 
 export interface ServiceListItem {
   name: string
+  remark?: string
   methods: string[]
   type: 'domain_service' | 'cross_domain_service'
 }
@@ -198,6 +203,7 @@ export interface ServiceMethodDetail {
 
 export interface ServiceDetail {
   name: string
+  remark?: string
   methods: ServiceMethodDetail[]
 }
 
@@ -379,7 +385,7 @@ export const api = {
       `/ddd/detail?domain=${encodeURIComponent(domain)}&type=${encodeURIComponent(type)}&name=${encodeURIComponent(name)}`
     ),
 
-  getDddSource: (domain: string, type: string, name: string) =>
+  getDddSource: (domain: string, type: string, name = '') =>
     request<DddSourceResponse>(
       `/ddd/source?domain=${encodeURIComponent(domain)}&type=${encodeURIComponent(type)}&name=${encodeURIComponent(name)}`
     ),
