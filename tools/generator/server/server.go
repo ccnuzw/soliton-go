@@ -69,6 +69,11 @@ func Start(host string, port int) {
 		api.POST("/ddd/events/preview", handlers.PreviewEvent)
 		api.POST("/ddd/event-handlers", handlers.GenerateEventHandler)
 		api.POST("/ddd/event-handlers/preview", handlers.PreviewEventHandler)
+		api.GET("/ddd/list", handlers.ListDDD)
+		api.GET("/ddd/detail", handlers.GetDDDDetail)
+		api.GET("/ddd/source", handlers.GetDDDSource)
+		api.POST("/ddd/delete", handlers.DeleteDDD)
+		api.POST("/ddd/rename", handlers.RenameDDD)
 
 		// Utility endpoints
 		api.GET("/layout", handlers.GetProjectLayout)

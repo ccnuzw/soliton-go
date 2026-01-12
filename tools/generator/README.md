@@ -92,6 +92,8 @@ cd /path/to/your/project
 - 以中文说明为主，专业术语保留英文
 - 支持 Value Object / Specification / Policy / Event / Handler 可视化生成
 - 支持 Event + Handler 组合生成
+- 🆕 支持已有组件加载、重命名与删除
+- 🆕 支持 Diff 对比预览与批量导入/导出字段
 
 ### 6. Migration Center（迁移中心）
 - 详细迁移日志（SYSTEM / TIDY / MIGRATE）

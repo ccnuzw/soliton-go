@@ -15,6 +15,8 @@ const editingDomain = ref<string | null>(null)
 const searchQuery = ref('')
 const showDeleteConfirm = ref(false)
 const deleteConfirmName = ref<string | null>(null)
+const bulkFieldsInput = ref('')
+const bulkImportError = ref('')
 
 const config = ref<DomainConfig>({
   name: '',
@@ -171,6 +173,82 @@ function moveFieldDown(index: number) {
 
 function updateEnumValues(field: FieldConfig, value: string) {
   field.enum_values = value.split('|').map(v => v.trim()).filter(Boolean)
+}
+
+function parseBulkFields(raw: string): FieldConfig[] {
+  const entries: FieldConfig[] = []
+  const tokens = raw.split(/\r?\n/).flatMap(line => line.split(','))
+
+  for (const token of tokens) {
+    let value = token.trim()
+    if (!value) continue
+
+    value = value.replace(/^[-*]\s+/, '').replace(/^\d+[\.\)]\s+/, '')
+    if (!value || value.startsWith('#') || value.startsWith('//')) continue
+
+    const parts = value.split(':')
+    const name = parts[0]?.trim()
+    if (!name) continue
+
+    const rawType = parts.length > 1 ? parts[1] : ''
+    let type = rawType ? rawType.trim() : 'string'
+    let comment = ''
+    if (parts.length > 2) {
+      comment = parts.slice(2).join(':').trim()
+    }
+    if (!type) type = 'string'
+
+    let enumValues: string[] = []
+    const enumMatch = type.match(/^enum(?:\(([^)]*)\))?$/)
+    if (enumMatch) {
+      type = 'enum'
+      if (enumMatch[1]) {
+        enumValues = enumMatch[1].split('|').map(v => v.trim()).filter(Boolean)
+      }
+    }
+
+    entries.push({
+      name,
+      type,
+      comment,
+      enum_values: enumValues,
+    })
+  }
+
+  return entries
+}
+
+function applyBulkImport() {
+  bulkImportError.value = ''
+  const parsed = parseBulkFields(bulkFieldsInput.value)
+  if (parsed.length === 0) {
+    bulkImportError.value = '未识别到有效字段，请检查格式'
+    return
+  }
+
+  const existingNames = new Set(
+    config.value.fields.map(field => field.name.trim()).filter(Boolean),
+  )
+  const deduped = parsed.filter(field => {
+    if (existingNames.has(field.name)) return false
+    existingNames.add(field.name)
+    return true
+  })
+
+  if (deduped.length === 0) {
+    bulkImportError.value = '字段已存在，未导入新字段'
+    return
+  }
+
+  const firstField = config.value.fields[0]
+  if (config.value.fields.length === 1 && firstField && !firstField.name.trim()) {
+    config.value.fields = deduped
+  } else {
+    config.value.fields.push(...deduped)
+  }
+
+  bulkFieldsInput.value = ''
+  showSuccess(`已导入 ${deduped.length} 个字段`)
 }
 
 async function preview() {
@@ -426,6 +504,21 @@ function getStatusText(status: string): string {
               </div>
             </div>
           </div>
+
+          <details class="bulk-import">
+            <summary>批量导入字段 Bulk Import</summary>
+            <p class="bulk-hint">
+              支持格式：<code>name:type:comment</code>、<code>name:type</code>、<code>name::comment</code>。
+              允许多行或逗号分隔；枚举可写为 <code>status:enum(active|inactive)</code>。
+            </p>
+            <textarea v-model="bulkFieldsInput" class="bulk-textarea"
+              placeholder="username:string:用户名&#10;status:enum(active|inactive):状态&#10;created_at:time?"></textarea>
+            <div class="bulk-actions">
+              <button class="btn" @click="applyBulkImport" :disabled="!bulkFieldsInput.trim()">导入字段</button>
+              <button class="btn" @click="bulkFieldsInput = ''" :disabled="!bulkFieldsInput.trim()">清空</button>
+            </div>
+            <div class="error" v-if="bulkImportError">{{ bulkImportError }}</div>
+          </details>
 
           <div class="options">
             <div class="form-group inline">
@@ -901,6 +994,50 @@ h1 {
 
 .fields-section {
   margin-bottom: 24px;
+}
+
+.bulk-import {
+  margin-bottom: 20px;
+  padding: 16px;
+  background: var(--bg-input);
+  border-radius: 8px;
+}
+
+.bulk-import summary {
+  cursor: pointer;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.bulk-hint {
+  margin: 8px 0 12px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.bulk-textarea {
+  width: 100%;
+  min-height: 120px;
+  padding: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 0.95rem;
+  resize: vertical;
+}
+
+.bulk-textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.bulk-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 12px;
 }
 
 .section-header {

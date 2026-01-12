@@ -13,6 +13,11 @@ import (
 	userapp "github.com/soliton-go/application/internal/application/user"
 	orderapp "github.com/soliton-go/application/internal/application/order"
 	productapp "github.com/soliton-go/application/internal/application/product"
+	inventoryapp "github.com/soliton-go/application/internal/application/inventory"
+	paymentapp "github.com/soliton-go/application/internal/application/payment"
+	shippingapp "github.com/soliton-go/application/internal/application/shipping"
+	promotionapp "github.com/soliton-go/application/internal/application/promotion"
+	reviewapp "github.com/soliton-go/application/internal/application/review"
 	// soliton-gen:imports
 )
 
@@ -51,6 +56,21 @@ func migrateAll(db *gorm.DB) error {
 		return err
 	}
 	if err := productapp.RegisterMigration(db); err != nil {
+		return err
+	}
+	if err := inventoryapp.RegisterMigration(db); err != nil {
+		return err
+	}
+	if err := paymentapp.RegisterMigration(db); err != nil {
+		return err
+	}
+	if err := shippingapp.RegisterMigration(db); err != nil {
+		return err
+	}
+	if err := promotionapp.RegisterMigration(db); err != nil {
+		return err
+	}
+	if err := reviewapp.RegisterMigration(db); err != nil {
 		return err
 	}
 	// soliton-gen:migrations

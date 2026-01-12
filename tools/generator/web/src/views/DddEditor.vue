@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import {
   api,
   type FieldConfig,
   type FieldType,
   type GenerationResult,
+  type DddListResponse,
 } from '../api'
 import { showSuccess, showError } from '../toast'
 
@@ -12,6 +13,25 @@ const loadingDomains = ref(false)
 const domains = ref<string[]>([])
 const selectedDomain = ref('')
 const fieldTypes = ref<FieldType[]>([])
+const dddList = ref<DddListResponse | null>(null)
+const dddLoading = ref(false)
+const selectedValueObjectName = ref('')
+const selectedSpecName = ref('')
+const selectedPolicyName = ref('')
+const selectedEventName = ref('')
+const selectedHandlerName = ref('')
+const diffVisible = ref(false)
+const diffTitle = ref('')
+const diffExisting = ref('')
+const diffPreview = ref('')
+const diffFileName = ref('')
+const diffHint = ref('')
+const diffStatus = ref('')
+const diffLoading = ref(false)
+const valueObjectBatch = ref('')
+const specBatch = ref('')
+const policyBatch = ref('')
+const eventBatch = ref('')
 
 const valueObjectLoading = ref(false)
 const valueObjectResult = ref<GenerationResult | null>(null)
@@ -22,25 +42,54 @@ const policyResult = ref<GenerationResult | null>(null)
 const eventLoading = ref(false)
 const eventResult = ref<GenerationResult | null>(null)
 
-const valueObject = ref({
+type ValueObjectState = {
+  name: string
+  fields: FieldConfig[]
+  force: boolean
+}
+
+type SpecificationState = {
+  name: string
+  target: string
+  force: boolean
+}
+
+type PolicyState = {
+  name: string
+  target: string
+  force: boolean
+}
+
+type EventFlowState = {
+  name: string
+  topic: string
+  fields: FieldConfig[]
+  generateEvent: boolean
+  generateHandler: boolean
+  handlerTopic: string
+  eventForce: boolean
+  handlerForce: boolean
+}
+
+const valueObject = ref<ValueObjectState>({
   name: '',
   fields: [{ name: 'value', type: 'string', comment: '', enum_values: [] as string[] }],
   force: false,
 })
 
-const specification = ref({
+const specification = ref<SpecificationState>({
   name: '',
   target: '',
   force: false,
 })
 
-const policy = ref({
+const policy = ref<PolicyState>({
   name: '',
   target: '',
   force: false,
 })
 
-const eventFlow = ref({
+const eventFlow = ref<EventFlowState>({
   name: '',
   topic: '',
   fields: [{ name: 'user_id', type: 'uuid', comment: '', enum_values: [] as string[] }],
@@ -68,9 +117,19 @@ onMounted(async () => {
     const res = await api.getFieldTypes()
     fieldTypes.value = res.types
     await loadDomains()
+    await loadDddList()
   } catch (e) {
     console.error(e)
   }
+})
+
+watch(selectedDomain, async () => {
+  selectedValueObjectName.value = ''
+  selectedSpecName.value = ''
+  selectedPolicyName.value = ''
+  selectedEventName.value = ''
+  selectedHandlerName.value = ''
+  await loadDddList()
 })
 
 async function loadDomains() {
@@ -88,6 +147,22 @@ async function loadDomains() {
     console.error('Failed to load domains:', e)
   } finally {
     loadingDomains.value = false
+  }
+}
+
+async function loadDddList() {
+  const domain = selectedDomain.value.trim()
+  if (!domain) {
+    dddList.value = null
+    return
+  }
+  dddLoading.value = true
+  try {
+    dddList.value = await api.listDddComponents(domain)
+  } catch (e) {
+    console.error('Failed to load DDD list:', e)
+  } finally {
+    dddLoading.value = false
   }
 }
 
@@ -124,6 +199,619 @@ function getStatusText(status: string): string {
   return map[status] || status
 }
 
+function closeDiffModal() {
+  diffVisible.value = false
+}
+
+function openDiffModal(
+  title: string,
+  existing: string,
+  preview: string,
+  fileName: string,
+  status: string,
+  hint = ''
+) {
+  diffTitle.value = title
+  diffExisting.value = existing
+  diffPreview.value = preview
+  diffFileName.value = fileName
+  diffStatus.value = status
+  diffHint.value = hint
+  diffVisible.value = true
+}
+
+function normalizeFieldEntry(entry: any): FieldConfig | null {
+  if (!entry) return null
+  if (typeof entry === 'string') {
+    return parseFieldLine(entry)
+  }
+  if (typeof entry !== 'object') return null
+  if (!entry.name || !entry.type) return null
+  const enumValues =
+    Array.isArray(entry.enum_values) ? entry.enum_values : Array.isArray(entry.enumValues) ? entry.enumValues : []
+  return {
+    name: String(entry.name),
+    type: String(entry.type),
+    comment: entry.comment ? String(entry.comment) : '',
+    enum_values: enumValues,
+  }
+}
+
+function parseFieldLine(line: string): FieldConfig | null {
+  const trimmed = line.trim()
+  if (!trimmed) return null
+
+  let name = ''
+  let fieldType = ''
+  let comment = ''
+
+  if (trimmed.includes(',')) {
+    const parts = trimmed.split(',')
+    name = (parts[0] || '').trim()
+    fieldType = (parts[1] || '').trim()
+    comment = parts.slice(2).join(',').trim()
+  } else if (trimmed.includes('\t')) {
+    const parts = trimmed.split('\t')
+    name = (parts[0] || '').trim()
+    fieldType = (parts[1] || '').trim()
+    comment = parts.slice(2).join(' ').trim()
+  } else {
+    const match = trimmed.match(/^(\S+)\s+(\S+)\s*(.*)$/)
+    if (!match) return null
+    name = match[1] || ''
+    fieldType = match[2] || ''
+    comment = match[3] || ''
+  }
+
+  if (!name || !fieldType) return null
+  let enumValues: string[] = []
+  if (fieldType.startsWith('enum:')) {
+    enumValues = fieldType
+      .slice('enum:'.length)
+      .split('|')
+      .map((v) => v.trim())
+      .filter(Boolean)
+    fieldType = 'enum'
+  }
+  return {
+    name,
+    type: fieldType,
+    comment: comment || '',
+    enum_values: enumValues,
+  }
+}
+
+function sanitizeFields(fields: FieldConfig[]): FieldConfig[] {
+  return fields.map((field) => ({
+    name: field.name || '',
+    type: field.type || 'string',
+    comment: field.comment || '',
+    enum_values: field.enum_values ? [...field.enum_values] : [],
+  }))
+}
+
+function normalizeFields(fields: FieldConfig[] | undefined, fallback: FieldConfig[]): FieldConfig[] {
+  if (!fields || fields.length === 0) return fallback
+  return sanitizeFields(fields)
+}
+
+function parseFieldBatchInput(input: string) {
+  const trimmed = input.trim()
+  if (!trimmed) return null
+  try {
+    const parsed = JSON.parse(trimmed)
+    if (Array.isArray(parsed)) {
+      const fields = parsed.map(normalizeFieldEntry).filter(Boolean) as FieldConfig[]
+      return fields.length ? { fields } : null
+    }
+    if (parsed && typeof parsed === 'object') {
+      const rawFields = Array.isArray(parsed.fields) ? parsed.fields : []
+      const fields = rawFields.map(normalizeFieldEntry).filter(Boolean) as FieldConfig[]
+      return {
+        name: parsed.name || parsed.event_name,
+        topic: parsed.topic,
+        handlerTopic: parsed.handler_topic || parsed.handlerTopic,
+        generateEvent: parsed.generateEvent,
+        generateHandler: parsed.generateHandler,
+        eventForce: parsed.eventForce,
+        handlerForce: parsed.handlerForce,
+        fields,
+      }
+    }
+  } catch (e) {
+    // Fall back to line parsing.
+  }
+
+  const fields = trimmed
+    .split(/\r?\n/)
+    .map(parseFieldLine)
+    .filter(Boolean) as FieldConfig[]
+  if (!fields.length) return null
+  return { fields }
+}
+
+function parseNameTargetInput(input: string) {
+  const trimmed = input.trim()
+  if (!trimmed) return null
+  try {
+    const parsed = JSON.parse(trimmed)
+    if (parsed && typeof parsed === 'object') {
+      return {
+        name: parsed.name,
+        target: parsed.target,
+        force: parsed.force,
+      }
+    }
+  } catch (e) {
+    // Fall back to line parsing.
+  }
+
+  const firstLine = trimmed.split(/\r?\n/).find((line) => line.trim())
+  if (!firstLine) return null
+  if (firstLine.includes(',')) {
+    const parts = firstLine.split(',')
+    return { name: (parts[0] || '').trim(), target: (parts[1] || '').trim() }
+  }
+  const match = firstLine.match(/^(\S+)\s+(\S+)\s*$/)
+  if (match) {
+    return { name: match[1] || '', target: match[2] || '' }
+  }
+  return { name: firstLine.trim(), target: '' }
+}
+
+function applyValueObjectBatch() {
+  const parsed = parseFieldBatchInput(valueObjectBatch.value)
+  if (!parsed) {
+    showError('请输入有效的字段 JSON 或行列表')
+    return
+  }
+  if (parsed.name) {
+    valueObject.value.name = String(parsed.name)
+  }
+  if (parsed.fields?.length) {
+    valueObject.value.fields = sanitizeFields(parsed.fields)
+  }
+  showSuccess('已导入字段')
+}
+
+function exportValueObjectBatch() {
+  valueObjectBatch.value = JSON.stringify(
+    {
+      name: valueObject.value.name,
+      fields: valueObject.value.fields,
+    },
+    null,
+    2
+  )
+}
+
+function applySpecBatch() {
+  const parsed = parseNameTargetInput(specBatch.value)
+  if (!parsed) {
+    showError('请输入有效的 JSON 或 Name,Target')
+    return
+  }
+  if (parsed.name) {
+    specification.value.name = String(parsed.name)
+  }
+  if (parsed.target !== undefined) {
+    specification.value.target = parsed.target || ''
+  }
+  if (typeof parsed.force === 'boolean') {
+    specification.value.force = parsed.force
+  }
+  showSuccess('已导入 Specification 配置')
+}
+
+function exportSpecBatch() {
+  specBatch.value = JSON.stringify(
+    {
+      name: specification.value.name,
+      target: specification.value.target,
+      force: specification.value.force,
+    },
+    null,
+    2
+  )
+}
+
+function applyPolicyBatch() {
+  const parsed = parseNameTargetInput(policyBatch.value)
+  if (!parsed) {
+    showError('请输入有效的 JSON 或 Name,Target')
+    return
+  }
+  if (parsed.name) {
+    policy.value.name = String(parsed.name)
+  }
+  if (parsed.target !== undefined) {
+    policy.value.target = parsed.target || ''
+  }
+  if (typeof parsed.force === 'boolean') {
+    policy.value.force = parsed.force
+  }
+  showSuccess('已导入 Policy 配置')
+}
+
+function exportPolicyBatch() {
+  policyBatch.value = JSON.stringify(
+    {
+      name: policy.value.name,
+      target: policy.value.target,
+      force: policy.value.force,
+    },
+    null,
+    2
+  )
+}
+
+function applyEventBatch() {
+  const parsed = parseFieldBatchInput(eventBatch.value)
+  if (!parsed) {
+    showError('请输入有效的字段 JSON 或行列表')
+    return
+  }
+  if (parsed.name) {
+    eventFlow.value.name = String(parsed.name)
+  }
+  if (parsed.topic !== undefined) {
+    eventFlow.value.topic = parsed.topic || ''
+  }
+  if (parsed.handlerTopic !== undefined) {
+    eventFlow.value.handlerTopic = parsed.handlerTopic || ''
+  }
+  if (typeof parsed.generateEvent === 'boolean') {
+    eventFlow.value.generateEvent = parsed.generateEvent
+  }
+  if (typeof parsed.generateHandler === 'boolean') {
+    eventFlow.value.generateHandler = parsed.generateHandler
+  }
+  if (typeof parsed.eventForce === 'boolean') {
+    eventFlow.value.eventForce = parsed.eventForce
+  }
+  if (typeof parsed.handlerForce === 'boolean') {
+    eventFlow.value.handlerForce = parsed.handlerForce
+  }
+  if (parsed.fields?.length) {
+    eventFlow.value.fields = sanitizeFields(parsed.fields)
+    eventFlow.value.generateEvent = true
+  }
+  showSuccess('已导入 Event 配置')
+}
+
+function exportEventBatch() {
+  eventBatch.value = JSON.stringify(
+    {
+      name: eventFlow.value.name,
+      topic: eventFlow.value.topic,
+      handler_topic: eventFlow.value.handlerTopic,
+      generateEvent: eventFlow.value.generateEvent,
+      generateHandler: eventFlow.value.generateHandler,
+      eventForce: eventFlow.value.eventForce,
+      handlerForce: eventFlow.value.handlerForce,
+      fields: eventFlow.value.fields,
+    },
+    null,
+    2
+  )
+}
+
+function applyRenameResult(itemType: string, oldName: string, newName: string) {
+  if (itemType === 'valueobject') {
+    if (selectedValueObjectName.value === oldName) selectedValueObjectName.value = newName
+    if (valueObject.value.name === oldName) valueObject.value.name = newName
+  }
+  if (itemType === 'spec') {
+    if (selectedSpecName.value === oldName) selectedSpecName.value = newName
+    if (specification.value.name === oldName) specification.value.name = newName
+  }
+  if (itemType === 'policy') {
+    if (selectedPolicyName.value === oldName) selectedPolicyName.value = newName
+    if (policy.value.name === oldName) policy.value.name = newName
+  }
+  if (itemType === 'event') {
+    if (selectedEventName.value === oldName) selectedEventName.value = newName
+    if (eventFlow.value.name === oldName) eventFlow.value.name = newName
+  }
+  if (itemType === 'event_handler') {
+    if (selectedHandlerName.value === oldName) selectedHandlerName.value = newName
+    if (eventFlow.value.name === oldName) eventFlow.value.name = newName
+  }
+}
+
+function applyDeleteResult(itemType: string, name: string) {
+  if (itemType === 'valueobject' && selectedValueObjectName.value === name) {
+    selectedValueObjectName.value = ''
+  }
+  if (itemType === 'spec' && selectedSpecName.value === name) {
+    selectedSpecName.value = ''
+  }
+  if (itemType === 'policy' && selectedPolicyName.value === name) {
+    selectedPolicyName.value = ''
+  }
+  if (itemType === 'event' && selectedEventName.value === name) {
+    selectedEventName.value = ''
+  }
+  if (itemType === 'event_handler' && selectedHandlerName.value === name) {
+    selectedHandlerName.value = ''
+  }
+}
+
+async function renameDddItem(itemType: string, name: string, label: string) {
+  const domain = ensureDomain()
+  if (!domain) return
+  if (!name) {
+    showError(`请选择需要重命名的 ${label}`)
+    return
+  }
+  const newName = window.prompt(`请输入新的 ${label} 名称`, name)
+  if (!newName || !newName.trim()) {
+    return
+  }
+  if (newName.trim() === name) {
+    showError('新名称与原名称一致')
+    return
+  }
+
+  dddLoading.value = true
+  try {
+    await api.renameDddItem({
+      domain,
+      type: itemType,
+      name,
+      new_name: newName.trim(),
+      force: false,
+    })
+    applyRenameResult(itemType, name, newName.trim())
+    await loadDddList()
+    showSuccess(`${label} 已重命名`)
+  } catch (e: any) {
+    if (e?.message && e.message.includes('target file exists')) {
+      const confirmOverwrite = window.confirm('目标文件已存在，是否覆盖？')
+      if (!confirmOverwrite) {
+        return
+      }
+      try {
+        await api.renameDddItem({
+          domain,
+          type: itemType,
+          name,
+          new_name: newName.trim(),
+          force: true,
+        })
+        applyRenameResult(itemType, name, newName.trim())
+        await loadDddList()
+        showSuccess(`${label} 已覆盖重命名`)
+      } catch (err: any) {
+        showError(err?.message || '重命名失败')
+      }
+    } else {
+      showError(e?.message || '重命名失败')
+    }
+  } finally {
+    dddLoading.value = false
+  }
+}
+
+async function deleteDddItem(itemType: string, name: string, label: string) {
+  const domain = ensureDomain()
+  if (!domain) return
+  if (!name) {
+    showError(`请选择需要删除的 ${label}`)
+    return
+  }
+  const confirmDelete = window.confirm(`确认删除 ${label} ${name} 吗？`)
+  if (!confirmDelete) return
+
+  dddLoading.value = true
+  try {
+    await api.deleteDddItem({
+      domain,
+      type: itemType,
+      name,
+    })
+    applyDeleteResult(itemType, name)
+    await loadDddList()
+    showSuccess(`${label} 已删除`)
+  } catch (e: any) {
+    showError(e?.message || '删除失败')
+  } finally {
+    dddLoading.value = false
+  }
+}
+
+async function fetchExistingSource(domain: string, itemType: string, name: string) {
+  try {
+    const res = await api.getDddSource(domain, itemType, name)
+    return { content: res.content, file: res.file, found: true }
+  } catch (e) {
+    return { content: '', file: '', found: false }
+  }
+}
+
+function pickPreviewFile(result: GenerationResult) {
+  const file = result.files.find((f) => f.content) || result.files[0]
+  if (!file || !file.content) {
+    throw new Error('预览内容为空')
+  }
+  return {
+    content: file.content,
+    file: file.path.split('/').pop() || file.path,
+    status: file.status,
+  }
+}
+
+async function showValueObjectDiff() {
+  const domain = ensureDomain()
+  if (!domain) return
+  if (!valueObject.value.name.trim()) {
+    showError('请输入 Value Object 名称')
+    return
+  }
+  diffLoading.value = true
+  try {
+    const fields = valueObject.value.fields.filter((f) => f.name.trim())
+    const preview = await api.previewValueObject({
+      domain,
+      name: valueObject.value.name,
+      fields,
+      force: valueObject.value.force,
+    })
+    const previewFile = pickPreviewFile(preview)
+    const existing = await fetchExistingSource(domain, 'valueobject', valueObject.value.name)
+    openDiffModal(
+      `Value Object · ${valueObject.value.name}`,
+      existing.content,
+      previewFile.content,
+      previewFile.file,
+      previewFile.status,
+      existing.found ? '' : '当前文件不存在，将创建新文件'
+    )
+  } catch (e: any) {
+    showError(e?.message || '对比失败')
+  } finally {
+    diffLoading.value = false
+  }
+}
+
+async function showSpecDiff() {
+  const domain = ensureDomain()
+  if (!domain) return
+  if (!specification.value.name.trim()) {
+    showError('请输入 Specification 名称')
+    return
+  }
+  diffLoading.value = true
+  try {
+    const preview = await api.previewSpecification({
+      domain,
+      name: specification.value.name,
+      target: specification.value.target.trim(),
+      force: specification.value.force,
+    })
+    const previewFile = pickPreviewFile(preview)
+    const existing = await fetchExistingSource(domain, 'spec', specification.value.name)
+    openDiffModal(
+      `Specification · ${specification.value.name}`,
+      existing.content,
+      previewFile.content,
+      previewFile.file,
+      previewFile.status,
+      existing.found ? '' : '当前文件不存在，将创建新文件'
+    )
+  } catch (e: any) {
+    showError(e?.message || '对比失败')
+  } finally {
+    diffLoading.value = false
+  }
+}
+
+async function showPolicyDiff() {
+  const domain = ensureDomain()
+  if (!domain) return
+  if (!policy.value.name.trim()) {
+    showError('请输入 Policy 名称')
+    return
+  }
+  diffLoading.value = true
+  try {
+    const preview = await api.previewPolicy({
+      domain,
+      name: policy.value.name,
+      target: policy.value.target.trim(),
+      force: policy.value.force,
+    })
+    const previewFile = pickPreviewFile(preview)
+    const existing = await fetchExistingSource(domain, 'policy', policy.value.name)
+    openDiffModal(
+      `Policy · ${policy.value.name}`,
+      existing.content,
+      previewFile.content,
+      previewFile.file,
+      previewFile.status,
+      existing.found ? '' : '当前文件不存在，将创建新文件'
+    )
+  } catch (e: any) {
+    showError(e?.message || '对比失败')
+  } finally {
+    diffLoading.value = false
+  }
+}
+
+async function showEventDiff() {
+  const domain = ensureDomain()
+  if (!domain) return
+  if (!eventFlow.value.name.trim()) {
+    showError('请输入 Event 名称')
+    return
+  }
+  if (!eventFlow.value.generateEvent) {
+    showError('请勾选生成 Event 后再对比')
+    return
+  }
+  diffLoading.value = true
+  try {
+    const fields = eventFlow.value.fields.filter((f) => f.name.trim())
+    const preview = await api.previewEvent({
+      domain,
+      name: eventFlow.value.name,
+      fields,
+      topic: eventFlow.value.topic.trim(),
+      force: eventFlow.value.eventForce,
+    })
+    const previewFile = pickPreviewFile(preview)
+    const existing = await fetchExistingSource(domain, 'event', eventFlow.value.name)
+    openDiffModal(
+      `Event · ${eventFlow.value.name}`,
+      existing.content,
+      previewFile.content,
+      previewFile.file,
+      previewFile.status,
+      existing.found ? '' : '当前文件不存在，将创建新文件'
+    )
+  } catch (e: any) {
+    showError(e?.message || '对比失败')
+  } finally {
+    diffLoading.value = false
+  }
+}
+
+async function showHandlerDiff() {
+  const domain = ensureDomain()
+  if (!domain) return
+  if (!eventFlow.value.name.trim()) {
+    showError('请输入 Event 名称')
+    return
+  }
+  if (!eventFlow.value.generateHandler) {
+    showError('请勾选生成 Handler 后再对比')
+    return
+  }
+  diffLoading.value = true
+  try {
+    const preview = await api.previewEventHandler({
+      domain,
+      event_name: eventFlow.value.name,
+      topic: (eventFlow.value.handlerTopic || eventFlow.value.topic).trim(),
+      force: eventFlow.value.handlerForce,
+    })
+    const previewFile = pickPreviewFile(preview)
+    const existing = await fetchExistingSource(domain, 'event_handler', eventFlow.value.name)
+    openDiffModal(
+      `Handler · ${eventFlow.value.name}`,
+      existing.content,
+      previewFile.content,
+      previewFile.file,
+      previewFile.status,
+      existing.found ? '' : '当前文件不存在，将创建新文件'
+    )
+  } catch (e: any) {
+    showError(e?.message || '对比失败')
+  } finally {
+    diffLoading.value = false
+  }
+}
+
 function mergeResults(results: GenerationResult[]): GenerationResult {
   const merged: GenerationResult = { success: true, files: [] }
   const messages: string[] = []
@@ -147,6 +835,120 @@ function mergeResults(results: GenerationResult[]): GenerationResult {
     merged.errors = errors
   }
   return merged
+}
+
+async function loadValueObjectDetail() {
+  const domain = ensureDomain()
+  if (!domain) return
+  if (!selectedValueObjectName.value) {
+    showError('请选择 Value Object')
+    return
+  }
+  dddLoading.value = true
+  try {
+    const detail = await api.getDddDetail(domain, 'valueobject', selectedValueObjectName.value)
+    valueObject.value.name = detail.name || selectedValueObjectName.value
+    valueObject.value.fields = normalizeFields(detail.fields, [
+      { name: 'value', type: 'string', comment: '', enum_values: [] },
+    ])
+    valueObject.value.force = true
+    showSuccess('已加载 Value Object')
+  } catch (e: any) {
+    showError(e.message || '加载失败')
+  } finally {
+    dddLoading.value = false
+  }
+}
+
+async function loadSpecDetail() {
+  const domain = ensureDomain()
+  if (!domain) return
+  if (!selectedSpecName.value) {
+    showError('请选择 Specification')
+    return
+  }
+  dddLoading.value = true
+  try {
+    const detail = await api.getDddDetail(domain, 'spec', selectedSpecName.value)
+    specification.value.name = detail.name || selectedSpecName.value
+    specification.value.target = detail.target || ''
+    specification.value.force = true
+    showSuccess('已加载 Specification')
+  } catch (e: any) {
+    showError(e.message || '加载失败')
+  } finally {
+    dddLoading.value = false
+  }
+}
+
+async function loadPolicyDetail() {
+  const domain = ensureDomain()
+  if (!domain) return
+  if (!selectedPolicyName.value) {
+    showError('请选择 Policy')
+    return
+  }
+  dddLoading.value = true
+  try {
+    const detail = await api.getDddDetail(domain, 'policy', selectedPolicyName.value)
+    policy.value.name = detail.name || selectedPolicyName.value
+    policy.value.target = detail.target || ''
+    policy.value.force = true
+    showSuccess('已加载 Policy')
+  } catch (e: any) {
+    showError(e.message || '加载失败')
+  } finally {
+    dddLoading.value = false
+  }
+}
+
+async function loadEventDetail() {
+  const domain = ensureDomain()
+  if (!domain) return
+  if (!selectedEventName.value) {
+    showError('请选择 Event')
+    return
+  }
+  dddLoading.value = true
+  try {
+    const detail = await api.getDddDetail(domain, 'event', selectedEventName.value)
+    eventFlow.value.name = detail.name || selectedEventName.value
+    eventFlow.value.topic = detail.topic || ''
+    eventFlow.value.fields = normalizeFields(detail.fields, [
+      { name: 'user_id', type: 'uuid', comment: '', enum_values: [] },
+    ])
+    eventFlow.value.generateEvent = true
+    eventFlow.value.generateHandler = false
+    eventFlow.value.eventForce = true
+    showSuccess('已加载 Event')
+  } catch (e: any) {
+    showError(e.message || '加载失败')
+  } finally {
+    dddLoading.value = false
+  }
+}
+
+async function loadEventHandlerDetail() {
+  const domain = ensureDomain()
+  if (!domain) return
+  if (!selectedHandlerName.value) {
+    showError('请选择 Handler')
+    return
+  }
+  dddLoading.value = true
+  try {
+    const detail = await api.getDddDetail(domain, 'event_handler', selectedHandlerName.value)
+    eventFlow.value.name = detail.event_name || selectedHandlerName.value
+    eventFlow.value.handlerTopic = detail.topic || ''
+    eventFlow.value.generateEvent = false
+    eventFlow.value.generateHandler = true
+    eventFlow.value.handlerForce = true
+    showSuccess('已加载 Handler')
+  } catch (e: any) {
+    showError(e.message || '加载失败')
+  } finally {
+    dddLoading.value = false
+  }
 }
 
 async function previewValueObject() {
@@ -407,6 +1209,9 @@ async function generateEventFlow() {
         <p><strong>命名建议：</strong>使用 PascalCase，如 <code>EmailAddress</code>、<code>ActiveUserSpec</code></p>
         <p><strong>Event 与 Handler：</strong>可单独生成，也可在同一操作中组合生成。</p>
         <p><strong>Topic：</strong>留空时自动按领域生成，例如 <code>user.activated</code></p>
+        <p><strong>回显与管理：</strong>可从已有列表加载已生成组件，支持重命名与删除。</p>
+        <p><strong>Diff 对比：</strong>对比当前文件与预览结果，Handler 对比仅显示处理器文件。</p>
+        <p><strong>批量导入：</strong>支持 JSON 或行格式（如 <code>name,type,comment</code>），枚举可用 <code>enum:a|b</code>。</p>
       </div>
     </details>
 
@@ -420,6 +1225,10 @@ async function generateEventFlow() {
         <datalist id="domain-list">
           <option v-for="d in domains" :key="d" :value="d">{{ d }}</option>
         </datalist>
+        <select v-model="selectedDomain" class="domain-select">
+          <option value="">选择已有领域</option>
+          <option v-for="d in domains" :key="d" :value="d">{{ d }}</option>
+        </select>
         <button class="btn" @click="loadDomains" :disabled="loadingDomains">
           {{ loadingDomains ? '刷新中...' : '刷新领域' }}
         </button>
@@ -435,6 +1244,36 @@ async function generateEventFlow() {
           <span class="tag">Domain</span>
         </div>
         <p class="card-desc">用于建模不可变概念（如金额、邮箱、地址）。</p>
+        <div class="existing">
+          <label>已有 Value Object</label>
+          <div class="existing-row">
+            <select v-model="selectedValueObjectName" class="existing-select">
+              <option value="">选择...</option>
+              <option v-for="item in (dddList?.value_objects || [])" :key="item.name" :value="item.name">
+                {{ item.name }}
+              </option>
+            </select>
+            <div class="existing-actions">
+              <button class="btn" @click="loadValueObjectDetail" :disabled="!selectedValueObjectName || dddLoading">
+                加载
+              </button>
+              <button
+                class="btn"
+                @click="renameDddItem('valueobject', selectedValueObjectName, 'Value Object')"
+                :disabled="!selectedValueObjectName || dddLoading"
+              >
+                重命名
+              </button>
+              <button
+                class="btn danger"
+                @click="deleteDddItem('valueobject', selectedValueObjectName, 'Value Object')"
+                :disabled="!selectedValueObjectName || dddLoading"
+              >
+                删除
+              </button>
+            </div>
+          </div>
+        </div>
         <div class="form-group">
           <label>名称 Name *</label>
           <input v-model="valueObject.name" placeholder="EmailAddress" />
@@ -461,12 +1300,30 @@ async function generateEventFlow() {
           </div>
         </div>
 
+        <div class="batch-import">
+          <div class="batch-header">
+            <div class="batch-title">批量导入/导出字段</div>
+            <div class="batch-actions">
+              <button class="btn" @click="applyValueObjectBatch">导入</button>
+              <button class="btn" @click="exportValueObjectBatch">导出</button>
+            </div>
+          </div>
+          <textarea
+            v-model="valueObjectBatch"
+            placeholder="支持 JSON 数组或行格式：name,type,comment"
+          ></textarea>
+          <span class="hint">示例：{"name":"EmailAddress","fields":[{"name":"value","type":"string","comment":"邮箱"}]}</span>
+        </div>
+
         <label class="checkbox">
           <input type="checkbox" v-model="valueObject.force" />
           强制覆盖 Force
         </label>
 
         <div class="actions">
+          <button class="btn ghost" @click="showValueObjectDiff" :disabled="valueObjectLoading || diffLoading">
+            {{ diffLoading ? '对比中...' : '对比 Diff' }}
+          </button>
           <button class="btn" @click="previewValueObject" :disabled="valueObjectLoading">
             {{ valueObjectLoading ? '预览中...' : '预览 Preview' }}
           </button>
@@ -495,6 +1352,36 @@ async function generateEventFlow() {
           <span class="tag">Domain</span>
         </div>
         <p class="card-desc">用于封装业务规则判断（可复用）。</p>
+        <div class="existing">
+          <label>已有 Specification</label>
+          <div class="existing-row">
+            <select v-model="selectedSpecName" class="existing-select">
+              <option value="">选择...</option>
+              <option v-for="item in (dddList?.specs || [])" :key="item.name" :value="item.name">
+                {{ item.name }}
+              </option>
+            </select>
+            <div class="existing-actions">
+              <button class="btn" @click="loadSpecDetail" :disabled="!selectedSpecName || dddLoading">
+                加载
+              </button>
+              <button
+                class="btn"
+                @click="renameDddItem('spec', selectedSpecName, 'Specification')"
+                :disabled="!selectedSpecName || dddLoading"
+              >
+                重命名
+              </button>
+              <button
+                class="btn danger"
+                @click="deleteDddItem('spec', selectedSpecName, 'Specification')"
+                :disabled="!selectedSpecName || dddLoading"
+              >
+                删除
+              </button>
+            </div>
+          </div>
+        </div>
         <div class="form-group">
           <label>名称 Name *</label>
           <input v-model="specification.name" placeholder="ActiveUserSpec" />
@@ -508,7 +1395,20 @@ async function generateEventFlow() {
           <input type="checkbox" v-model="specification.force" />
           强制覆盖 Force
         </label>
+        <div class="batch-import">
+          <div class="batch-header">
+            <div class="batch-title">批量导入/导出配置</div>
+            <div class="batch-actions">
+              <button class="btn" @click="applySpecBatch">导入</button>
+              <button class="btn" @click="exportSpecBatch">导出</button>
+            </div>
+          </div>
+          <textarea v-model="specBatch" placeholder="JSON 或 Name,Target"></textarea>
+        </div>
         <div class="actions">
+          <button class="btn ghost" @click="showSpecDiff" :disabled="specLoading || diffLoading">
+            {{ diffLoading ? '对比中...' : '对比 Diff' }}
+          </button>
           <button class="btn" @click="previewSpec" :disabled="specLoading">
             {{ specLoading ? '预览中...' : '预览 Preview' }}
           </button>
@@ -536,6 +1436,36 @@ async function generateEventFlow() {
           <span class="tag">Domain</span>
         </div>
         <p class="card-desc">用于表达业务策略或决策逻辑。</p>
+        <div class="existing">
+          <label>已有 Policy</label>
+          <div class="existing-row">
+            <select v-model="selectedPolicyName" class="existing-select">
+              <option value="">选择...</option>
+              <option v-for="item in (dddList?.policies || [])" :key="item.name" :value="item.name">
+                {{ item.name }}
+              </option>
+            </select>
+            <div class="existing-actions">
+              <button class="btn" @click="loadPolicyDetail" :disabled="!selectedPolicyName || dddLoading">
+                加载
+              </button>
+              <button
+                class="btn"
+                @click="renameDddItem('policy', selectedPolicyName, 'Policy')"
+                :disabled="!selectedPolicyName || dddLoading"
+              >
+                重命名
+              </button>
+              <button
+                class="btn danger"
+                @click="deleteDddItem('policy', selectedPolicyName, 'Policy')"
+                :disabled="!selectedPolicyName || dddLoading"
+              >
+                删除
+              </button>
+            </div>
+          </div>
+        </div>
         <div class="form-group">
           <label>名称 Name *</label>
           <input v-model="policy.name" placeholder="PasswordPolicy" />
@@ -549,7 +1479,20 @@ async function generateEventFlow() {
           <input type="checkbox" v-model="policy.force" />
           强制覆盖 Force
         </label>
+        <div class="batch-import">
+          <div class="batch-header">
+            <div class="batch-title">批量导入/导出配置</div>
+            <div class="batch-actions">
+              <button class="btn" @click="applyPolicyBatch">导入</button>
+              <button class="btn" @click="exportPolicyBatch">导出</button>
+            </div>
+          </div>
+          <textarea v-model="policyBatch" placeholder="JSON 或 Name,Target"></textarea>
+        </div>
         <div class="actions">
+          <button class="btn ghost" @click="showPolicyDiff" :disabled="policyLoading || diffLoading">
+            {{ diffLoading ? '对比中...' : '对比 Diff' }}
+          </button>
           <button class="btn" @click="previewPolicy" :disabled="policyLoading">
             {{ policyLoading ? '预览中...' : '预览 Preview' }}
           </button>
@@ -577,6 +1520,66 @@ async function generateEventFlow() {
           <span class="tag">Domain</span>
         </div>
         <p class="card-desc">支持事件与处理器组合生成，自动注入模块与 EventBus。</p>
+        <div class="existing">
+          <label>已有 Event</label>
+          <div class="existing-row">
+            <select v-model="selectedEventName" class="existing-select">
+              <option value="">选择...</option>
+              <option v-for="item in (dddList?.events || [])" :key="item.name" :value="item.name">
+                {{ item.name }}
+              </option>
+            </select>
+            <div class="existing-actions">
+              <button class="btn" @click="loadEventDetail" :disabled="!selectedEventName || dddLoading">
+                加载
+              </button>
+              <button
+                class="btn"
+                @click="renameDddItem('event', selectedEventName, 'Event')"
+                :disabled="!selectedEventName || dddLoading"
+              >
+                重命名
+              </button>
+              <button
+                class="btn danger"
+                @click="deleteDddItem('event', selectedEventName, 'Event')"
+                :disabled="!selectedEventName || dddLoading"
+              >
+                删除
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="existing">
+          <label>已有 Handler</label>
+          <div class="existing-row">
+            <select v-model="selectedHandlerName" class="existing-select">
+              <option value="">选择...</option>
+              <option v-for="item in (dddList?.event_handlers || [])" :key="item.name" :value="item.name">
+                {{ item.name }}
+              </option>
+            </select>
+            <div class="existing-actions">
+              <button class="btn" @click="loadEventHandlerDetail" :disabled="!selectedHandlerName || dddLoading">
+                加载
+              </button>
+              <button
+                class="btn"
+                @click="renameDddItem('event_handler', selectedHandlerName, 'Handler')"
+                :disabled="!selectedHandlerName || dddLoading"
+              >
+                重命名
+              </button>
+              <button
+                class="btn danger"
+                @click="deleteDddItem('event_handler', selectedHandlerName, 'Handler')"
+                :disabled="!selectedHandlerName || dddLoading"
+              >
+                删除
+              </button>
+            </div>
+          </div>
+        </div>
         <div class="form-group">
           <label>事件名称 Event *</label>
           <input v-model="eventFlow.name" placeholder="UserActivated" />
@@ -633,7 +1636,25 @@ async function generateEventFlow() {
           <span class="hint">留空时复用事件 Topic</span>
         </div>
 
+        <div class="batch-import">
+          <div class="batch-header">
+            <div class="batch-title">批量导入/导出 Event 配置</div>
+            <div class="batch-actions">
+              <button class="btn" @click="applyEventBatch">导入</button>
+              <button class="btn" @click="exportEventBatch">导出</button>
+            </div>
+          </div>
+          <textarea v-model="eventBatch" placeholder="JSON 或行格式：name,type,comment"></textarea>
+          <span class="hint">可携带 topic、handler_topic、generateEvent 等字段</span>
+        </div>
+
         <div class="actions">
+          <button class="btn ghost" @click="showEventDiff" :disabled="eventLoading || diffLoading">
+            Event 对比
+          </button>
+          <button class="btn ghost" @click="showHandlerDiff" :disabled="eventLoading || diffLoading">
+            Handler 对比
+          </button>
           <button class="btn" @click="previewEventFlow" :disabled="eventLoading">
             {{ eventLoading ? '预览中...' : '预览 Preview' }}
           </button>
@@ -655,6 +1676,33 @@ async function generateEventFlow() {
           <div class="message" v-if="eventResult.message">{{ eventResult.message }}</div>
         </div>
       </section>
+    </div>
+
+    <div v-if="diffVisible" class="diff-modal">
+      <div class="diff-backdrop" @click="closeDiffModal"></div>
+      <div class="diff-panel">
+        <div class="diff-header">
+          <div>
+            <div class="diff-title">{{ diffTitle }}</div>
+            <div class="diff-meta">
+              <span v-if="diffFileName">文件：{{ diffFileName }}</span>
+              <span v-if="diffStatus">状态：{{ getStatusText(diffStatus) }}</span>
+              <span v-if="diffHint">{{ diffHint }}</span>
+            </div>
+          </div>
+          <button class="btn" @click="closeDiffModal">关闭</button>
+        </div>
+        <div class="diff-body">
+          <div class="diff-column">
+            <h4>当前文件</h4>
+            <pre>{{ diffExisting || '（当前文件不存在）' }}</pre>
+          </div>
+          <div class="diff-column">
+            <h4>生成预览</h4>
+            <pre>{{ diffPreview || '（暂无预览内容）' }}</pre>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -687,6 +1735,10 @@ async function generateEventFlow() {
 
 .domain-input input {
   flex: 1;
+}
+
+.domain-select {
+  min-width: 180px;
 }
 
 .grid {
@@ -725,6 +1777,30 @@ async function generateEventFlow() {
   color: var(--text-muted);
   font-size: 0.9rem;
   margin-bottom: 12px;
+}
+
+.existing {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.existing-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.existing-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.existing-select {
+  flex: 1;
+  min-width: 0;
 }
 
 .form-group {
@@ -860,6 +1936,16 @@ select {
   padding: 8px 12px;
 }
 
+.btn.ghost {
+  background: transparent;
+  border: 1px solid var(--border);
+}
+
+.btn.danger {
+  background: var(--error);
+  color: white;
+}
+
 .btn.primary {
   background: var(--primary);
   color: white;
@@ -890,6 +1976,7 @@ select {
   display: flex;
   gap: 10px;
   margin-top: 12px;
+  flex-wrap: wrap;
 }
 
 .result {
@@ -952,6 +2039,115 @@ select {
   margin-bottom: 12px;
 }
 
+.batch-import {
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.batch-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  gap: 8px;
+}
+
+.batch-title {
+  font-weight: 600;
+}
+
+.batch-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.batch-import textarea {
+  width: 100%;
+  min-height: 120px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-family: 'Courier New', monospace;
+  resize: vertical;
+}
+
+.diff-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+}
+
+.diff-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+}
+
+.diff-panel {
+  position: relative;
+  z-index: 51;
+  max-width: 1200px;
+  margin: 60px auto;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.diff-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.diff-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.diff-meta {
+  display: flex;
+  gap: 16px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  flex-wrap: wrap;
+}
+
+.diff-body {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.diff-column {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  min-height: 320px;
+  display: flex;
+  flex-direction: column;
+}
+
+.diff-column h4 {
+  margin-bottom: 8px;
+}
+
+.diff-column pre {
+  flex: 1;
+  overflow: auto;
+  white-space: pre-wrap;
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+}
+
 @media (max-width: 960px) {
   .grid {
     grid-template-columns: 1fr;
@@ -964,6 +2160,14 @@ select {
   .domain-input {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .diff-body {
+    grid-template-columns: 1fr;
+  }
+
+  .diff-panel {
+    margin: 20px;
   }
 }
 </style>
