@@ -31,6 +31,7 @@ func NewReviewService(
 
 
 // CreateReview 实现 CreateReview 用例。
+// MethodRemark: CreateReview 创建评价
 func (s *ReviewService) CreateReview(ctx context.Context, req CreateReviewServiceRequest) (*CreateReviewServiceResponse, error) {
 	// TODO: 实现业务逻辑
 	// 示例步骤：
@@ -45,6 +46,7 @@ func (s *ReviewService) CreateReview(ctx context.Context, req CreateReviewServic
 }
 
 // ModerateReview 实现 ModerateReview 用例。
+// MethodRemark: ModerateReview 审核评价
 func (s *ReviewService) ModerateReview(ctx context.Context, req ModerateReviewServiceRequest) (*ModerateReviewServiceResponse, error) {
 	// TODO: 实现业务逻辑
 	// 示例步骤：
@@ -59,6 +61,7 @@ func (s *ReviewService) ModerateReview(ctx context.Context, req ModerateReviewSe
 }
 
 // ReplyReview 实现 ReplyReview 用例。
+// MethodRemark: ReplyReview 回复评价
 func (s *ReviewService) ReplyReview(ctx context.Context, req ReplyReviewServiceRequest) (*ReplyReviewServiceResponse, error) {
 	// TODO: 实现业务逻辑
 	// 示例步骤：

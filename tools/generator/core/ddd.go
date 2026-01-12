@@ -41,7 +41,7 @@ func generateValueObjectInternal(cfg ValueObjectConfig, previewOnly bool) (*Gene
 		fieldsCfg = []FieldConfig{{Name: "Value", Type: "string"}}
 	}
 	fields := ConvertToFields(fieldsCfg, valueObjectName, domainName)
-	hasTime, hasEnums := detectFieldFlags(fields)
+	hasTime, hasEnums, hasJSON := detectFieldFlags(fields)
 
 	data := ValueObjectData{
 		PackageName:     domainName,
@@ -49,6 +49,7 @@ func generateValueObjectInternal(cfg ValueObjectConfig, previewOnly bool) (*Gene
 		Fields:          fields,
 		HasTime:         hasTime,
 		HasEnums:        hasEnums,
+		HasJSON:         hasJSON,
 	}
 
 	fileName := fmt.Sprintf("value_object_%s.go", ToSnakeCase(valueObjectName))
@@ -239,7 +240,7 @@ func generateEventInternal(cfg EventConfig, previewOnly bool) (*GenerationResult
 	eventStructName := normalizeEventStructName(cfg.Name)
 	eventTopic := normalizeEventTopic(cfg.Topic, domainName, eventStructName)
 	fields := ConvertToFieldsAllowReserved(cfg.Fields, eventStructName, domainName)
-	hasTime, hasEnums := detectFieldFlags(fields)
+	hasTime, hasEnums, hasJSON := detectFieldFlags(fields)
 
 	data := EventData{
 		PackageName:     domainName,
@@ -248,6 +249,7 @@ func generateEventInternal(cfg EventConfig, previewOnly bool) (*GenerationResult
 		Fields:          fields,
 		HasTime:         hasTime,
 		HasEnums:        hasEnums,
+		HasJSON:         hasJSON,
 	}
 
 	fileName := fmt.Sprintf("event_%s.go", ToSnakeCase(strings.TrimSuffix(eventStructName, "Event")))
@@ -400,9 +402,10 @@ func normalizeEventTopic(topic, domainName, eventStructName string) string {
 	return fmt.Sprintf("%s.%s", domainName, ToSnakeCase(baseName))
 }
 
-func detectFieldFlags(fields []Field) (bool, bool) {
+func detectFieldFlags(fields []Field) (bool, bool, bool) {
 	hasTime := false
 	hasEnums := false
+	hasJSON := false
 	for _, f := range fields {
 		if strings.Contains(f.GoType, "time.Time") {
 			hasTime = true
@@ -410,8 +413,11 @@ func detectFieldFlags(fields []Field) (bool, bool) {
 		if f.IsEnum {
 			hasEnums = true
 		}
+		if strings.Contains(f.GoType, "datatypes.JSON") {
+			hasJSON = true
+		}
 	}
-	return hasTime, hasEnums
+	return hasTime, hasEnums, hasJSON
 }
 
 func updateModuleContentForEventHandler(content string, handlerName string) (string, bool) {

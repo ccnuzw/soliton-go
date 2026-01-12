@@ -41,6 +41,9 @@ func New{{.ServiceName}}(
 
 {{range .Methods}}
 // {{.Name}} 实现 {{.Name}} 用例。
+{{- if .Remark}}
+// MethodRemark: {{.Name}} {{.Remark}}
+{{- end}}
 func (s *{{$.ServiceName}}) {{.Name}}(ctx context.Context, req {{.Name}}ServiceRequest) (*{{.Name}}ServiceResponse, error) {
 	// TODO: 实现业务逻辑
 	// 示例步骤：

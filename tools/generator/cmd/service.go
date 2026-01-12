@@ -22,7 +22,8 @@ Services orchestrate multiple domains to implement complex use cases.
 Examples:
   soliton-gen service OrderService
   soliton-gen service OrderService --methods "CreateOrder,CancelOrder,GetUserOrders"
-  soliton-gen service PaymentService --methods "ProcessPayment,RefundPayment"`,
+  soliton-gen service PaymentService --methods "ProcessPayment,RefundPayment"
+  soliton-gen service InventoryService --methods "ReserveStock::预占库存,ReleaseStock::释放预占"`,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		name := args[0]
@@ -44,12 +45,12 @@ Examples:
 		}
 
 		// Parse methods from comma-separated string
-		var methods []string
+		var methods []core.ServiceMethodConfig
 		if serviceMethods != "" {
 			for _, m := range strings.Split(serviceMethods, ",") {
-				m = strings.TrimSpace(m)
-				if m != "" {
-					methods = append(methods, m)
+				cfg, ok := parseServiceMethodSpec(m)
+				if ok {
+					methods = append(methods, cfg)
 				}
 			}
 		}
@@ -82,7 +83,7 @@ Examples:
 
 func init() {
 	rootCmd.AddCommand(serviceCmd)
-	serviceCmd.Flags().StringVar(&serviceMethods, "methods", "", "Comma-separated list of service methods (e.g., 'CreateOrder,CancelOrder')")
+	serviceCmd.Flags().StringVar(&serviceMethods, "methods", "", "Comma-separated list of service methods (e.g., 'CreateOrder,CancelOrder' or 'CreateOrder::创建订单')")
 	serviceCmd.Flags().BoolVar(&forceFlag, "force", false, "Force overwrite existing files")
 	serviceCmd.Flags().StringVar(&serviceRemarkFlag, "remark", "", "Optional service remark/description")
 
@@ -153,4 +154,33 @@ var serviceDeleteCmd = &cobra.Command{
 			os.Exit(1)
 		}
 	},
+}
+
+func parseServiceMethodSpec(spec string) (core.ServiceMethodConfig, bool) {
+	spec = strings.TrimSpace(spec)
+	if spec == "" {
+		return core.ServiceMethodConfig{}, false
+	}
+
+	name := spec
+	remark := ""
+
+	if strings.Contains(spec, "::") {
+		parts := strings.SplitN(spec, "::", 2)
+		name = strings.TrimSpace(parts[0])
+		if len(parts) > 1 {
+			remark = strings.TrimSpace(parts[1])
+		}
+	} else if strings.Contains(spec, ":") {
+		parts := strings.SplitN(spec, ":", 2)
+		name = strings.TrimSpace(parts[0])
+		if len(parts) > 1 {
+			remark = strings.TrimSpace(parts[1])
+		}
+	}
+
+	if name == "" {
+		return core.ServiceMethodConfig{}, false
+	}
+	return core.ServiceMethodConfig{Name: name, Remark: remark}, true
 }

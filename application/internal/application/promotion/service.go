@@ -31,6 +31,7 @@ func NewPromotionService(
 
 
 // ApplyPromotion 实现 ApplyPromotion 用例。
+// MethodRemark: ApplyPromotion 应用优惠
 func (s *PromotionService) ApplyPromotion(ctx context.Context, req ApplyPromotionServiceRequest) (*ApplyPromotionServiceResponse, error) {
 	// TODO: 实现业务逻辑
 	// 示例步骤：
@@ -45,6 +46,7 @@ func (s *PromotionService) ApplyPromotion(ctx context.Context, req ApplyPromotio
 }
 
 // ValidatePromotion 实现 ValidatePromotion 用例。
+// MethodRemark: ValidatePromotion 校验优惠
 func (s *PromotionService) ValidatePromotion(ctx context.Context, req ValidatePromotionServiceRequest) (*ValidatePromotionServiceResponse, error) {
 	// TODO: 实现业务逻辑
 	// 示例步骤：
@@ -59,6 +61,7 @@ func (s *PromotionService) ValidatePromotion(ctx context.Context, req ValidatePr
 }
 
 // RevokePromotion 实现 RevokePromotion 用例。
+// MethodRemark: RevokePromotion 撤销优惠
 func (s *PromotionService) RevokePromotion(ctx context.Context, req RevokePromotionServiceRequest) (*RevokePromotionServiceResponse, error) {
 	// TODO: 实现业务逻辑
 	// 示例步骤：
@@ -73,6 +76,7 @@ func (s *PromotionService) RevokePromotion(ctx context.Context, req RevokePromot
 }
 
 // EvaluatePromotion 实现 EvaluatePromotion 用例。
+// MethodRemark: EvaluatePromotion 评估优惠
 func (s *PromotionService) EvaluatePromotion(ctx context.Context, req EvaluatePromotionServiceRequest) (*EvaluatePromotionServiceResponse, error) {
 	// TODO: 实现业务逻辑
 	// 示例步骤：
@@ -87,6 +91,7 @@ func (s *PromotionService) EvaluatePromotion(ctx context.Context, req EvaluatePr
 }
 
 // FindByCode 实现 FindByCode 用例。
+// MethodRemark: FindByCode 按码查询
 func (s *PromotionService) FindByCode(ctx context.Context, req FindByCodeServiceRequest) (*FindByCodeServiceResponse, error) {
 	// TODO: 实现业务逻辑
 	// 示例步骤：

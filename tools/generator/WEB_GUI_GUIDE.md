@@ -147,6 +147,10 @@ cd /path/to/existing/project
 - 格式：使用 PascalCase
 - 示例：`User`、`Order`、`Product`
 
+**领域备注 Remark** *（可选）*
+- 说明：用于说明该领域用途
+- 回显：会显示在已生成领域卡片上
+
 #### 字段配置
 
 点击"+ 添加字段"添加新字段，每个字段包含：
@@ -309,6 +313,10 @@ internal/
 - 格式：使用 PascalCase，自动添加 "Service" 后缀
 - 示例：`OrderService`、`PaymentService`
 
+**服务备注 Remark** *（可选）*
+- 说明：用于说明该服务用途
+- 回显：会显示在已生成服务卡片上
+
 #### 方法配置
 
 点击"+ 添加方法"添加新方法：
@@ -317,6 +325,7 @@ internal/
   - 格式：使用 PascalCase
   - 示例：`CreateOrder`、`ProcessPayment`、`CancelOrder`
   - 每行一个方法名
+  - **方法备注**（可选）：用于说明该方法用途，生成后可回显
 
 - **默认方法**
   - 如果不填写方法，将自动生成：

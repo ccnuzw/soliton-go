@@ -85,11 +85,7 @@ func generateServiceInternal(cfg ServiceConfig, previewOnly bool) (*GenerationRe
 	}
 
 	// Parse methods
-	var methodsStr string
-	if len(cfg.Methods) > 0 {
-		methodsStr = strings.Join(cfg.Methods, ",")
-	}
-	methods := ParseServiceMethods(methodsStr, serviceName)
+	methods := ParseServiceMethods(cfg.Methods, serviceName)
 
 	data := ServiceData{
 		ServiceName:   serviceName,

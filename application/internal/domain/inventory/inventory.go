@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/soliton-go/framework/ddd"
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
 // DomainRemark: 库存领域

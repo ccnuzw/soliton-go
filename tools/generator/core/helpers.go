@@ -350,25 +350,26 @@ func isStringType(goType string) bool {
 // Service Helpers
 // ============================================================================
 
-// ParseServiceMethods parses service methods from a comma-separated string.
-func ParseServiceMethods(methodsStr, serviceName string) []ServiceMethod {
+// ParseServiceMethods parses service methods from config entries.
+func ParseServiceMethods(methodsCfg []ServiceMethodConfig, serviceName string) []ServiceMethod {
 	var methods []ServiceMethod
 
-	if methodsStr != "" {
-		for _, m := range strings.Split(methodsStr, ",") {
-			m = strings.TrimSpace(m)
-			if m != "" {
-				// Keep original case if already PascalCase, otherwise convert
-				name := m
-				if len(name) > 0 && name[0] >= 'a' && name[0] <= 'z' {
-					name = strings.ToUpper(string(name[0])) + name[1:]
-				}
-				camelName := strings.ToLower(string(name[0])) + name[1:]
-				methods = append(methods, ServiceMethod{
-					Name:      name,
-					CamelName: camelName,
-				})
+	if len(methodsCfg) > 0 {
+		for _, m := range methodsCfg {
+			name := strings.TrimSpace(m.Name)
+			if name == "" {
+				continue
 			}
+			// Keep original case if already PascalCase, otherwise convert
+			if len(name) > 0 && name[0] >= 'a' && name[0] <= 'z' {
+				name = strings.ToUpper(string(name[0])) + name[1:]
+			}
+			camelName := strings.ToLower(string(name[0])) + name[1:]
+			methods = append(methods, ServiceMethod{
+				Name:      name,
+				CamelName: camelName,
+				Remark:    strings.TrimSpace(m.Remark),
+			})
 		}
 	} else {
 		// Default methods

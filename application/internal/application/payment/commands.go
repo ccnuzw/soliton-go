@@ -3,6 +3,7 @@ package paymentapp
 import (
 	"context"
 	"time"
+	"gorm.io/datatypes"
 
 	"github.com/soliton-go/application/internal/domain/payment"
 )

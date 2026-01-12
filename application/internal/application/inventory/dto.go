@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/soliton-go/application/internal/domain/inventory"
+	"gorm.io/datatypes"
 )
 
 // CreateInventoryRequest 是创建 Inventory 的请求体。

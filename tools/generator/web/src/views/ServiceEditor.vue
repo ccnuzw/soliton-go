@@ -19,7 +19,7 @@ const manualMode = ref(false)
 const config = ref<ServiceConfig>({
   name: '',
   remark: '',
-  methods: [''],
+  methods: [{ name: '', remark: '' }],
   force: false,  // 默认不勾选
 })
 
@@ -31,7 +31,10 @@ const filteredServices = computed(() => {
   return services.value.filter(service =>
     service.name.toLowerCase().includes(query) ||
     (service.remark || '').toLowerCase().includes(query) ||
-    service.methods.some(method => method.toLowerCase().includes(query))
+    service.methods.some(method =>
+      method.name.toLowerCase().includes(query) ||
+      (method.remark || '').toLowerCase().includes(query)
+    )
   )
 })
 
@@ -98,7 +101,7 @@ async function loadService(serviceName: string) {
     config.value = {
       name: detail.name,
       remark: detail.remark || '',
-      methods: detail.methods.map(m => m.name),
+      methods: detail.methods.map(m => ({ name: m.name, remark: m.remark || '' })),
       force: true, // Auto-enable force when editing
     }
 
@@ -112,7 +115,7 @@ async function loadService(serviceName: string) {
 }
 
 function addMethod() {
-  config.value.methods.push('')
+  config.value.methods.push({ name: '', remark: '' })
 }
 
 function removeMethod(index: number) {
@@ -125,7 +128,9 @@ async function preview() {
   error.value = ''
   loading.value = true
   try {
-    const validMethods = config.value.methods.filter(m => m.trim())
+    const validMethods = config.value.methods
+      .map(method => ({ name: method.name.trim(), remark: method.remark?.trim() }))
+      .filter(method => method.name)
     result.value = await api.previewService({
       ...config.value,
       methods: validMethods,
@@ -142,7 +147,9 @@ async function generate() {
   error.value = ''
   loading.value = true
   try {
-    const validMethods = config.value.methods.filter(m => m.trim())
+    const validMethods = config.value.methods
+      .map(method => ({ name: method.name.trim(), remark: method.remark?.trim() }))
+      .filter(method => method.name)
     result.value = await api.generateService({
       ...config.value,
       methods: validMethods,
@@ -165,7 +172,7 @@ function reset() {
   config.value = {
     name: '',
     remark: '',
-    methods: [''],
+    methods: [{ name: '', remark: '' }],
     force: false,
   }
   result.value = null
@@ -235,8 +242,9 @@ function getStatusText(status: string): string {
             </div>
           </div>
           <div class="service-methods">
-            <span v-for="(method, idx) in service.methods" :key="idx" class="method-tag">
-              {{ method }}
+            <span v-for="(method, idx) in service.methods" :key="idx" class="method-tag" :title="method.remark || ''">
+              {{ method.name }}
+              <span v-if="method.remark" class="method-remark">· {{ method.remark }}</span>
             </span>
           </div>
           <div class="service-action">
@@ -366,9 +374,10 @@ function getStatusText(status: string): string {
               <button class="btn-add" @click="addMethod">+ 添加方法</button>
             </div>
 
-            <div class="method-row" v-for="(_method, index) in config.methods" :key="index">
-              <input v-model="config.methods[index]" placeholder="CreateOrder / ProcessPayment / CancelOrder"
+            <div class="method-row" v-for="(method, index) in config.methods" :key="index">
+              <input v-model="method.name" placeholder="CreateOrder / ProcessPayment / CancelOrder"
                 class="method-name" />
+              <input v-model="method.remark" placeholder="方法备注（可选）" class="method-remark-input" />
               <button class="btn-remove" @click="removeMethod(index)" :disabled="config.methods.length === 1">×</button>
             </div>
 
@@ -674,6 +683,11 @@ h1 {
   color: var(--text-muted);
 }
 
+.method-remark {
+  color: var(--text-muted);
+  margin-left: 4px;
+  font-size: 0.75rem;
+}
 .more {
   padding: 2px 8px;
   color: var(--primary);
@@ -1022,9 +1036,19 @@ h1 {
   display: flex;
   gap: 8px;
   margin-bottom: 8px;
+  flex-wrap: wrap;
 }
 
 .method-name {
+  flex: 1.2;
+  padding: 10px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+}
+
+.method-remark-input {
   flex: 1;
   padding: 10px;
   background: var(--bg-input);

@@ -2,6 +2,7 @@ package reviewapp
 
 import (
 	"context"
+	"gorm.io/datatypes"
 
 	"github.com/soliton-go/application/internal/domain/review"
 )

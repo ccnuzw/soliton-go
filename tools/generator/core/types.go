@@ -42,10 +42,16 @@ type FieldConfig struct {
 
 // ServiceConfig holds configuration for service generation.
 type ServiceConfig struct {
-	Name    string   `json:"name"`
-	Remark  string   `json:"remark,omitempty"`
-	Methods []string `json:"methods,omitempty"`
-	Force   bool     `json:"force"`
+	Name    string                `json:"name"`
+	Remark  string                `json:"remark,omitempty"`
+	Methods []ServiceMethodConfig `json:"methods,omitempty"`
+	Force   bool                  `json:"force"`
+}
+
+// ServiceMethodConfig represents a service method definition.
+type ServiceMethodConfig struct {
+	Name   string `json:"name"`
+	Remark string `json:"remark,omitempty"`
 }
 
 // ValueObjectConfig holds configuration for value object generation.
@@ -144,6 +150,7 @@ type TemplateData struct {
 	Fields       []Field
 	HasTime      bool
 	HasEnums     bool
+	HasJSON      bool
 	ModulePath   string
 	TableName    string
 	RouteBase    string
@@ -154,6 +161,7 @@ type TemplateData struct {
 type ServiceMethod struct {
 	Name      string // Method name (e.g., "CreateOrder")
 	CamelName string // Camel case name (e.g., "createOrder")
+	Remark    string // Method remark/description
 }
 
 // ServiceData holds template data for service generation.
@@ -182,6 +190,7 @@ type ValueObjectData struct {
 	Fields          []Field
 	HasTime         bool
 	HasEnums        bool
+	HasJSON         bool
 }
 
 // SpecificationData holds template data for specification generation.
@@ -208,6 +217,7 @@ type EventData struct {
 	Fields          []Field
 	HasTime         bool
 	HasEnums        bool
+	HasJSON         bool
 }
 
 // EventHandlerData holds template data for event handler generation.

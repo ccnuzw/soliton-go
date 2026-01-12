@@ -3,6 +3,7 @@ package inventoryapp
 import (
 	"context"
 	"time"
+	"gorm.io/datatypes"
 
 	"github.com/soliton-go/application/internal/domain/inventory"
 )

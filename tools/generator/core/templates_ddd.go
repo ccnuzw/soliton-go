@@ -12,6 +12,9 @@ import (
 {{- if .HasTime}}
 	"time"
 {{- end}}
+{{- if .HasJSON}}
+	"gorm.io/datatypes"
+{{- end}}
 )
 
 {{- range .Fields}}
@@ -92,6 +95,9 @@ const EventTemplate = `package {{.PackageName}}
 import (
 {{- if .HasTime}}
 	"time"
+{{- end}}
+{{- if .HasJSON}}
+	"gorm.io/datatypes"
 {{- end}}
 	"github.com/soliton-go/framework/ddd"
 	"github.com/soliton-go/framework/event"

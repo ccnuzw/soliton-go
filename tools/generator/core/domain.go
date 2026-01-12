@@ -41,12 +41,16 @@ func generateDomainInternal(cfg DomainConfig, previewOnly bool) (*GenerationResu
 	// Check for special types
 	hasTime := false
 	hasEnums := false
+	hasJSON := false
 	for _, f := range fields {
 		if strings.Contains(f.GoType, "time.Time") {
 			hasTime = true
 		}
 		if f.IsEnum {
 			hasEnums = true
+		}
+		if strings.Contains(f.GoType, "datatypes.JSON") {
+			hasJSON = true
 		}
 	}
 
@@ -67,6 +71,7 @@ func generateDomainInternal(cfg DomainConfig, previewOnly bool) (*GenerationResu
 		Fields:       fields,
 		HasTime:      hasTime,
 		HasEnums:     hasEnums,
+		HasJSON:      hasJSON,
 		ModulePath:   layout.ModulePath,
 		TableName:    tableName,
 		RouteBase:    routeBase,
