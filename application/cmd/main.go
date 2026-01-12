@@ -18,6 +18,11 @@ import (
 	orderapp "github.com/soliton-go/application/internal/application/order"
 	productapp "github.com/soliton-go/application/internal/application/product"
 	"github.com/soliton-go/framework/event"
+	inventoryapp "github.com/soliton-go/application/internal/application/inventory"
+	paymentapp "github.com/soliton-go/application/internal/application/payment"
+	shippingapp "github.com/soliton-go/application/internal/application/shipping"
+	promotionapp "github.com/soliton-go/application/internal/application/promotion"
+	reviewapp "github.com/soliton-go/application/internal/application/review"
 	// soliton-gen:imports
 )
 
@@ -35,11 +40,21 @@ func main() {
 		userapp.Module,
 		orderapp.Module,
 		productapp.Module,
+		inventoryapp.Module,
+		paymentapp.Module,
+		shippingapp.Module,
+		promotionapp.Module,
+		reviewapp.Module,
 		// soliton-gen:modules
 
 		fx.Provide(interfaceshttp.NewUserHandler),
 		fx.Provide(interfaceshttp.NewOrderHandler),
 		fx.Provide(interfaceshttp.NewProductHandler),
+		fx.Provide(interfaceshttp.NewInventoryHandler),
+		fx.Provide(interfaceshttp.NewPaymentHandler),
+		fx.Provide(interfaceshttp.NewShippingHandler),
+		fx.Provide(interfaceshttp.NewPromotionHandler),
+		fx.Provide(interfaceshttp.NewReviewHandler),
 		// soliton-gen:handlers
 
 		fx.Invoke(func(db *gorm.DB, r *gin.Engine, h *interfaceshttp.UserHandler) error {
@@ -58,6 +73,41 @@ func main() {
 		}),
 		fx.Invoke(func(db *gorm.DB, r *gin.Engine, h *interfaceshttp.ProductHandler) error {
 			if err := productapp.RegisterMigration(db); err != nil {
+				return err
+			}
+			h.RegisterRoutes(r)
+			return nil
+		}),
+		fx.Invoke(func(db *gorm.DB, r *gin.Engine, h *interfaceshttp.InventoryHandler) error {
+			if err := inventoryapp.RegisterMigration(db); err != nil {
+				return err
+			}
+			h.RegisterRoutes(r)
+			return nil
+		}),
+		fx.Invoke(func(db *gorm.DB, r *gin.Engine, h *interfaceshttp.PaymentHandler) error {
+			if err := paymentapp.RegisterMigration(db); err != nil {
+				return err
+			}
+			h.RegisterRoutes(r)
+			return nil
+		}),
+		fx.Invoke(func(db *gorm.DB, r *gin.Engine, h *interfaceshttp.ShippingHandler) error {
+			if err := shippingapp.RegisterMigration(db); err != nil {
+				return err
+			}
+			h.RegisterRoutes(r)
+			return nil
+		}),
+		fx.Invoke(func(db *gorm.DB, r *gin.Engine, h *interfaceshttp.PromotionHandler) error {
+			if err := promotionapp.RegisterMigration(db); err != nil {
+				return err
+			}
+			h.RegisterRoutes(r)
+			return nil
+		}),
+		fx.Invoke(func(db *gorm.DB, r *gin.Engine, h *interfaceshttp.ReviewHandler) error {
+			if err := reviewapp.RegisterMigration(db); err != nil {
 				return err
 			}
 			h.RegisterRoutes(r)

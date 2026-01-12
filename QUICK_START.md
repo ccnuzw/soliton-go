@@ -188,6 +188,35 @@ GOWORK=off go run ./cmd/main.go
 | User | `/api/users` |
 | Product | `/api/products` |
 | Order | `/api/orders` |
+| Inventory | `/api/inventories` |
+| Payment | `/api/payments` |
+| Shipping | `/api/shippings` |
+| Promotion | `/api/promotions` |
+| Review | `/api/reviews` |
+
+**🆕 业务操作端点：**
+
+| 方法 | 端点 | 说明 |
+|------|------|------|
+| POST | `/api/payments/authorize` | 授权支付 |
+| POST | `/api/payments/:id/capture` | 确认扣款 |
+| POST | `/api/payments/:id/refund` | 退款 |
+| POST | `/api/payments/:id/cancel` | 取消支付 |
+| POST | `/api/inventories/:id/adjust` | 调整库存 |
+| POST | `/api/inventories/:id/reserve` | 预占库存 |
+| POST | `/api/inventories/:id/release` | 释放库存 |
+| POST | `/api/inventories/:id/stock-in` | 入库 |
+| POST | `/api/inventories/:id/stock-out` | 出库 |
+| POST | `/api/shippings/shipments` | 创建物流单 |
+| POST | `/api/shippings/:id/tracking` | 更新物流 |
+| POST | `/api/shippings/:id/deliver` | 标记签收 |
+| POST | `/api/shippings/:id/cancel` | 取消物流 |
+| POST | `/api/promotions/validate` | 校验优惠 |
+| POST | `/api/promotions/apply` | 应用优惠 |
+| POST | `/api/promotions/revoke` | 撤销优惠 |
+| POST | `/api/reviews/submit` | 提交评价 |
+| POST | `/api/reviews/:id/moderate` | 审核评价 |
+| POST | `/api/reviews/:id/reply` | 回复评价 |
 
 **🆕 分页查询：**
 ```bash
