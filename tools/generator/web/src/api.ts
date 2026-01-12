@@ -379,7 +379,7 @@ export const api = {
       `/ddd/detail?domain=${encodeURIComponent(domain)}&type=${encodeURIComponent(type)}&name=${encodeURIComponent(name)}`
     ),
 
-  getDddSource: (domain: string, type: string, name: string) =>
+  getDddSource: (domain: string, type: string, name = '') =>
     request<DddSourceResponse>(
       `/ddd/source?domain=${encodeURIComponent(domain)}&type=${encodeURIComponent(type)}&name=${encodeURIComponent(name)}`
     ),

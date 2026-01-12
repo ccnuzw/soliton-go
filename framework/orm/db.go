@@ -5,6 +5,7 @@ import (
 
 	"github.com/soliton-go/framework/core/config"
 	"go.uber.org/zap"
+	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -17,6 +18,8 @@ func NewGormDB(cfg *config.Config, logger *zap.Logger) (*gorm.DB, error) {
 
 	var dialector gorm.Dialector
 	switch driver {
+	case "mysql":
+		dialector = mysql.Open(dsn)
 	case "postgres":
 		dialector = postgres.Open(dsn)
 	case "sqlite":

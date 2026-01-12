@@ -159,7 +159,7 @@ server:
 
 # Database Configuration
 database:
-  # Options: sqlite, postgres
+  # Options: sqlite, postgres, mysql
   driver: sqlite
   dsn: data.db
 
@@ -167,7 +167,9 @@ database:
   # driver: postgres
   # dsn: host=localhost user=postgres password=secret dbname=myapp port=5432 sslmode=disable
 
-  # MySQL is not enabled by default. Extend framework/orm/db.go if needed.
+  # MySQL example:
+  # driver: mysql
+  # dsn: user:password@tcp(127.0.0.1:3306)/myapp?charset=utf8mb4&parseTime=True&loc=Local
 
 # Logging
 log:

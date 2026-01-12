@@ -22,16 +22,21 @@ const selectedEventName = ref('')
 const selectedHandlerName = ref('')
 const diffVisible = ref(false)
 const diffTitle = ref('')
-const diffExisting = ref('')
-const diffPreview = ref('')
-const diffFileName = ref('')
-const diffHint = ref('')
-const diffStatus = ref('')
 const diffLoading = ref(false)
 const valueObjectBatch = ref('')
 const specBatch = ref('')
 const policyBatch = ref('')
 const eventBatch = ref('')
+const diffEntries = ref<DiffEntry[]>([])
+const diffSelected = ref(0)
+
+type DiffEntry = {
+  fileName: string
+  existing: string
+  preview: string
+  status: string
+  hint?: string
+}
 
 const valueObjectLoading = ref(false)
 const valueObjectResult = ref<GenerationResult | null>(null)
@@ -111,6 +116,8 @@ const domainHint = computed(() => {
   }
   return '可选领域来自已生成模块'
 })
+
+const currentDiff = computed(() => diffEntries.value[diffSelected.value])
 
 onMounted(async () => {
   try {
@@ -203,20 +210,10 @@ function closeDiffModal() {
   diffVisible.value = false
 }
 
-function openDiffModal(
-  title: string,
-  existing: string,
-  preview: string,
-  fileName: string,
-  status: string,
-  hint = ''
-) {
+function openDiffModal(title: string, entries: DiffEntry[]) {
   diffTitle.value = title
-  diffExisting.value = existing
-  diffPreview.value = preview
-  diffFileName.value = fileName
-  diffStatus.value = status
-  diffHint.value = hint
+  diffEntries.value = entries
+  diffSelected.value = 0
   diffVisible.value = true
 }
 
@@ -620,7 +617,7 @@ async function deleteDddItem(itemType: string, name: string, label: string) {
   }
 }
 
-async function fetchExistingSource(domain: string, itemType: string, name: string) {
+async function fetchExistingSource(domain: string, itemType: string, name = '') {
   try {
     const res = await api.getDddSource(domain, itemType, name)
     return { content: res.content, file: res.file, found: true }
@@ -629,15 +626,43 @@ async function fetchExistingSource(domain: string, itemType: string, name: strin
   }
 }
 
-function pickPreviewFile(result: GenerationResult) {
-  const file = result.files.find((f) => f.content) || result.files[0]
-  if (!file || !file.content) {
+function pickPreviewFiles(result: GenerationResult) {
+  const files = result.files
+    .filter((f) => f.content)
+    .map((file) => ({
+      content: file.content as string,
+      file: file.path.split('/').pop() || file.path,
+      status: file.status,
+      path: file.path,
+    }))
+  if (!files.length) {
     throw new Error('预览内容为空')
   }
+  return files
+}
+
+function pickPreviewFile(result: GenerationResult) {
+  const files = pickPreviewFiles(result)
+  const first = files[0]
+  if (!first) {
+    throw new Error('预览内容为空')
+  }
+  return first
+}
+
+async function buildDiffEntry(
+  domain: string,
+  itemType: string,
+  name: string,
+  previewFile: { content: string; file: string; status: string }
+): Promise<DiffEntry> {
+  const existing = await fetchExistingSource(domain, itemType, name)
   return {
-    content: file.content,
-    file: file.path.split('/').pop() || file.path,
-    status: file.status,
+    fileName: previewFile.file,
+    existing: existing.content,
+    preview: previewFile.content,
+    status: previewFile.status,
+    hint: existing.found ? '' : '当前文件不存在，将创建新文件',
   }
 }
 
@@ -658,15 +683,8 @@ async function showValueObjectDiff() {
       force: valueObject.value.force,
     })
     const previewFile = pickPreviewFile(preview)
-    const existing = await fetchExistingSource(domain, 'valueobject', valueObject.value.name)
-    openDiffModal(
-      `Value Object · ${valueObject.value.name}`,
-      existing.content,
-      previewFile.content,
-      previewFile.file,
-      previewFile.status,
-      existing.found ? '' : '当前文件不存在，将创建新文件'
-    )
+    const entry = await buildDiffEntry(domain, 'valueobject', valueObject.value.name, previewFile)
+    openDiffModal(`Value Object · ${valueObject.value.name}`, [entry])
   } catch (e: any) {
     showError(e?.message || '对比失败')
   } finally {
@@ -690,15 +708,8 @@ async function showSpecDiff() {
       force: specification.value.force,
     })
     const previewFile = pickPreviewFile(preview)
-    const existing = await fetchExistingSource(domain, 'spec', specification.value.name)
-    openDiffModal(
-      `Specification · ${specification.value.name}`,
-      existing.content,
-      previewFile.content,
-      previewFile.file,
-      previewFile.status,
-      existing.found ? '' : '当前文件不存在，将创建新文件'
-    )
+    const entry = await buildDiffEntry(domain, 'spec', specification.value.name, previewFile)
+    openDiffModal(`Specification · ${specification.value.name}`, [entry])
   } catch (e: any) {
     showError(e?.message || '对比失败')
   } finally {
@@ -722,15 +733,8 @@ async function showPolicyDiff() {
       force: policy.value.force,
     })
     const previewFile = pickPreviewFile(preview)
-    const existing = await fetchExistingSource(domain, 'policy', policy.value.name)
-    openDiffModal(
-      `Policy · ${policy.value.name}`,
-      existing.content,
-      previewFile.content,
-      previewFile.file,
-      previewFile.status,
-      existing.found ? '' : '当前文件不存在，将创建新文件'
-    )
+    const entry = await buildDiffEntry(domain, 'policy', policy.value.name, previewFile)
+    openDiffModal(`Policy · ${policy.value.name}`, [entry])
   } catch (e: any) {
     showError(e?.message || '对比失败')
   } finally {
@@ -760,15 +764,8 @@ async function showEventDiff() {
       force: eventFlow.value.eventForce,
     })
     const previewFile = pickPreviewFile(preview)
-    const existing = await fetchExistingSource(domain, 'event', eventFlow.value.name)
-    openDiffModal(
-      `Event · ${eventFlow.value.name}`,
-      existing.content,
-      previewFile.content,
-      previewFile.file,
-      previewFile.status,
-      existing.found ? '' : '当前文件不存在，将创建新文件'
-    )
+    const entry = await buildDiffEntry(domain, 'event', eventFlow.value.name, previewFile)
+    openDiffModal(`Event · ${eventFlow.value.name}`, [entry])
   } catch (e: any) {
     showError(e?.message || '对比失败')
   } finally {
@@ -795,16 +792,27 @@ async function showHandlerDiff() {
       topic: (eventFlow.value.handlerTopic || eventFlow.value.topic).trim(),
       force: eventFlow.value.handlerForce,
     })
-    const previewFile = pickPreviewFile(preview)
-    const existing = await fetchExistingSource(domain, 'event_handler', eventFlow.value.name)
-    openDiffModal(
-      `Handler · ${eventFlow.value.name}`,
-      existing.content,
-      previewFile.content,
-      previewFile.file,
-      previewFile.status,
-      existing.found ? '' : '当前文件不存在，将创建新文件'
-    )
+    const previewFiles = pickPreviewFiles(preview)
+    const entries: DiffEntry[] = []
+    for (const file of previewFiles) {
+      if (file.file === 'module.go') {
+        const entry = await buildDiffEntry(domain, 'module', '', file)
+        entries.push(entry)
+        continue
+      }
+      if (file.file === 'main.go') {
+        const entry = await buildDiffEntry('', 'main', '', file)
+        entries.push(entry)
+        continue
+      }
+      const entry = await buildDiffEntry(domain, 'event_handler', eventFlow.value.name, file)
+      entries.push(entry)
+    }
+    if (entries.length === 0) {
+      showError('预览内容为空')
+      return
+    }
+    openDiffModal(`Handler · ${eventFlow.value.name}`, entries)
   } catch (e: any) {
     showError(e?.message || '对比失败')
   } finally {
@@ -1210,7 +1218,7 @@ async function generateEventFlow() {
         <p><strong>Event 与 Handler：</strong>可单独生成，也可在同一操作中组合生成。</p>
         <p><strong>Topic：</strong>留空时自动按领域生成，例如 <code>user.activated</code></p>
         <p><strong>回显与管理：</strong>可从已有列表加载已生成组件，支持重命名与删除。</p>
-        <p><strong>Diff 对比：</strong>对比当前文件与预览结果，Handler 对比仅显示处理器文件。</p>
+        <p><strong>Diff 对比：</strong>对比当前文件与预览结果，Handler 对比会包含 module.go / main.go 变更。</p>
         <p><strong>批量导入：</strong>支持 JSON 或行格式（如 <code>name,type,comment</code>），枚举可用 <code>enum:a|b</code>。</p>
       </div>
     </details>
@@ -1685,21 +1693,29 @@ async function generateEventFlow() {
           <div>
             <div class="diff-title">{{ diffTitle }}</div>
             <div class="diff-meta">
-              <span v-if="diffFileName">文件：{{ diffFileName }}</span>
-              <span v-if="diffStatus">状态：{{ getStatusText(diffStatus) }}</span>
-              <span v-if="diffHint">{{ diffHint }}</span>
+              <span v-if="currentDiff?.fileName">文件：{{ currentDiff.fileName }}</span>
+              <span v-if="currentDiff?.status">状态：{{ getStatusText(currentDiff.status) }}</span>
+              <span v-if="currentDiff?.hint">{{ currentDiff.hint }}</span>
             </div>
           </div>
           <button class="btn" @click="closeDiffModal">关闭</button>
         </div>
+        <div class="diff-switch" v-if="diffEntries.length > 1">
+          <label>切换文件</label>
+          <select v-model="diffSelected">
+            <option v-for="(entry, index) in diffEntries" :key="entry.fileName + index" :value="index">
+              {{ entry.fileName }}
+            </option>
+          </select>
+        </div>
         <div class="diff-body">
           <div class="diff-column">
             <h4>当前文件</h4>
-            <pre>{{ diffExisting || '（当前文件不存在）' }}</pre>
+            <pre>{{ currentDiff?.existing || '（当前文件不存在）' }}</pre>
           </div>
           <div class="diff-column">
             <h4>生成预览</h4>
-            <pre>{{ diffPreview || '（暂无预览内容）' }}</pre>
+            <pre>{{ currentDiff?.preview || '（暂无预览内容）' }}</pre>
           </div>
         </div>
       </div>
@@ -2118,6 +2134,21 @@ select {
   font-size: 0.85rem;
   color: var(--text-muted);
   flex-wrap: wrap;
+}
+
+.diff-switch {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.diff-switch select {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 6px 10px;
+  border-radius: 8px;
 }
 
 .diff-body {
