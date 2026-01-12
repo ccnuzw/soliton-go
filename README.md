@@ -24,7 +24,10 @@ cd tools/generator && go build -o soliton-gen .
 # 3. 生成领域模块 (--wire 自动接入 main.go)
 soliton-gen domain User --fields "username,email,status:enum(active|inactive)" --wire
 
-# 4. 运行
+# 4. 生成应用服务（可选，支持方法备注）
+soliton-gen service OrderService --methods "CreateOrder::创建订单,CancelOrder::取消订单"
+
+# 5. 运行
 GOWORK=off go mod tidy && GOWORK=off go run ./cmd/main.go
 ```
 
@@ -91,6 +94,7 @@ soliton-gen serve --port 8080
 - ✨ 可视化字段编辑器，支持拖拽
 - 👁️ 生成前预览代码
 - 🔌 自动注入模块到 main.go
+- 🆕 方法备注（服务方法用途说明，可回显）
 - 📖 详细的操作提示和使用指南
 - 🌐 中英双语界面
 

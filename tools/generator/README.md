@@ -150,7 +150,7 @@ cd /path/to/your/project
 
 | 参数 | 说明 | 示例 |
 |------|------|------|
-| `--methods` | 方法列表 | `--methods "Create,Update,Delete"` |
+| `--methods` | 方法列表（支持备注） | `--methods "Create::创建,Update::更新"` |
 | `--remark` | 服务备注 | `--remark "支付服务"` |
 | `--force` | 强制覆盖/跳过确认 | `--force` |
 
