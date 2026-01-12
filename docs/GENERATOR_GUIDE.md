@@ -59,6 +59,7 @@ GOWORK=off go mod tidy
 
 # 完整格式（带备注）
 ./soliton-gen domain User --fields "username:string:用户名,email::邮箱,status:enum(active|inactive):状态"
+./soliton-gen domain User --fields "..." --remark "用户领域"
 
 ./soliton-gen domain User --fields "..." --force  # 强制覆盖
 ./soliton-gen domain User --fields "..." --wire   # 自动接入 main.go
@@ -86,6 +87,7 @@ GOWORK=off go mod tidy
 | 参数 | 说明 | 示例 |
 |------|------|------|
 | `--fields`, `-f` | 定义字段 | `--fields "name,age:int"` |
+| `--remark` | 领域备注 | `--remark "用户领域"` |
 | `--wire` | 自动注入 main.go | `--wire` |
 | `--force` | 强制覆盖文件 | `--force` |
 | `--table` | 自定义表名 | `--table "custom_users"` |
@@ -218,7 +220,15 @@ const (
 ```bash
 ./soliton-gen service OrderService
 ./soliton-gen service OrderService --methods "CreateOrder,CancelOrder,GetUserOrders"
+./soliton-gen service OrderService --methods "CreateOrder,CancelOrder" --remark "订单服务"
 ```
+
+### 参数说明
+| 参数 | 说明 | 示例 |
+|------|------|------|
+| `--methods` | 方法列表 | `--methods "Create,Update,Delete"` |
+| `--remark` | 服务备注 | `--remark "支付服务"` |
+| `--force` | 强制覆盖文件 | `--force` |
 
 ### 🆕 智能服务类型检测
 

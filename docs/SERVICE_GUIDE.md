@@ -35,9 +35,19 @@
 # 指定方法
 ./soliton-gen service OrderService --methods "CreateOrder,CancelOrder,GetUserOrders"
 
+# 添加服务备注
+./soliton-gen service OrderService --methods "CreateOrder,CancelOrder" --remark "订单服务"
+
 # 支付服务示例
 ./soliton-gen service PaymentService --methods "ProcessPayment,Refund,QueryStatus"
 ```
+
+### 参数说明
+| 参数 | 说明 | 示例 |
+|------|------|------|
+| `--methods` | 方法列表 | `--methods "Create,Update,Delete"` |
+| `--remark` | 服务备注 | `--remark "支付服务"` |
+| `--force` | 强制覆盖文件 | `--force` |
 
 ---
 

@@ -27,7 +27,6 @@ var Module = fx.Options(
 	fx.Provide(NewGetReviewHandler),
 	fx.Provide(NewListReviewsHandler),
 	
-	fx.Provide(NewReviewService),
 	// soliton-gen:services
 	// soliton-gen:event-handlers
 

@@ -10,6 +10,9 @@ import (
 	"time"
 
 	"github.com/soliton-go/framework/ddd"
+{{- if .HasJSON}}
+	"gorm.io/datatypes"
+{{- end}}
 {{- if .SoftDelete}}
 	"gorm.io/gorm"
 {{- end}}
@@ -267,6 +270,9 @@ import (
 {{- if .HasTime}}
 	"time"
 {{- end}}
+{{- if .HasJSON}}
+	"gorm.io/datatypes"
+{{- end}}
 
 	"{{.ModulePath}}/internal/domain/{{.PackageName}}"
 )
@@ -471,6 +477,9 @@ import (
 	"time"
 
 	"{{.ModulePath}}/internal/domain/{{.PackageName}}"
+{{- if .HasJSON}}
+	"gorm.io/datatypes"
+{{- end}}
 )
 
 // Create{{.EntityName}}Request 是创建 {{.EntityName}} 的请求体。

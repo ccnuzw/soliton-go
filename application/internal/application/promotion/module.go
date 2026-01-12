@@ -27,7 +27,6 @@ var Module = fx.Options(
 	fx.Provide(NewGetPromotionHandler),
 	fx.Provide(NewListPromotionsHandler),
 	
-	fx.Provide(NewPromotionService),
 	// soliton-gen:services
 	// soliton-gen:event-handlers
 

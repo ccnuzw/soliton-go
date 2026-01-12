@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/soliton-go/application/internal/domain/review"
+	"gorm.io/datatypes"
 )
 
 // CreateReviewRequest 是创建 Review 的请求体。

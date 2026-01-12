@@ -75,6 +75,7 @@ cd /path/to/your/project
 ### 3. Domain Editor（领域编辑器）
 - 可视化字段编辑器
 - 🆕 **字段备注**：为每个字段添加注释，自动生成行尾注释
+- 🆕 **领域备注**：为领域添加说明，便于识别与检索
 - 🆕 **字段排序**：通过 ↑↓ 按钮调整字段顺序
 - 支持多种字段类型（string、int、enum 等）
 - 枚举值可视化配置
@@ -85,6 +86,7 @@ cd /path/to/your/project
 
 ### 4. Service Editor（服务编辑器）
 - 可视化方法配置
+- 🆕 **服务备注**：为服务添加说明，卡片列表可回显
 - 默认方法生成
 - 代码预览功能
 
@@ -124,6 +126,7 @@ cd /path/to/your/project
 | 参数 | 说明 | 示例 |
 |------|------|------|
 | `--fields` | 字段列表 | 见下方字段格式 |
+| `--remark` | 领域备注 | `--remark "用户领域"` |
 | `--table` | 自定义表名 | `--table "sys_users"` |
 | `--route` | 自定义路由 | `--route "/v1/users"` |
 | `--soft-delete` | 启用软删除 | `--soft-delete` |
@@ -147,6 +150,7 @@ cd /path/to/your/project
 | 参数 | 说明 | 示例 |
 |------|------|------|
 | `--methods` | 方法列表 | `--methods "Create,Update,Delete"` |
+| `--remark` | 服务备注 | `--remark "支付服务"` |
 | `--force` | 强制覆盖/跳过确认 | `--force` |
 
 ### Serve 命令参数

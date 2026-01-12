@@ -144,6 +144,7 @@ type TemplateData struct {
 	Fields       []Field
 	HasTime      bool
 	HasEnums     bool
+	HasJSON      bool
 	ModulePath   string
 	TableName    string
 	RouteBase    string
@@ -182,6 +183,7 @@ type ValueObjectData struct {
 	Fields          []Field
 	HasTime         bool
 	HasEnums        bool
+	HasJSON         bool
 }
 
 // SpecificationData holds template data for specification generation.
@@ -208,6 +210,7 @@ type EventData struct {
 	Fields          []Field
 	HasTime         bool
 	HasEnums        bool
+	HasJSON         bool
 }
 
 // EventHandlerData holds template data for event handler generation.

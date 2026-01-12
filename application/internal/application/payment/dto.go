@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/soliton-go/application/internal/domain/payment"
+	"gorm.io/datatypes"
 )
 
 // CreatePaymentRequest 是创建 Payment 的请求体。

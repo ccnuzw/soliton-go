@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/soliton-go/application/internal/domain/promotion"
+	"gorm.io/datatypes"
 )
 
 // CreatePromotionRequest 是创建 Promotion 的请求体。
