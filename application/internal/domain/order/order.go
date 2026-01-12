@@ -6,6 +6,7 @@ import (
 	"github.com/soliton-go/framework/ddd"
 	"gorm.io/gorm"
 )
+// DomainRemark: 订单领域
 
 // OrderID 是强类型的实体标识符。
 type OrderID string

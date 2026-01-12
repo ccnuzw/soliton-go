@@ -26,10 +26,8 @@ var Module = fx.Options(
 	// Query Handlers
 	fx.Provide(NewGetInventoryHandler),
 	fx.Provide(NewListInventorysHandler),
-
-	// Application Services
+	
 	fx.Provide(NewInventoryService),
-
 	// soliton-gen:services
 	// soliton-gen:event-handlers
 

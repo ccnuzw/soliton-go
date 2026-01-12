@@ -17,7 +17,6 @@ type PaymentHandler struct {
 	deleteHandler *paymentapp.DeletePaymentHandler
 	getHandler    *paymentapp.GetPaymentHandler
 	listHandler   *paymentapp.ListPaymentsHandler
-	service       *paymentapp.PaymentService
 }
 
 // NewPaymentHandler 创建 PaymentHandler 实例。
@@ -27,7 +26,6 @@ func NewPaymentHandler(
 	deleteHandler *paymentapp.DeletePaymentHandler,
 	getHandler *paymentapp.GetPaymentHandler,
 	listHandler *paymentapp.ListPaymentsHandler,
-	service *paymentapp.PaymentService,
 ) *PaymentHandler {
 	return &PaymentHandler{
 		createHandler: createHandler,
@@ -35,7 +33,6 @@ func NewPaymentHandler(
 		deleteHandler: deleteHandler,
 		getHandler:    getHandler,
 		listHandler:   listHandler,
-		service:       service,
 	}
 }
 
@@ -44,10 +41,6 @@ func (h *PaymentHandler) RegisterRoutes(r *gin.Engine) {
 	api := r.Group("/api/payments")
 	{
 		api.POST("", h.Create)
-		api.POST("/authorize", h.Authorize)
-		api.POST("/:id/capture", h.Capture)
-		api.POST("/:id/refund", h.Refund)
-		api.POST("/:id/cancel", h.Cancel)
 		api.GET("", h.List)
 		api.GET("/:id", h.Get)
 		api.PUT("/:id", h.Update)
@@ -65,19 +58,19 @@ func (h *PaymentHandler) Create(c *gin.Context) {
 	}
 
 	cmd := paymentapp.CreatePaymentCommand{
-		ID:            uuid.New().String(),
-		OrderId:       req.OrderId,
-		UserId:        req.UserId,
-		Amount:        req.Amount,
-		Currency:      req.Currency,
-		Method:        payment.PaymentMethod(req.Method),
-		Status:        payment.PaymentStatus(req.Status),
-		Provider:      req.Provider,
+		ID: uuid.New().String(),
+		OrderId: req.OrderId,
+		UserId: req.UserId,
+		Amount: req.Amount,
+		Currency: req.Currency,
+		Method: payment.PaymentMethod(req.Method),
+		Status: payment.PaymentStatus(req.Status),
+		Provider: req.Provider,
 		ProviderTxnId: req.ProviderTxnId,
-		PaidAt:        req.PaidAt,
-		RefundedAt:    req.RefundedAt,
+		PaidAt: req.PaidAt,
+		RefundedAt: req.RefundedAt,
 		FailureReason: req.FailureReason,
-		Metadata:      req.Metadata,
+		Metadata: req.Metadata,
 	}
 
 	entity, err := h.createHandler.Handle(c.Request.Context(), cmd)
@@ -110,9 +103,9 @@ func (h *PaymentHandler) List(c *gin.Context) {
 	sortOrder := c.DefaultQuery("sort_order", "desc")
 
 	result, err := h.listHandler.Handle(c.Request.Context(), paymentapp.ListPaymentsQuery{
-		Page:      page,
-		PageSize:  pageSize,
-		SortBy:    sortBy,
+		Page:     page,
+		PageSize: pageSize,
+		SortBy:   sortBy,
 		SortOrder: sortOrder,
 	})
 	if err != nil {
@@ -140,19 +133,19 @@ func (h *PaymentHandler) Update(c *gin.Context) {
 	}
 
 	cmd := paymentapp.UpdatePaymentCommand{
-		ID:            id,
-		OrderId:       req.OrderId,
-		UserId:        req.UserId,
-		Amount:        req.Amount,
-		Currency:      req.Currency,
-		Method:        EnumPtr(req.Method, func(v string) payment.PaymentMethod { return payment.PaymentMethod(v) }),
-		Status:        EnumPtr(req.Status, func(v string) payment.PaymentStatus { return payment.PaymentStatus(v) }),
-		Provider:      req.Provider,
+		ID: id,
+		OrderId: req.OrderId,
+		UserId: req.UserId,
+		Amount: req.Amount,
+		Currency: req.Currency,
+		Method: EnumPtr(req.Method, func(v string) payment.PaymentMethod { return payment.PaymentMethod(v) }),
+		Status: EnumPtr(req.Status, func(v string) payment.PaymentStatus { return payment.PaymentStatus(v) }),
+		Provider: req.Provider,
 		ProviderTxnId: req.ProviderTxnId,
-		PaidAt:        req.PaidAt,
-		RefundedAt:    req.RefundedAt,
+		PaidAt: req.PaidAt,
+		RefundedAt: req.RefundedAt,
 		FailureReason: req.FailureReason,
-		Metadata:      req.Metadata,
+		Metadata: req.Metadata,
 	}
 
 	entity, err := h.updateHandler.Handle(c.Request.Context(), cmd)
@@ -175,96 +168,4 @@ func (h *PaymentHandler) Delete(c *gin.Context) {
 	}
 
 	Success(c, nil)
-}
-
-// Authorize 处理 POST /api/payments/authorize
-func (h *PaymentHandler) Authorize(c *gin.Context) {
-	var req paymentapp.AuthorizePaymentServiceRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		BadRequest(c, err.Error())
-		return
-	}
-
-	resp, err := h.service.AuthorizePayment(c.Request.Context(), req)
-	if err != nil {
-		ServiceError(c, err)
-		return
-	}
-
-	Success(c, resp)
-}
-
-// Capture 处理 POST /api/payments/:id/capture
-func (h *PaymentHandler) Capture(c *gin.Context) {
-	id := c.Param("id")
-
-	var req paymentapp.CapturePaymentServiceRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		BadRequest(c, err.Error())
-		return
-	}
-	if req.PaymentId == "" {
-		req.PaymentId = id
-	} else if req.PaymentId != id {
-		BadRequest(c, "payment_id mismatch")
-		return
-	}
-
-	resp, err := h.service.CapturePayment(c.Request.Context(), req)
-	if err != nil {
-		ServiceError(c, err)
-		return
-	}
-
-	Success(c, resp)
-}
-
-// Refund 处理 POST /api/payments/:id/refund
-func (h *PaymentHandler) Refund(c *gin.Context) {
-	id := c.Param("id")
-
-	var req paymentapp.RefundPaymentServiceRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		BadRequest(c, err.Error())
-		return
-	}
-	if req.PaymentId == "" {
-		req.PaymentId = id
-	} else if req.PaymentId != id {
-		BadRequest(c, "payment_id mismatch")
-		return
-	}
-
-	resp, err := h.service.RefundPayment(c.Request.Context(), req)
-	if err != nil {
-		ServiceError(c, err)
-		return
-	}
-
-	Success(c, resp)
-}
-
-// Cancel 处理 POST /api/payments/:id/cancel
-func (h *PaymentHandler) Cancel(c *gin.Context) {
-	id := c.Param("id")
-
-	var req paymentapp.CancelPaymentServiceRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		BadRequest(c, err.Error())
-		return
-	}
-	if req.PaymentId == "" {
-		req.PaymentId = id
-	} else if req.PaymentId != id {
-		BadRequest(c, "payment_id mismatch")
-		return
-	}
-
-	resp, err := h.service.CancelPayment(c.Request.Context(), req)
-	if err != nil {
-		ServiceError(c, err)
-		return
-	}
-
-	Success(c, resp)
 }

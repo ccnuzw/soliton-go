@@ -61,15 +61,16 @@ func generateDomainInternal(cfg DomainConfig, previewOnly bool) (*GenerationResu
 	}
 
 	data := TemplateData{
-		PackageName: packageName,
-		EntityName:  entityName,
-		Fields:      fields,
-		HasTime:     hasTime,
-		HasEnums:    hasEnums,
-		ModulePath:  layout.ModulePath,
-		TableName:   tableName,
-		RouteBase:   routeBase,
-		SoftDelete:  cfg.SoftDelete,
+		PackageName:  packageName,
+		EntityName:   entityName,
+		DomainRemark: strings.TrimSpace(cfg.Remark),
+		Fields:       fields,
+		HasTime:      hasTime,
+		HasEnums:     hasEnums,
+		ModulePath:   layout.ModulePath,
+		TableName:    tableName,
+		RouteBase:    routeBase,
+		SoftDelete:   cfg.SoftDelete,
 	}
 
 	// Domain Layer

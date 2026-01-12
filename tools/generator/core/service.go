@@ -92,10 +92,11 @@ func generateServiceInternal(cfg ServiceConfig, previewOnly bool) (*GenerationRe
 	methods := ParseServiceMethods(methodsStr, serviceName)
 
 	data := ServiceData{
-		ServiceName: serviceName,
-		PackageName: packageName,
-		Methods:     methods,
-		ModulePath:  layout.ModulePath,
+		ServiceName:   serviceName,
+		ServiceRemark: strings.TrimSpace(cfg.Remark),
+		PackageName:   packageName,
+		Methods:       methods,
+		ModulePath:    layout.ModulePath,
 	}
 
 	// Auto-detect: check if domain exists

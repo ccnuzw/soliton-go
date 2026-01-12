@@ -6,6 +6,7 @@ import (
 	"github.com/soliton-go/framework/ddd"
 	"gorm.io/gorm"
 )
+// DomainRemark: 物流领域
 
 // ShippingID 是强类型的实体标识符。
 type ShippingID string
@@ -39,7 +40,7 @@ const (
 type Shipping struct {
 	ddd.BaseAggregateRoot
 	ID ShippingID `gorm:"primaryKey"`
-	OrderId string `gorm:"size:36;index"` // 订单ID
+	OrderId string `gorm:"size:255"` // 订单ID
 	Carrier string `gorm:"size:255"` // 物流承运商
 	ShippingMethod ShippingShippingMethod `gorm:"size:50;default:'standard'"` // 配送方式
 	TrackingNumber string `gorm:"size:255"` // 物流单号
@@ -53,7 +54,7 @@ type Shipping struct {
 	ReceiverState string `gorm:"size:255"` // 收件人省/州
 	ReceiverCountry string `gorm:"size:255"` // 收件人国家
 	ReceiverPostalCode string `gorm:"size:255"` // 邮编
-	Notes string `gorm:"type:text"` // 备注
+	Notes string `gorm:"size:255"` // 备注
 	CreatedAt time.Time `gorm:"autoCreateTime"`
 	UpdatedAt time.Time `gorm:"autoUpdateTime"`
 	DeletedAt gorm.DeletedAt `gorm:"index"`

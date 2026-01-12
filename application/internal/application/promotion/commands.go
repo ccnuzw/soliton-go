@@ -5,32 +5,31 @@ import (
 	"time"
 
 	"github.com/soliton-go/application/internal/domain/promotion"
-	"gorm.io/datatypes"
 )
 
 // CreatePromotionCommand 是创建 Promotion 的命令。
 type CreatePromotionCommand struct {
-	ID                string
-	Code              string
-	Name              string
-	Description       string
-	DiscountType      promotion.PromotionDiscountType
-	DiscountValue     int64
-	Currency          string
-	MinOrderAmount    int64
+	ID string
+	Code string
+	Name string
+	Description string
+	DiscountType promotion.PromotionDiscountType
+	DiscountValue int64
+	Currency string
+	MinOrderAmount int64
 	MaxDiscountAmount int64
-	UsageLimit        int
-	UsedCount         int
-	PerUserLimit      int
-	StartsAt          *time.Time
-	EndsAt            *time.Time
-	Status            promotion.PromotionStatus
-	Metadata          datatypes.JSON
+	UsageLimit int
+	UsedCount int
+	PerUserLimit int
+	StartsAt *time.Time
+	EndsAt *time.Time
+	Status promotion.PromotionStatus
+	Metadata datatypes.JSON
 }
 
 // CreatePromotionHandler 处理 CreatePromotionCommand。
 type CreatePromotionHandler struct {
-	repo    promotion.PromotionRepository
+	repo promotion.PromotionRepository
 	service *promotion.PromotionDomainService
 	// 可选：添加事件总线用于发布领域事件
 	// eventBus event.EventBus
@@ -60,27 +59,27 @@ func (h *CreatePromotionHandler) Handle(ctx context.Context, cmd CreatePromotion
 
 // UpdatePromotionCommand 是更新 Promotion 的命令。
 type UpdatePromotionCommand struct {
-	ID                string
-	Code              *string
-	Name              *string
-	Description       *string
-	DiscountType      *promotion.PromotionDiscountType
-	DiscountValue     *int64
-	Currency          *string
-	MinOrderAmount    *int64
+	ID string
+	Code *string
+	Name *string
+	Description *string
+	DiscountType *promotion.PromotionDiscountType
+	DiscountValue *int64
+	Currency *string
+	MinOrderAmount *int64
 	MaxDiscountAmount *int64
-	UsageLimit        *int
-	UsedCount         *int
-	PerUserLimit      *int
-	StartsAt          *time.Time
-	EndsAt            *time.Time
-	Status            *promotion.PromotionStatus
-	Metadata          *datatypes.JSON
+	UsageLimit *int
+	UsedCount *int
+	PerUserLimit *int
+	StartsAt *time.Time
+	EndsAt *time.Time
+	Status *promotion.PromotionStatus
+	Metadata *datatypes.JSON
 }
 
 // UpdatePromotionHandler 处理 UpdatePromotionCommand。
 type UpdatePromotionHandler struct {
-	repo    promotion.PromotionRepository
+	repo promotion.PromotionRepository
 	service *promotion.PromotionDomainService
 }
 
@@ -107,7 +106,7 @@ type DeletePromotionCommand struct {
 
 // DeletePromotionHandler 处理 DeletePromotionCommand。
 type DeletePromotionHandler struct {
-	repo    promotion.PromotionRepository
+	repo promotion.PromotionRepository
 	service *promotion.PromotionDomainService
 }
 

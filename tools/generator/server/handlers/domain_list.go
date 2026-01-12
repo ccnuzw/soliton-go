@@ -15,6 +15,7 @@ import (
 // DomainInfo represents information about a generated domain
 type DomainInfo struct {
 	Name       string   `json:"name"`
+	Remark     string   `json:"remark,omitempty"`
 	ModulePath string   `json:"module_path"`
 	TableName  string   `json:"table_name"`
 	Fields     []string `json:"fields"`
@@ -67,9 +68,11 @@ func ListDomains(c *gin.Context) {
 
 		// Parse entity file to get fields
 		fields := parseEntityFields(entityFile)
+		remark := parseDomainRemark(entityFile)
 
 		domains = append(domains, DomainInfo{
 			Name:       domainName,
+			Remark:     remark,
 			ModulePath: layout.ModulePath,
 			Fields:     fields,
 			HasFiles:   core.IsFile(repoFile),
@@ -143,6 +146,24 @@ func parseEntityFields(filePath string) []string {
 	return fields
 }
 
+func parseDomainRemark(filePath string) string {
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		return ""
+	}
+	return parseDomainRemarkFromContent(string(content))
+}
+
+func parseDomainRemarkFromContent(content string) string {
+	for _, line := range strings.Split(content, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "// DomainRemark:") {
+			return strings.TrimSpace(strings.TrimPrefix(trimmed, "// DomainRemark:"))
+		}
+	}
+	return ""
+}
+
 // GetDomainDetail handles GET /api/domains/:name
 func GetDomainDetail(c *gin.Context) {
 	domainName := c.Param("name")
@@ -172,9 +193,11 @@ func GetDomainDetail(c *gin.Context) {
 
 	// Parse fields with more details
 	fields := parseEntityFieldsDetailed(entityFile)
+	remark := parseDomainRemark(entityFile)
 
 	c.JSON(http.StatusOK, gin.H{
 		"name":   domainName,
+		"remark": remark,
 		"fields": fields,
 		"files": gin.H{
 			"entity":     core.IsFile(entityFile),

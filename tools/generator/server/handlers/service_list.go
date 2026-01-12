@@ -14,6 +14,7 @@ import (
 // ServiceInfo represents information about a generated service
 type ServiceInfo struct {
 	Name    string   `json:"name"`
+	Remark  string   `json:"remark,omitempty"`
 	Methods []string `json:"methods"`
 	Type    string   `json:"type"` // "domain_service" or "cross_domain_service"
 }
@@ -70,6 +71,7 @@ func ListServices(c *gin.Context) {
 
 		serviceName := toPascalCase(entry.Name()) + "Service"
 		methods := parseServiceMethods(serviceFile)
+		remark := parseServiceRemark(serviceFile)
 
 		// Detect service type: check if corresponding domain exists
 		domainDir := filepath.Join(layout.DomainDir, entry.Name())
@@ -80,6 +82,7 @@ func ListServices(c *gin.Context) {
 
 		services = append(services, ServiceInfo{
 			Name:    serviceName,
+			Remark:  remark,
 			Methods: methods,
 			Type:    serviceType,
 		})
@@ -124,9 +127,11 @@ func GetServiceDetail(c *gin.Context) {
 
 	// Parse methods with details
 	methods := parseServiceMethodsDetailed(serviceFile)
+	remark := parseServiceRemark(serviceFile)
 
 	c.JSON(http.StatusOK, gin.H{
 		"name":    serviceName,
+		"remark":  remark,
 		"methods": methods,
 	})
 }
@@ -183,6 +188,20 @@ func parseServiceMethodsDetailed(filePath string) []ServiceMethodDetail {
 	}
 
 	return methods
+}
+
+func parseServiceRemark(filePath string) string {
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		return ""
+	}
+	for _, line := range strings.Split(string(content), "\n") {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "// ServiceRemark:") {
+			return strings.TrimSpace(strings.TrimPrefix(trimmed, "// ServiceRemark:"))
+		}
+	}
+	return ""
 }
 
 // toPascalCase converts snake_case to PascalCase

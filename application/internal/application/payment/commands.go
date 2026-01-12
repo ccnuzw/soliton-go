@@ -5,29 +5,28 @@ import (
 	"time"
 
 	"github.com/soliton-go/application/internal/domain/payment"
-	"gorm.io/datatypes"
 )
 
 // CreatePaymentCommand 是创建 Payment 的命令。
 type CreatePaymentCommand struct {
-	ID            string
-	OrderId       string
-	UserId        string
-	Amount        float64
-	Currency      string
-	Method        payment.PaymentMethod
-	Status        payment.PaymentStatus
-	Provider      string
+	ID string
+	OrderId string
+	UserId string
+	Amount float64
+	Currency string
+	Method payment.PaymentMethod
+	Status payment.PaymentStatus
+	Provider string
 	ProviderTxnId string
-	PaidAt        *time.Time
-	RefundedAt    *time.Time
+	PaidAt *time.Time
+	RefundedAt *time.Time
 	FailureReason string
-	Metadata      datatypes.JSON
+	Metadata datatypes.JSON
 }
 
 // CreatePaymentHandler 处理 CreatePaymentCommand。
 type CreatePaymentHandler struct {
-	repo    payment.PaymentRepository
+	repo payment.PaymentRepository
 	service *payment.PaymentDomainService
 	// 可选：添加事件总线用于发布领域事件
 	// eventBus event.EventBus
@@ -57,24 +56,24 @@ func (h *CreatePaymentHandler) Handle(ctx context.Context, cmd CreatePaymentComm
 
 // UpdatePaymentCommand 是更新 Payment 的命令。
 type UpdatePaymentCommand struct {
-	ID            string
-	OrderId       *string
-	UserId        *string
-	Amount        *float64
-	Currency      *string
-	Method        *payment.PaymentMethod
-	Status        *payment.PaymentStatus
-	Provider      *string
+	ID string
+	OrderId *string
+	UserId *string
+	Amount *float64
+	Currency *string
+	Method *payment.PaymentMethod
+	Status *payment.PaymentStatus
+	Provider *string
 	ProviderTxnId *string
-	PaidAt        *time.Time
-	RefundedAt    *time.Time
+	PaidAt *time.Time
+	RefundedAt *time.Time
 	FailureReason *string
-	Metadata      *datatypes.JSON
+	Metadata *datatypes.JSON
 }
 
 // UpdatePaymentHandler 处理 UpdatePaymentCommand。
 type UpdatePaymentHandler struct {
-	repo    payment.PaymentRepository
+	repo payment.PaymentRepository
 	service *payment.PaymentDomainService
 }
 
@@ -101,7 +100,7 @@ type DeletePaymentCommand struct {
 
 // DeletePaymentHandler 处理 DeletePaymentCommand。
 type DeletePaymentHandler struct {
-	repo    payment.PaymentRepository
+	repo payment.PaymentRepository
 	service *payment.PaymentDomainService
 }
 

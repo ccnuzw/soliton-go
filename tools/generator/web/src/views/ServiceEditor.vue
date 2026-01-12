@@ -18,6 +18,7 @@ const manualMode = ref(false)
 
 const config = ref<ServiceConfig>({
   name: '',
+  remark: '',
   methods: [''],
   force: false,  // 默认不勾选
 })
@@ -29,6 +30,7 @@ const filteredServices = computed(() => {
   const query = searchQuery.value.toLowerCase()
   return services.value.filter(service =>
     service.name.toLowerCase().includes(query) ||
+    (service.remark || '').toLowerCase().includes(query) ||
     service.methods.some(method => method.toLowerCase().includes(query))
   )
 })
@@ -95,6 +97,7 @@ async function loadService(serviceName: string) {
 
     config.value = {
       name: detail.name,
+      remark: detail.remark || '',
       methods: detail.methods.map(m => m.name),
       force: true, // Auto-enable force when editing
     }
@@ -161,6 +164,7 @@ async function generate() {
 function reset() {
   config.value = {
     name: '',
+    remark: '',
     methods: [''],
     force: false,
   }
@@ -216,7 +220,10 @@ function getStatusText(status: string): string {
           :class="{ 'domain-service': service.type === 'domain_service', 'cross-domain-service': service.type === 'cross_domain_service' }"
           @click="loadService(service.name)">
           <div class="service-header">
-            <h3>{{ service.name }}</h3>
+            <div class="service-title">
+              <h3>{{ service.name }}</h3>
+              <span v-if="service.remark" class="service-remark">{{ service.remark }}</span>
+            </div>
             <div class="header-actions">
               <span class="type-badge" :class="service.type">
                 {{ service.type === 'domain_service' ? '领域' : '跨域' }}
@@ -320,6 +327,11 @@ function getStatusText(status: string): string {
             </label>
             <input v-model="config.name" placeholder="OrderService / PaymentService" />
             <span class="hint">如果未包含 "Service" 后缀会自动添加</span>
+          </div>
+          <div class="form-group">
+            <label>服务备注 Remark（可选）</label>
+            <input v-model="config.remark" placeholder="用于说明该服务用途" />
+            <span class="hint">会显示在已生成服务卡片上</span>
           </div>
 
           <!-- Detection Result -->
@@ -542,10 +554,22 @@ h1 {
   margin-bottom: 12px;
 }
 
+.service-title {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
 .service-header h3 {
   margin: 0;
   font-size: 1.2rem;
   flex: 1;
+}
+
+.service-remark {
+  color: var(--text-muted);
+  font-size: 0.85rem;
 }
 
 .header-actions {

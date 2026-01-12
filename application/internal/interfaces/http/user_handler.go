@@ -7,7 +7,6 @@ import (
 	"github.com/google/uuid"
 
 	userapp "github.com/soliton-go/application/internal/application/user"
-	"github.com/soliton-go/application/internal/domain/user"
 )
 
 // UserHandler 处理 User 相关的 HTTP 请求。
@@ -61,24 +60,6 @@ func (h *UserHandler) Create(c *gin.Context) {
 		ID: uuid.New().String(),
 		Username: req.Username,
 		Email: req.Email,
-		Password: req.Password,
-		FullName: req.FullName,
-		Phone: req.Phone,
-		Avatar: req.Avatar,
-		Bio: req.Bio,
-		BirthDate: req.BirthDate,
-		Gender: user.UserGender(req.Gender),
-		Role: user.UserRole(req.Role),
-		Status: user.UserStatus(req.Status),
-		EmailVerified: req.EmailVerified,
-		PhoneVerified: req.PhoneVerified,
-		LastLoginAt: req.LastLoginAt,
-		LoginCount: req.LoginCount,
-		FailedLoginCount: req.FailedLoginCount,
-		Balance: req.Balance,
-		Points: req.Points,
-		VipLevel: req.VipLevel,
-		Preferences: req.Preferences,
 	}
 
 	entity, err := h.createHandler.Handle(c.Request.Context(), cmd)
@@ -144,24 +125,6 @@ func (h *UserHandler) Update(c *gin.Context) {
 		ID: id,
 		Username: req.Username,
 		Email: req.Email,
-		Password: req.Password,
-		FullName: req.FullName,
-		Phone: req.Phone,
-		Avatar: req.Avatar,
-		Bio: req.Bio,
-		BirthDate: req.BirthDate,
-		Gender: EnumPtr(req.Gender, func(v string) user.UserGender { return user.UserGender(v) }),
-		Role: EnumPtr(req.Role, func(v string) user.UserRole { return user.UserRole(v) }),
-		Status: EnumPtr(req.Status, func(v string) user.UserStatus { return user.UserStatus(v) }),
-		EmailVerified: req.EmailVerified,
-		PhoneVerified: req.PhoneVerified,
-		LastLoginAt: req.LastLoginAt,
-		LoginCount: req.LoginCount,
-		FailedLoginCount: req.FailedLoginCount,
-		Balance: req.Balance,
-		Points: req.Points,
-		VipLevel: req.VipLevel,
-		Preferences: req.Preferences,
 	}
 
 	entity, err := h.updateHandler.Handle(c.Request.Context(), cmd)
