@@ -35,6 +35,9 @@
 # 指定方法
 ./soliton-gen service OrderService --methods "CreateOrder,CancelOrder,GetUserOrders"
 
+# 指定方法并添加备注
+./soliton-gen service OrderService --methods "CreateOrder::创建订单,CancelOrder::取消订单"
+
 # 添加服务备注
 ./soliton-gen service OrderService --methods "CreateOrder,CancelOrder" --remark "订单服务"
 
@@ -45,7 +48,7 @@
 ### 参数说明
 | 参数 | 说明 | 示例 |
 |------|------|------|
-| `--methods` | 方法列表 | `--methods "Create,Update,Delete"` |
+| `--methods` | 方法列表（支持备注） | `--methods "Create::创建,Update::更新"` |
 | `--remark` | 服务备注 | `--remark "支付服务"` |
 | `--force` | 强制覆盖文件 | `--force` |
 

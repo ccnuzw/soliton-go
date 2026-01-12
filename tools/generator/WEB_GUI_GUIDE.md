@@ -325,6 +325,7 @@ internal/
   - 格式：使用 PascalCase
   - 示例：`CreateOrder`、`ProcessPayment`、`CancelOrder`
   - 每行一个方法名
+  - **方法备注**（可选）：用于说明该方法用途，生成后可回显
 
 - **默认方法**
   - 如果不填写方法，将自动生成：

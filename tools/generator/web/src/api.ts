@@ -28,8 +28,13 @@ export interface DomainConfig {
 export interface ServiceConfig {
   name: string
   remark?: string
-  methods: string[]
+  methods: ServiceMethodConfig[]
   force: boolean
+}
+
+export interface ServiceMethodConfig {
+  name: string
+  remark?: string
 }
 
 export interface ValueObjectConfig {
@@ -192,13 +197,14 @@ export interface DomainDetail {
 export interface ServiceListItem {
   name: string
   remark?: string
-  methods: string[]
+  methods: ServiceMethodConfig[]
   type: 'domain_service' | 'cross_domain_service'
 }
 
 export interface ServiceMethodDetail {
   name: string
   camel_name: string
+  remark?: string
 }
 
 export interface ServiceDetail {

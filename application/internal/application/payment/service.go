@@ -53,6 +53,7 @@ func parsePaymentMethod(method string) (payment.PaymentMethod, error) {
 }
 
 // AuthorizePayment 实现 AuthorizePayment 用例。
+// MethodRemark: AuthorizePayment 支付授权
 func (s *PaymentService) AuthorizePayment(ctx context.Context, req AuthorizePaymentServiceRequest) (*AuthorizePaymentServiceResponse, error) {
 	if req.OrderId == "" || req.UserId == "" {
 		return nil, errors.New("order_id and user_id are required")
@@ -87,6 +88,7 @@ func (s *PaymentService) AuthorizePayment(ctx context.Context, req AuthorizePaym
 }
 
 // CapturePayment 实现 CapturePayment 用例。
+// MethodRemark: CapturePayment 支付扣款
 func (s *PaymentService) CapturePayment(ctx context.Context, req CapturePaymentServiceRequest) (*CapturePaymentServiceResponse, error) {
 	entity, err := s.loadPayment(ctx, req.PaymentId)
 	if err != nil {
@@ -106,6 +108,7 @@ func (s *PaymentService) CapturePayment(ctx context.Context, req CapturePaymentS
 }
 
 // RefundPayment 实现 RefundPayment 用例。
+// MethodRemark: RefundPayment 退款处理
 func (s *PaymentService) RefundPayment(ctx context.Context, req RefundPaymentServiceRequest) (*RefundPaymentServiceResponse, error) {
 	entity, err := s.loadPayment(ctx, req.PaymentId)
 	if err != nil {
@@ -131,6 +134,7 @@ func (s *PaymentService) RefundPayment(ctx context.Context, req RefundPaymentSer
 }
 
 // CancelPayment 实现 CancelPayment 用例。
+// MethodRemark: CancelPayment 取消支付
 func (s *PaymentService) CancelPayment(ctx context.Context, req CancelPaymentServiceRequest) (*CancelPaymentServiceResponse, error) {
 	entity, err := s.loadPayment(ctx, req.PaymentId)
 	if err != nil {

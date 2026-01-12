@@ -9,10 +9,10 @@ import (
 
 // ServiceRequest is the request body for service generation.
 type ServiceRequest struct {
-	Name    string   `json:"name" binding:"required"`
-	Remark  string   `json:"remark"`
-	Methods []string `json:"methods"`
-	Force   bool     `json:"force"`
+	Name    string                     `json:"name" binding:"required"`
+	Remark  string                     `json:"remark"`
+	Methods []core.ServiceMethodConfig `json:"methods"`
+	Force   bool                       `json:"force"`
 }
 
 // GenerateService handles POST /api/services

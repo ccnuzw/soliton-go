@@ -50,8 +50,8 @@ cd /path/to/your/project
 # 生成领域模块（完整格式，带备注）
 ./soliton-gen domain User --fields "username:string:用户名,email::邮箱,status:enum(active|inactive):账户状态" --wire
 
-# 生成应用服务
-./soliton-gen service Order --methods "CreateOrder,ProcessPayment" --wire
+# 生成应用服务（带方法备注）
+./soliton-gen service Order --methods "CreateOrder::创建订单,ProcessPayment::发起支付" --wire
 ```
 
 ## 📖 文档
@@ -86,6 +86,7 @@ cd /path/to/your/project
 
 ### 4. Service Editor（服务编辑器）
 - 可视化方法配置
+- 🆕 **方法备注**：为每个方法添加用途说明，便于理解与回显
 - 🆕 **服务备注**：为服务添加说明，卡片列表可回显
 - 默认方法生成
 - 代码预览功能

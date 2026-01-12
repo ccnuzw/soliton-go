@@ -13,16 +13,23 @@ import (
 
 // ServiceInfo represents information about a generated service
 type ServiceInfo struct {
-	Name    string   `json:"name"`
-	Remark  string   `json:"remark,omitempty"`
-	Methods []string `json:"methods"`
-	Type    string   `json:"type"` // "domain_service" or "cross_domain_service"
+	Name    string                 `json:"name"`
+	Remark  string                 `json:"remark,omitempty"`
+	Methods []ServiceMethodSummary `json:"methods"`
+	Type    string                 `json:"type"` // "domain_service" or "cross_domain_service"
+}
+
+// ServiceMethodSummary represents method info for list view.
+type ServiceMethodSummary struct {
+	Name   string `json:"name"`
+	Remark string `json:"remark,omitempty"`
 }
 
 // ServiceMethodDetail represents detailed method information
 type ServiceMethodDetail struct {
 	Name      string `json:"name"`
 	CamelName string `json:"camel_name"`
+	Remark    string `json:"remark,omitempty"`
 }
 
 // ListServices handles GET /api/services/list
@@ -70,7 +77,7 @@ func ListServices(c *gin.Context) {
 		}
 
 		serviceName := toPascalCase(entry.Name()) + "Service"
-		methods := parseServiceMethods(serviceFile)
+		methods := parseServiceMethodsSummary(serviceFile)
 		remark := parseServiceRemark(serviceFile)
 
 		// Detect service type: check if corresponding domain exists
@@ -175,19 +182,74 @@ func parseServiceMethods(filePath string) []string {
 	return methods
 }
 
+// parseServiceMethodsSummary parses service file and returns method summary information
+func parseServiceMethodsSummary(filePath string) []ServiceMethodSummary {
+	methodNames := parseServiceMethods(filePath)
+	remarks := parseServiceMethodRemarks(filePath)
+	var methods []ServiceMethodSummary
+
+	for _, name := range methodNames {
+		methods = append(methods, ServiceMethodSummary{
+			Name:   name,
+			Remark: remarks[name],
+		})
+	}
+
+	return methods
+}
+
 // parseServiceMethodsDetailed parses service file and returns detailed method information
 func parseServiceMethodsDetailed(filePath string) []ServiceMethodDetail {
 	methodNames := parseServiceMethods(filePath)
+	remarks := parseServiceMethodRemarks(filePath)
 	var methods []ServiceMethodDetail
 
 	for _, name := range methodNames {
 		methods = append(methods, ServiceMethodDetail{
 			Name:      name,
 			CamelName: toCamelCase(name),
+			Remark:    remarks[name],
 		})
 	}
 
 	return methods
+}
+
+func parseServiceMethodRemarks(filePath string) map[string]string {
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		return map[string]string{}
+	}
+
+	remarks := make(map[string]string)
+	for _, line := range strings.Split(string(content), "\n") {
+		trimmed := strings.TrimSpace(line)
+		if !strings.HasPrefix(trimmed, "// MethodRemark:") {
+			continue
+		}
+		payload := strings.TrimSpace(strings.TrimPrefix(trimmed, "// MethodRemark:"))
+		name, remark := splitMethodRemark(payload)
+		if name != "" {
+			remarks[name] = remark
+		}
+	}
+
+	return remarks
+}
+
+func splitMethodRemark(payload string) (string, string) {
+	payload = strings.TrimSpace(payload)
+	if payload == "" {
+		return "", ""
+	}
+	if strings.Contains(payload, "::") {
+		parts := strings.SplitN(payload, "::", 2)
+		return strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1])
+	}
+	if idx := strings.Index(payload, " "); idx >= 0 {
+		return strings.TrimSpace(payload[:idx]), strings.TrimSpace(payload[idx+1:])
+	}
+	return strings.TrimSpace(payload), ""
 }
 
 func parseServiceRemark(filePath string) string {

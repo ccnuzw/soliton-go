@@ -29,6 +29,7 @@ func (s *InventoryService) loadInventory(ctx context.Context, id string) (*inven
 }
 
 // AdjustStock 实现 AdjustStock 用例。
+// MethodRemark: AdjustStock 调整库存
 func (s *InventoryService) AdjustStock(ctx context.Context, req AdjustStockServiceRequest) (*AdjustStockServiceResponse, error) {
 	entity, err := s.loadInventory(ctx, req.InventoryId)
 	if err != nil {
@@ -63,6 +64,7 @@ func (s *InventoryService) AdjustStock(ctx context.Context, req AdjustStockServi
 }
 
 // ReserveStock 实现 ReserveStock 用例。
+// MethodRemark: ReserveStock 预占库存
 func (s *InventoryService) ReserveStock(ctx context.Context, req ReserveStockServiceRequest) (*ReserveStockServiceResponse, error) {
 	if req.Quantity <= 0 {
 		return nil, errors.New("quantity must be greater than 0")
@@ -88,6 +90,7 @@ func (s *InventoryService) ReserveStock(ctx context.Context, req ReserveStockSer
 }
 
 // ReleaseStock 实现 ReleaseStock 用例。
+// MethodRemark: ReleaseStock 释放预占库存
 func (s *InventoryService) ReleaseStock(ctx context.Context, req ReleaseStockServiceRequest) (*ReleaseStockServiceResponse, error) {
 	if req.Quantity <= 0 {
 		return nil, errors.New("quantity must be greater than 0")
@@ -112,6 +115,7 @@ func (s *InventoryService) ReleaseStock(ctx context.Context, req ReleaseStockSer
 }
 
 // StockIn 实现 StockIn 用例。
+// MethodRemark: StockIn 入库
 func (s *InventoryService) StockIn(ctx context.Context, req StockInServiceRequest) (*StockInServiceResponse, error) {
 	if req.Quantity <= 0 {
 		return nil, errors.New("quantity must be greater than 0")
@@ -137,6 +141,7 @@ func (s *InventoryService) StockIn(ctx context.Context, req StockInServiceReques
 }
 
 // StockOut 实现 StockOut 用例。
+// MethodRemark: StockOut 出库
 func (s *InventoryService) StockOut(ctx context.Context, req StockOutServiceRequest) (*StockOutServiceResponse, error) {
 	if req.Quantity <= 0 {
 		return nil, errors.New("quantity must be greater than 0")

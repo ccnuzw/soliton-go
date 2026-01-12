@@ -31,6 +31,7 @@ func NewShippingService(
 
 
 // CreateShipment 实现 CreateShipment 用例。
+// MethodRemark: CreateShipment 创建发货
 func (s *ShippingService) CreateShipment(ctx context.Context, req CreateShipmentServiceRequest) (*CreateShipmentServiceResponse, error) {
 	// TODO: 实现业务逻辑
 	// 示例步骤：
@@ -45,6 +46,7 @@ func (s *ShippingService) CreateShipment(ctx context.Context, req CreateShipment
 }
 
 // UpdateTracking 实现 UpdateTracking 用例。
+// MethodRemark: UpdateTracking 更新物流
 func (s *ShippingService) UpdateTracking(ctx context.Context, req UpdateTrackingServiceRequest) (*UpdateTrackingServiceResponse, error) {
 	// TODO: 实现业务逻辑
 	// 示例步骤：
@@ -59,6 +61,7 @@ func (s *ShippingService) UpdateTracking(ctx context.Context, req UpdateTracking
 }
 
 // MarkDelivered 实现 MarkDelivered 用例。
+// MethodRemark: MarkDelivered 标记送达
 func (s *ShippingService) MarkDelivered(ctx context.Context, req MarkDeliveredServiceRequest) (*MarkDeliveredServiceResponse, error) {
 	// TODO: 实现业务逻辑
 	// 示例步骤：
@@ -73,6 +76,7 @@ func (s *ShippingService) MarkDelivered(ctx context.Context, req MarkDeliveredSe
 }
 
 // CancelShipment 实现 CancelShipment 用例。
+// MethodRemark: CancelShipment 取消发货
 func (s *ShippingService) CancelShipment(ctx context.Context, req CancelShipmentServiceRequest) (*CancelShipmentServiceResponse, error) {
 	// TODO: 实现业务逻辑
 	// 示例步骤：
