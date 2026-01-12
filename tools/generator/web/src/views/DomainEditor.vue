@@ -190,7 +190,8 @@ function parseBulkFields(raw: string): FieldConfig[] {
     const name = parts[0]?.trim()
     if (!name) continue
 
-    let type = parts.length > 1 ? parts[1].trim() : 'string'
+    const rawType = parts.length > 1 ? parts[1] : ''
+    let type = rawType ? rawType.trim() : 'string'
     let comment = ''
     if (parts.length > 2) {
       comment = parts.slice(2).join(':').trim()
@@ -239,7 +240,8 @@ function applyBulkImport() {
     return
   }
 
-  if (config.value.fields.length === 1 && !config.value.fields[0].name.trim()) {
+  const firstField = config.value.fields[0]
+  if (config.value.fields.length === 1 && firstField && !firstField.name.trim()) {
     config.value.fields = deduped
   } else {
     config.value.fields.push(...deduped)

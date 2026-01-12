@@ -102,6 +102,49 @@ export interface FieldType {
   description: string
 }
 
+export interface DddListItem {
+  name: string
+  file: string
+  target?: string
+  topic?: string
+  event_name?: string
+}
+
+export interface DddListResponse {
+  value_objects: DddListItem[]
+  specs: DddListItem[]
+  policies: DddListItem[]
+  events: DddListItem[]
+  event_handlers: DddListItem[]
+}
+
+export interface DddDetailResponse {
+  name?: string
+  fields?: FieldConfig[]
+  target?: string
+  topic?: string
+  event_name?: string
+}
+
+export interface DddSourceResponse {
+  file: string
+  content: string
+}
+
+export interface DddDeleteRequest {
+  domain: string
+  type: string
+  name: string
+}
+
+export interface DddRenameRequest {
+  domain: string
+  type: string
+  name: string
+  new_name: string
+  force?: boolean
+}
+
 export interface ProjectLayout {
   found: boolean
   message?: string
@@ -324,6 +367,31 @@ export const api = {
 
   previewEventHandler: (config: EventHandlerConfig) =>
     request<GenerationResult>('/ddd/event-handlers/preview', {
+      method: 'POST',
+      body: JSON.stringify(config),
+    }),
+
+  listDddComponents: (domain: string) =>
+    request<DddListResponse>(`/ddd/list?domain=${encodeURIComponent(domain)}`),
+
+  getDddDetail: (domain: string, type: string, name: string) =>
+    request<DddDetailResponse>(
+      `/ddd/detail?domain=${encodeURIComponent(domain)}&type=${encodeURIComponent(type)}&name=${encodeURIComponent(name)}`
+    ),
+
+  getDddSource: (domain: string, type: string, name: string) =>
+    request<DddSourceResponse>(
+      `/ddd/source?domain=${encodeURIComponent(domain)}&type=${encodeURIComponent(type)}&name=${encodeURIComponent(name)}`
+    ),
+
+  deleteDddItem: (config: DddDeleteRequest) =>
+    request<{ success: boolean }>('/ddd/delete', {
+      method: 'POST',
+      body: JSON.stringify(config),
+    }),
+
+  renameDddItem: (config: DddRenameRequest) =>
+    request<{ success: boolean }>('/ddd/rename', {
       method: 'POST',
       body: JSON.stringify(config),
     }),

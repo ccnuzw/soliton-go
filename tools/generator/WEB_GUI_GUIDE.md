@@ -250,19 +250,23 @@ internal/
 - **Policy**：用于表达业务策略或决策逻辑
 - **Event**：领域事件，描述领域中已发生的业务事实
 - **Handler**：事件处理器，订阅并处理领域事件
+- **回显与管理**：支持加载已有组件，快速回显并继续编辑
+- **Diff 对比**：展示当前文件与预览结果的对照视图
+- **批量导入**：支持 JSON 或行格式批量粘贴字段
 
 #### 使用流程
 
 1. 选择已有领域（Domain）
-2. 选择需要生成的组件：
+2. 选择需要生成的组件，或从已有列表加载：
    - **Value Object**：定义值对象字段
    - **Specification**：定义规格，Target 可留空表示 any
    - **Policy**：定义策略，Target 可留空表示 any
    - **Event & Handler**：支持组合生成（Event + Handler）
-3. 设置可选参数：
+3. 设置可选参数与批量字段：
    - Topic（留空自动生成）
    - Force（可选，覆盖已有文件）
-4. 点击"预览"确认生成结果
+   - 批量导入支持 JSON 或行格式（如 `name,type,comment`）
+4. 点击"Diff 对比"或"预览"确认生成结果
 5. 点击"生成"执行生成
 
 #### 组合生成说明
@@ -271,6 +275,18 @@ internal/
 - 同时勾选时会依次生成 Event 与 Handler
 - Handler Topic 留空时会复用 Event Topic
 - 默认注入 EventBus Provider 与事件注册
+
+#### 回显与管理
+
+- 支持从“已有组件”列表加载内容并回填表单
+- 支持重命名与删除（删除会移除对应文件）
+- Handler 的 Diff 仅展示处理器文件，不包含 module 注册变更
+
+#### 批量导入说明
+
+- 支持 JSON 数组：`[{ "name": "value", "type": "string", "comment": "备注" }]`
+- 支持行格式：`name,type,comment`
+- 枚举可写为 `enum:a|b`
 
 ---
 
@@ -417,6 +433,8 @@ internal/application/<name>/
 DDD 增强页面支持：
 - Value Object / Specification / Policy / Event / Handler
 - Event 与 Handler 组合生成
+- 已有组件加载、重命名、删除
+- Diff 对比与批量导入/导出
 
 ### 迁移中心
 
